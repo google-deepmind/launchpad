@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package courier;
+
+import "courier/serialization/serialization.proto";
+
+message CallRequest {
+  // Name of the server method to be called.
+  string method = 1;
+
+  // Arguments for the method call.
+  courier.CallArguments arguments = 2;
+}
+
+message CallResponse {
+  // Result of the method call.
+  courier.CallResult result = 2;
+}
+
+message ListMethodsRequest {}
+
+message ListMethodsResponse {
+  repeated string methods = 1;
+}
+
+service CourierService {
+  // Calls a method on the server and returns the call's result.
+  rpc Call(CallRequest) returns (CallResponse) {
+  }
+
+  // Lists the methods available on the server.
+  rpc ListMethods(ListMethodsRequest) returns (ListMethodsResponse) {
+  }
+}

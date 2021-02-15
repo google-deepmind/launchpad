@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package courier;
+
+import "tensorflow/core/framework/tensor.proto";
+
+message SerializedObject {
+  reserved 7;
+
+  oneof payload {
+    // Basic scalars.
+    int64 int_value = 1;
+    double double_value = 2;
+    bool bool_value = 3;
+    bytes string_value = 4;
+    bytes unicode_value = 13;
+    // List/Tuple.
+    SerializedList list_value = 5;
+    // Unordered dict.
+    SerializedDict dict_value = 6;
+    // Python None value.
+    bool none_value = 8;
+    // Custom Python object which implements a __reduce__  method.
+    ReducedObject reduced_object_value = 12;
+    // tensorflow::Tensor or Python numpy array.
+    tensorflow.TensorProto tensor_value = 9;
+    // Python type object.
+    TypeValue type_value = 14;
+    // JAX: jax.numpy.array. Will be unpacked as numpy array just like
+    // tensor_value but has its own target as the bfloat16 numpy dtype is not
+    // shared between tensorflow and JAX.
+    tensorflow.TensorProto jax_tensor_value = 15;
+  }
+}
+
+message SerializedList {
+  repeated SerializedObject items = 1;
+  // Special Python tuple.
+  bool is_tuple = 2;
+}
+
+message SerializedDict {
+  repeated SerializedObject keys = 1;
+  repeated SerializedObject values = 2;
+}
+
+message CallArguments {
+  // Arguments of the method call.
+  repeated SerializedObject args = 1;
+
+  // Keyword arguments for the method call (Python only).
+  map<string, SerializedObject> kwargs = 2;
+}
+
+message CallResult {
+  // Return value of the method call.
+  SerializedObject result = 1;
+}
+
+message ReducedObject {
+  string class_module = 1;
+  string class_name = 2;
+  SerializedObject args = 3;
+  SerializedObject state = 4;
+  SerializedObject items = 5;
+  SerializedObject kvpairs = 6;
+}
+
+// Message used to store Callables; eg classes, functions and builtins.
+message TypeValue {
+  bytes module = 1;
+  bytes name = 2;
+}

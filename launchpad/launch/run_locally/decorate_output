@@ -1,0 +1,15 @@
+#! /bin/bash
+#
+# Combine stderr and stdout, and annotate the resulting lines.
+#
+# Example usage:
+#   decorate_output 33 'my title' seq 10 10 30
+#
+# Example output (in yellow, which has ANSI colour code 33):
+#   [my title] 10
+#   [my title] 20
+#   [my title] 30
+
+COLOR=${1:?ANSI colour code expected}
+TITLE=${2:?line title expected}
+exec "${@:3}" 2>&1 | sed "s!^!\\x1b[1;${COLOR}m[${TITLE}] !;s!\$!\\x1b[0;0m!"
