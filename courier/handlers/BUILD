@@ -19,9 +19,6 @@ lp_cc_library(
     name = "py_call",
     srcs = ["py_call.cc"],
     hdrs = ["py_call.h"],
-    copts = [
-        "-fexceptions",
-    ],
     features = ["-use_header_modules"],
     deps = [
         ":interface",
@@ -30,11 +27,11 @@ lp_cc_library(
         "//courier/platform/default:py_utils",
         "//courier/serialization:py_serialize",
         "//courier/serialization:serialization_cc_proto",
-        "//third_party/pybind11",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@pybind11",
     ],
 )

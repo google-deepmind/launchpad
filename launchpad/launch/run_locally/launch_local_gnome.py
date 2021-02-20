@@ -18,8 +18,11 @@
 import atexit
 import datetime
 import os
+import shlex
 import signal
+import stat
 import subprocess
+import tempfile
 import time
 
 from launchpad.launch.run_locally import feature_testing
@@ -39,11 +42,82 @@ def find_gnome_terminal_server():
   return None
 
 
-def launch_with_gnome_terminal(commands_to_launch):
+def _launch_in_windows(commands_to_launch, app_id):
+  """Launches commands in gnome windows."""
+  for window_index, command_to_launch in enumerate(commands_to_launch):
+    set_title = (r'PS1=$; PROMPT_COMMAND=; '
+                 'echo -en "\\033]0;{}\\a"'.format(command_to_launch.title))
+    inner_cmd = '{}; {}; exec $SHELL'.format(
+        set_title, subprocess.list2cmdline(command_to_launch.command_as_list))
+    terminal_command_list = [
+        'gnome-terminal',
+        '--app-id',
+        app_id,  # Connects to the recently opened terminal server.
+        '--geometry',
+        '80x60+{}+{}'.format(window_index * 40, window_index * 40),
+        '--',
+        'bash',
+        '-c',
+        inner_cmd,
+    ]
+    env = {}
+    env.update(os.environ)
+    env.update(command_to_launch.env_overrides)
+    subprocess.Popen(terminal_command_list, env=env)
+
+
+def _launch_in_tabs(commands_to_launch, app_id):
+  """Launches commands in gnome tabs."""
+  file_handle, command_file_path = tempfile.mkstemp('.sh')
+  os.close(file_handle)
+  atexit.register(os.remove, command_file_path)
+  with open(command_file_path, 'w') as command_file:
+    # The command file starts with setting up environment.
+    for key, value in os.environ.items():
+      # Remove these two keys so that new processes are created by the newly
+      # started gnome-terminal-server.
+      if key in ['GNOME_TERMINAL_SERVICE', 'GNOME_TERMINAL_SCREEN']:
+        continue
+      command_file.write(f'export {shlex.quote(key)}={shlex.quote(value)}\n')
+    for command_to_launch in commands_to_launch:
+      inner_cmd = '; '.join([
+          # Set the title (see https://superuser.com/a/1330292/156433).
+          'PS1=$',
+          'PROMPT_COMMAND=',
+          f'echo -en "\\033]0;{command_to_launch.title}\\a"',
+          # Run the actual command.
+          subprocess.list2cmdline(command_to_launch.command_as_list),
+          # Start a shell so that the tab doesn't close instantly when the
+          # command finishes.
+          'exec $SHELL',
+      ])
+      terminal_command_list = [
+          'gnome-terminal',
+          '--tab',
+          '--',
+          'bash',
+          '-c',
+          inner_cmd,
+      ]
+      env_overrides = []
+      for key, value in command_to_launch.env_overrides.items():
+        env_overrides.append(f'{shlex.quote(key)}={shlex.quote(value)}')
+      command_file.write(
+          subprocess.list2cmdline(env_overrides + terminal_command_list) + '\n')
+
+  os.chmod(command_file_path, os.stat(command_file_path).st_mode | stat.S_IEXEC)
+  subprocess.Popen(
+      ['gnome-terminal', '--app-id', app_id, '--', command_file_path],
+      env=os.environ).wait()
+
+
+def launch_with_gnome_terminal(commands_to_launch, use_tabs=False):
   """Launch commands given as CommandToLaunch tuples with gnome-terminal.
 
   Args:
     commands_to_launch: An iterable of `CommandToLaunch` namedtuples.
+    use_tabs: Whether or not to run each command in a gnome tab (instead of a
+      window)
   """
   # The new server-client architecture of gnome-terminal removes several
   # extremely useful features. Relevant ones here are
@@ -85,26 +159,10 @@ def launch_with_gnome_terminal(commands_to_launch):
                                     env=os.environ,
                                     preexec_fn=preexec_fn)
   time.sleep(5)
-  for window_index, command_to_launch in enumerate(commands_to_launch):
-    set_title = (r'PS1=$; PROMPT_COMMAND=; '
-                 'echo -en "\\033]0;{}\\a"'.format(command_to_launch.title))
-    inner_cmd = '{}; {}; exec $SHELL'.format(
-        set_title, subprocess.list2cmdline(command_to_launch.command_as_list))
-    terminal_command_list = [
-        'gnome-terminal',
-        '--app-id',
-        app_id,  # Connects to the recently opened terminal server.
-        '--geometry',
-        '80x60+{}+{}'.format(window_index * 40, window_index * 40),
-        '--',
-        'bash',
-        '-c',
-        inner_cmd,
-    ]
-    env = {}
-    env.update(os.environ)
-    env.update(command_to_launch.env_overrides)
-    subprocess.Popen(terminal_command_list, env=env)
+  if use_tabs:
+    _launch_in_tabs(commands_to_launch, app_id)
+  else:
+    _launch_in_windows(commands_to_launch, app_id)
 
   def kill_processes():
     parent = psutil.Process(server_process.pid)
@@ -117,3 +175,11 @@ def launch_with_gnome_terminal(commands_to_launch):
     server_process.kill()
 
   atexit.register(kill_processes)
+
+
+def launch_with_gnome_terminal_windows(commands_to_launch):
+  launch_with_gnome_terminal(commands_to_launch, use_tabs=False)
+
+
+def launch_with_gnome_terminal_tabs(commands_to_launch):
+  launch_with_gnome_terminal(commands_to_launch, use_tabs=True)

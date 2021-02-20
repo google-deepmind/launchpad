@@ -14,7 +14,6 @@ py_library(
     srcs_version = "PY3",
     deps = [
         "//courier/python:client",
-        "//courier/python:courier_dataset",
         "//courier/python:py_server",
     ],
 )

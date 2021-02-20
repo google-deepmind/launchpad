@@ -81,6 +81,6 @@ absl::StatusOr<std::unique_ptr<Server>> Server::BuildAndStart(
     Router* router, int port, int thread_pool_size) {
   auto server = std::make_unique<ServerImpl>(router, port);
   COURIER_RETURN_IF_ERROR(server->Start());
-  return server;
+  return absl::WrapUnique<Server>(server.release());
 }
 }  // namespace courier

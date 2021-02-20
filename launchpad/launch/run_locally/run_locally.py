@@ -28,7 +28,8 @@ from launchpad.launch.run_locally import launch_local_tmux
 from launchpad.launch.run_locally import launch_local_xterm
 
 SEPARATE_TERMINAL_XTERM = 'xterm'
-SEPARATE_TERMINAL_GNOME_TERMINAL = 'gnome-terminal'
+SEPARATE_TERMINAL_GNOME_TERMINAL_WINDOWS = 'gnome-terminal'
+SEPARATE_TERMINAL_GNOME_TERMINAL_TABS = 'gnome-terminal-tab'
 SEPARATE_TERMINAL_TMUX_SESSION = 'tmux_session'
 SEPARATE_TERMINAL_BYOBU_SESSION = 'byobu_session'
 SEPARATE_TERMINAL_CURRENT_TERMINAL = 'current_terminal'
@@ -36,7 +37,8 @@ SEPARATE_TERMINAL_OUTPUT_TO_FILES = 'output_to_files'
 
 SEPARATE_TERMINAL_MODES = (
     SEPARATE_TERMINAL_XTERM,
-    SEPARATE_TERMINAL_GNOME_TERMINAL,
+    SEPARATE_TERMINAL_GNOME_TERMINAL_WINDOWS,
+    SEPARATE_TERMINAL_GNOME_TERMINAL_TABS,
     SEPARATE_TERMINAL_TMUX_SESSION,
     SEPARATE_TERMINAL_BYOBU_SESSION,
     SEPARATE_TERMINAL_CURRENT_TERMINAL,
@@ -45,15 +47,18 @@ SEPARATE_TERMINAL_MODES = (
 
 TERMINALS_FOR_X = (
     SEPARATE_TERMINAL_XTERM,
-    SEPARATE_TERMINAL_GNOME_TERMINAL,
+    SEPARATE_TERMINAL_GNOME_TERMINAL_WINDOWS,
+    SEPARATE_TERMINAL_GNOME_TERMINAL_TABS,
 )
 
 # Map terminal name to the corresponding launch function
 _LOCAL_LAUNCHER_MAP = {
     SEPARATE_TERMINAL_XTERM:
         launch_local_xterm.launch_with_xterm,
-    SEPARATE_TERMINAL_GNOME_TERMINAL:
-        launch_local_gnome.launch_with_gnome_terminal,
+    SEPARATE_TERMINAL_GNOME_TERMINAL_WINDOWS:
+        launch_local_gnome.launch_with_gnome_terminal_windows,
+    SEPARATE_TERMINAL_GNOME_TERMINAL_TABS:
+        launch_local_gnome.launch_with_gnome_terminal_tabs,
     SEPARATE_TERMINAL_TMUX_SESSION:
         launch_local_tmux.launch_with_tmux_session,
     SEPARATE_TERMINAL_BYOBU_SESSION:
@@ -107,7 +112,7 @@ def _get_terminal(given_terminal: Optional[Text]):
 
   if terminal is None:
     if feature_testing.has_gnome_terminal():
-      terminal = SEPARATE_TERMINAL_GNOME_TERMINAL
+      terminal = SEPARATE_TERMINAL_GNOME_TERMINAL_WINDOWS
     elif feature_testing.has_tmux():
       terminal = SEPARATE_TERMINAL_TMUX_SESSION
     elif feature_testing.has_xterm():

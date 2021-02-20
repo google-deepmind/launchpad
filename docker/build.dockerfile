@@ -8,8 +8,8 @@ LABEL maintainer="Launchpad Team <no-reply@google.com>"
 # instruction after a FROM.
 ARG cpu_base_image="tensorflow/tensorflow:2.1.0-custom-op-ubuntu16"
 ARG base_image=$cpu_base_image
-ARG tensorflow_pip="tf-nightly"
-ARG python_version="3.6"
+ARG tensorflow_pip="tensorflow==2.3.0"
+ARG python_version="3.8"
 
 # Pick up some TF dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \

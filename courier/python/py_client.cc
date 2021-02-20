@@ -14,6 +14,7 @@
 
 #include "courier/python/py_client.h"
 
+#include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 

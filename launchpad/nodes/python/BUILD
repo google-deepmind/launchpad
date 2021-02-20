@@ -27,7 +27,6 @@ lp_library(
         "//launchpad:context",
         "//launchpad/nodes:base",
         "//launchpad/nodes:dereference",
-        "//launchpad/nodes/python:process_entry",  # build_cleaner: keep
     ],
 )
 

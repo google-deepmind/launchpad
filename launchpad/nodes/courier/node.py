@@ -67,8 +67,7 @@ class CourierNode(python.PyClassNode[CourierHandle, WorkerType],
                *args,
                courier_kwargs=None,
                **kwargs):
-
-    super().__init__(constructor, *args, **kwargs)  
+    super().__init__(constructor, *args, **kwargs)
     self._address = lp_address.Address(COURIER_PORT_NAME)
     self.allocate_address(self._address)
     if courier_kwargs is None:

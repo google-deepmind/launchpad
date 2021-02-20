@@ -57,6 +57,7 @@ function prepare_src() {
 
   # Copy all Python files and so libraries.
   cp --parents `find -name \*.py*` ${TMPDIR}
+  cp launchpad/launch/run_locally/decorate_output ${TMPDIR}/launchpad/launch/run_locally/decorate_output
   cd bazel-bin/courier && cp --parents `find -type f -name \*.so | grep -v runfiles` ${TMPDIR}/courier && cd ../..
   mv ${TMPDIR}/courier/serialization/*.so ${TMPDIR}/courier/python/
 
