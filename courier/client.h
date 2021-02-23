@@ -18,6 +18,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <thread>  // NOLINT
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -33,6 +34,7 @@
 #include "courier/call_context.h"
 #include "courier/courier_service.grpc.pb.h"
 #include "courier/courier_service.pb.h"
+#include "courier/platform/client_monitor.h"
 #include "courier/platform/status_macros.h"
 #include "courier/serialization/serialization.pb.h"
 #include "courier/serialization/serialize.h"
@@ -48,6 +50,8 @@ class Client {
  public:
   // Creates a new Client that will connect to a Server.
   explicit Client(absl::string_view server_address);
+
+  ~Client();
 
   // Calls a method on the server. The caller retains ownership of `context`.
   // Blocks until the RPC call has finished, so the caller is not expected to
@@ -88,12 +92,19 @@ class Client {
   absl::StatusOr<std::vector<std::string>> ListMethods();
 
  private:
+  friend class AsyncRequest;
   // Initializes the stub RPC client. This has to be called outside of the
   // constructor as it might block and we expect the constructor to be non
   // blocking. If the singleton `AddressInterceptor` was enabled, then we
   // consult the interceptor for a potential redirect before using the
   // `server_address` to create the stub.
   absl::Status TryInit(CallContext* context) ABSL_LOCKS_EXCLUDED(init_mu_);
+
+  // Run by dedicated thread it polls on the competion queue.
+  void cq_polling();
+
+  grpc::CompletionQueue cq_;
+  std::thread cq_thread_;
 
   // Ensures initialization is only done once.
   absl::Mutex init_mu_;
@@ -106,6 +117,27 @@ class Client {
   std::unique_ptr</* grpc_gen:: */CourierService::Stub> stub_;
 };
 
+class AsyncRequest {
+ public:
+  AsyncRequest(Client* client, CallContext* context,
+               MonitoredCallScope* monitor, absl::string_view method_name,
+               std::unique_ptr<CallArguments> arguments,
+               std::function<void(absl::StatusOr<CallResult>)> callback);
+
+  void Run();
+
+  void Done(const ::grpc::Status& grpc_status);
+
+ private:
+  friend class Client;
+  Client* client_;
+  const std::function<void(absl::StatusOr<courier::CallResult>)> callback_;
+  CallContext* context_;
+  courier::CallRequest request_;
+  courier::CallResponse response_;
+  courier::MonitoredCallScope* monitor_;
+  grpc::Status status_;
+};
 }  // namespace courier
 
 #endif  // COURIER_CLIENT_H_

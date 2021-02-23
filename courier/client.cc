@@ -35,7 +35,6 @@
 #include "courier/address_interceptor.h"
 #include "courier/call_context.h"
 #include "courier/courier_service.pb.h"
-#include "courier/platform/client_monitor.h"
 #include "courier/platform/grpc_utils.h"
 #include "courier/platform/logging.h"
 #include "courier/platform/status_macros.h"
@@ -61,42 +60,66 @@ inline absl::Status FromGrpcStatus(const grpc::Status& s) {
 }
 
 namespace courier {
-namespace {
 
 bool IsRetryable(const absl::Status& status) {
   return absl::IsUnavailable(status);
 }
 
-// Takes ownership of `request`, `response` and `monitor`.
-void AsyncCallDone(
-    /* grpc_gen:: */CourierService::Stub* stub,
-    const std::function<void(absl::StatusOr<courier::CallResult>)> callback,
-    CallContext* context, const CallRequest* request, CallResponse* response,
-    MonitoredCallScope* monitor, const ::grpc::Status& grpc_status) {
+AsyncRequest::AsyncRequest(
+    Client* client, CallContext* context, MonitoredCallScope* monitor,
+    absl::string_view method_name, std::unique_ptr<CallArguments> arguments,
+    std::function<void(absl::StatusOr<CallResult>)> callback)
+    : client_(client),
+      callback_(callback),
+      context_(context),
+      monitor_(monitor) {
+  request_.set_method(std::string(method_name));
+  request_.set_allocated_arguments(arguments.release());
+}
+
+void AsyncRequest::Run() {
+  std::unique_ptr<grpc::ClientAsyncResponseReader<CallResponse>> rpc(
+      client_->stub_->PrepareAsyncCall(context_->context(), request_,
+                                       &client_->cq_));
+  rpc->StartCall();
+  rpc->Finish(&response_, &status_, (void*)this);
+}
+
+void AsyncRequest::Done(const ::grpc::Status& grpc_status) {
   absl::Status status = FromGrpcStatus(grpc_status);
-  if (IsRetryable(status) && context->wait_for_ready()) {
-    context->Reset();
-    stub->experimental_async()->Call(
-        context->context(), request, response,
-        absl::bind_front(&AsyncCallDone, stub, callback, context, request,
-                         response, monitor));
+  if (IsRetryable(status) && context_->wait_for_ready()) {
+    context_->Reset();
+    Run();
   } else {
-    delete monitor;
+    delete monitor_;
     if (status.ok()) {
-      callback(std::move(*response->mutable_result()));
+      callback_(std::move(*response_.mutable_result()));
     } else {
-      callback(status);
+      callback_(status);
     }
-    delete request;
-    delete response;
+    delete this;
   }
 }
 
-}  // namespace
+void Client::cq_polling() {
+  void* tag;
+  bool ok = false;
+  while (cq_.Next(&tag, &ok)) {
+    AsyncRequest* request = static_cast<AsyncRequest*>(tag);
+    COURIER_CHECK(ok);
+    request->Done(request->status_);
+  }
+}
 
-Client::Client(absl::string_view server_address)
-    : server_address_(server_address) {
+Client::Client(absl::string_view server_address) :
+      cq_thread_(&Client::cq_polling, this),
+      server_address_(server_address) {
   ClientCreation();
+}
+
+Client::~Client() {
+  cq_.Shutdown();
+  cq_thread_.join();
 }
 
 absl::StatusOr<courier::CallResult> Client::CallF(
@@ -135,21 +158,14 @@ void Client::AsyncCallF(
     return;
   }
 
-  auto request = absl::make_unique<CallRequest>();
-  request->set_method(std::string(method_name));
-  request->set_allocated_arguments(arguments.release());
-
   COURIER_CHECK(stub_);
-  auto response = absl::make_unique<CallResponse>();
-  auto monitor =
-      BuildCallMonitor(channel_.get(), request->method(), server_address_);
-  auto request_ptr = request.get();
-  auto response_ptr = response.get();
-  stub_->experimental_async()->Call(
-      context->context(), request_ptr, response_ptr,
-      absl::bind_front(&AsyncCallDone, stub_.get(), callback, context,
-                       request.release(), response.release(),
-                       monitor.release()));
+  auto monitor = BuildCallMonitor(channel_.get(), std::string(method_name),
+                                  server_address_);
+  // Request deletes itself upon completion.
+  AsyncRequest* request =
+      new AsyncRequest(this, context, monitor.release(), method_name,
+                       std::move(arguments), callback);
+  request->Run();
 }
 
 absl::StatusOr<std::vector<std::string>> Client::ListMethods() {
