@@ -29,6 +29,7 @@ from launchpad.nodes import base
 from launchpad.nodes import dereference
 from launchpad.nodes.python import addressing
 
+from launchpad.nodes.python import local_multi_processing
 import tree
 
 T = TypeVar('T')
@@ -83,6 +84,14 @@ class PyNode(base.Node[HandleType], Generic[HandleType, ReturnType]):
         context.LaunchType.TEST_MULTI_THREADING
     ]):
       return [node.function for node in nodes]
+    elif (launch_context.launch_type is
+          context.LaunchType.LOCAL_MULTI_PROCESSING):
+      return local_multi_processing.to_multiprocessing_executables(
+          nodes, label, launch_context.launch_config, pdb_post_mortem=True)
+    elif (
+        launch_context.launch_type is context.LaunchType.TEST_MULTI_PROCESSING):
+      return local_multi_processing.to_multiprocessing_executables(
+          nodes, label, launch_context.launch_config, pdb_post_mortem=False)
     raise NotImplementedError('Unsupported launch type: {}'.format(
         launch_context.launch_type))
 

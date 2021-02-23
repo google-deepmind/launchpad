@@ -78,6 +78,7 @@ class SetupToolsHelper(object):
     """Returns list of required packages."""
     required_packages = [
         'absl-py',
+        'cloudpickle',
         'dm-reverb[tensorflow]',
         'dm-tree',
         'grpcio',

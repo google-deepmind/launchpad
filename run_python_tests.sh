@@ -29,4 +29,13 @@ py_test() {
   done
 }
 
+test_terminal () {
+  LAUNCHPAD_LAUNCH_LOCAL_TERMINAL=$@ python3 -m launchpad.examples.consumer_producers.launch --lp_launch_type=local_mp
+}
+
 py_test
+test_terminal xterm
+test_terminal tmux_session
+test_terminal byobu_session
+test_terminal current_terminal
+test_terminal output_to_files

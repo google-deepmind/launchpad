@@ -27,6 +27,7 @@ lp_library(
         "//launchpad:context",
         "//launchpad/nodes:base",
         "//launchpad/nodes:dereference",
+        "//launchpad/nodes/python:process_entry",  # build_cleaner: keep
     ],
 )
 
@@ -35,4 +36,10 @@ lp_library(
     srcs = ["local_multi_processing.py"],
     srcs_version = "PY3",
     deps = [":flags_utils"],
+)
+
+lp_library(
+    name = "process_entry",
+    srcs = ["process_entry.py"],
+    srcs_version = "PY3",
 )

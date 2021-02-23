@@ -42,6 +42,8 @@ def launch(
     programs: Union[lp_program.Program, Sequence[lp_program.Program],
                    ],
     launch_type: Optional[Union[context.LaunchType, str]] = None,
+    local_resources: Optional[Dict[str, Any]] = None,
+    terminal: Optional[str] = None,
 ) -> Any:
   """Launches a Launchpad program.
 
@@ -52,6 +54,11 @@ def launch(
       FLAGS.lp_launch_type. See the definition of context.LaunchType for the
       valid choices. The benefit of setting it to None is you can control the
       launch type from command line (by just passing --lp_launch_type=...).
+    local_resources: (for local/test multiprocessing launch) A dictionary to
+      specify per-node launch configuration.
+    terminal: (for local multiprocessing launch) Terminal to use to run the
+      commands. Valid choices are gnome-terminal, xterm, tmux_session,
+      current_terminal, and output_to_files.
 
   Returns:
     Anything returns from the specific launcher.

@@ -28,8 +28,6 @@ def launch_and_output_to_files(commands_to_launch):
   Args:
     commands_to_launch: An iterable of `CommandToLaunch` namedtuples.
   """
-  if not os.path.exists(_LOGGING_DIR):
-    os.makedirs(_LOGGING_DIR)
   titles = []
   for command_to_launch in commands_to_launch:
     env = {}
@@ -42,6 +40,9 @@ def launch_and_output_to_files(commands_to_launch):
       title = command_to_launch.title + '_' + str(count)
     titles.append(title)
     filename = os.path.join(_LOGGING_DIR, title)
+    directory = os.path.dirname(filename)
+    if not os.path.exists(directory):
+      os.makedirs(directory)
     print('Logging to: {}'.format(filename))
     with open(filename, 'w') as outfile:
       subprocess.Popen(command_to_launch.command_as_list,

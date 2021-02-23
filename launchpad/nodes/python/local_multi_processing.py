@@ -19,6 +19,7 @@ import atexit
 import json
 import os
 import shutil
+import sys
 import tempfile
 from typing import Any, List, Mapping, Optional, Union, Sequence, Tuple
 
@@ -28,9 +29,10 @@ from absl import logging
 import cloudpickle
 import dataclasses
 
-
+from launchpad.launch.local_multi_processing import commands as mp_commands
 from launchpad.nodes.python import flags_utils
 
+_INTERPRETER = sys.executable
 
 StrOrFloat = Union[str, float]
 
@@ -56,25 +58,18 @@ class PythonProcess:
   args: Mapping[str, StrOrFloat] = dataclasses.field(default_factory=dict)
   env: Mapping[str, StrOrFloat] = dataclasses.field(default_factory=dict)
 
-  def __post_init__(self):
-    if 'logtostderr' not in self.interpreter_args and FLAGS.logtostderr:
-      copy = dict(self.interpreter_args)
-      copy['logtostderr'] = 'True'
-      self.interpreter_args = copy
-      logging.info('Forwarding --logtostderr to launched subprocesses...')
+  _absolute_interpreter_path: str = ''
 
-    if 'alsologtostderr' not in self.interpreter_args and FLAGS.alsologtostderr:
-      copy = dict(self.interpreter_args)
-      copy['alsologtostderr'] = 'True'
-      self.interpreter_args = copy
-      logging.info('Forwarding --alsologtostderr to launched subprocesses...')
+  def _get_absolute_interpreter_path(self):
+    """Resolve self.interpreter to an absolute path."""
+    return _INTERPRETER
 
-    if 'vmodule' not in self.interpreter_args and FLAGS.vmodule:
-      copy = dict(self.interpreter_args)
-      copy['vmodule'] = FLAGS.vmodule
-      self.interpreter_args = copy
-      logging.info('Forwarding --vmodule to launched subprocesses...')
-
+  @property
+  def absolute_interpreter_path(self) -> str:
+    """Returns the absolute path to the interpreter binary."""
+    if not self._absolute_interpreter_path:
+      self._absolute_interpreter_path = self._get_absolute_interpreter_path()
+    return self._absolute_interpreter_path
 
 
 _DATA_FILE_NAME = 'job.pkl'
@@ -89,26 +84,9 @@ def to_multiprocessing_executables(
     raise ValueError(
         'Launch config for {} must be a PythonProcess.'.format(label))
 
-  interpreter_binary_paths = None
-  if not interpreter_binary_paths:
-    if os.path.exists(os.environ['_'] + '_interpreter'):
-      relative_path = os.environ['_'].split('/', 10)[-1] + '_interpreter'
-      interpreter_binary_paths = dict(default=relative_path)
 
-  if not launch_config.interpreter and interpreter_binary_paths:
-    # Interpreter is not specified in the launch config, but
-    # FLAGS.py_node_interpreter_binary_paths exists (likely set by lp_script)
-    if label in interpreter_binary_paths:
-      launch_config.interpreter = interpreter_binary_paths[label]
-    elif 'default' in interpreter_binary_paths:
-      launch_config.interpreter = (interpreter_binary_paths['default'])
-    else:
-      raise ValueError(
-          'Either "{}" or "default" must be available in '
-          'FLAGS.py_node_interpreter_binary_paths. Did you forget to add them '
-          'in your lp_script() macro?'.format(label))
-
-  entry_script_path = 'launchpad/nodes/python/process_entry.py'
+  entry_script_path = os.path.join(os.path.dirname(__file__),
+                                   'process_entry.py')
 
   tmp_dir = tempfile.mkdtemp()
   atexit.register(shutil.rmtree, tmp_dir, ignore_errors=True)
@@ -123,11 +101,6 @@ def to_multiprocessing_executables(
         launch_config.absolute_interpreter_path, entry_script_path
     ]
 
-    # Interpreter arguments
-    for key, value in launch_config.interpreter_args.items():
-      command_as_list.extend(_to_cmd_arg(key, value))
-
-    command_as_list.append('--')
 
     # Arguments to pass to the script
     for key, value in launch_config.args.items():

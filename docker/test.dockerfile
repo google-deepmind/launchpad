@@ -6,11 +6,14 @@ WORKDIR /tmp/launchpad
 RUN ln -fs /usr/share/zoneinfo/Europe/Dublin /etc/localtime
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  byobu \
   python3.8-dev \
   python3-pip \
   python3-venv \
   python3-setuptools \
-  build-essential
+  tmux \
+  xterm
 
 RUN pip3 install --upgrade setuptools wheel
 
@@ -22,6 +25,4 @@ COPY run_python_tests.sh .
 
 ENV PYTHONPATH=/tmp/launchpad
 
-RUN bash run_python_tests.sh
-
-CMD ["/bin/bash"]
+CMD ["bash", "run_python_tests.sh"]
