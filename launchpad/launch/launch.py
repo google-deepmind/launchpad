@@ -57,8 +57,8 @@ def launch(
     local_resources: (for local/test multiprocessing launch) A dictionary to
       specify per-node launch configuration.
     terminal: (for local multiprocessing launch) Terminal to use to run the
-      commands. Valid choices are gnome-terminal, xterm, tmux_session,
-      current_terminal, and output_to_files.
+      commands. Valid choices are gnome-terminal, gnome-terminal-tabs, xterm,
+      tmux_session, current_terminal, and output_to_files.
 
   Returns:
     Anything returns from the specific launcher.

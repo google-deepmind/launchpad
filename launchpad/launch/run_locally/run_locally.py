@@ -29,7 +29,7 @@ from launchpad.launch.run_locally import launch_local_xterm
 
 SEPARATE_TERMINAL_XTERM = 'xterm'
 SEPARATE_TERMINAL_GNOME_TERMINAL_WINDOWS = 'gnome-terminal'
-SEPARATE_TERMINAL_GNOME_TERMINAL_TABS = 'gnome-terminal-tab'
+SEPARATE_TERMINAL_GNOME_TERMINAL_TABS = 'gnome-terminal-tabs'
 SEPARATE_TERMINAL_TMUX_SESSION = 'tmux_session'
 SEPARATE_TERMINAL_BYOBU_SESSION = 'byobu_session'
 SEPARATE_TERMINAL_CURRENT_TERMINAL = 'current_terminal'
