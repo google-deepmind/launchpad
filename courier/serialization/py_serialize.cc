@@ -229,29 +229,21 @@ absl::Status SerializeNdArray(PyObject* object, SerializedObject* buffer) {
   }
 
   PyArrayObject* array = reinterpret_cast<PyArrayObject*>(object);
-  int array_type = PyArray_TYPE(array);
-
-  // Unicode arrays are converted to string tensors, which are first
-  // deserialized to byte arrays and then cast back to string.
-  if (array_type == NPY_UNICODE) {
-    return SerializeAsTensorProto(object,
-                                  buffer->mutable_numpy_unicode_tensor_value());
-  }
 
   // Usage of user defined types (e.g) is low so we avoid fetching bfloat16
   // details from JAX and TF until a user defined type is used.
-  if (!PyTypeNum_ISUSERDEF(array_type)) {
+  if (!PyTypeNum_ISUSERDEF(PyArray_TYPE(array))) {
     return SerializeAsTensorProto(object, buffer->mutable_tensor_value());
   }
 
-  // User defined types are almost definitely bfloat16 but we check just to
+  // User defined types are almost definetely bfloat16 but we check just to
   // be sure. If it is not bfloat16 then we fallback to the default tensor
   // serialization. Note that this will most likely result in an error but
   // if tensorflow starts supporting other user defined types in the future
   // then we are prepared.
   COURIER_ASSIGN_OR_RETURN(int jax_bfloat16_type_num,
                            GetJaxBfloat16NumpyType());
-  if (array_type != jax_bfloat16_type_num) {
+  if (PyArray_TYPE(array) != jax_bfloat16_type_num) {
     return SerializeAsTensorProto(object, buffer->mutable_tensor_value());
   }
 
@@ -263,50 +255,6 @@ absl::Status SerializeNdArray(PyObject* object, SerializedObject* buffer) {
 
   return SerializeAsTensorProto(tf_bfloat16_obj.get(),
                                 buffer->mutable_jax_tensor_value());
-}
-
-// UTF-8 decodes all strings stored in an array of dtype byte_. This is
-// necessary to correctly handle unicode arrays, which are serialized to byte
-// arrays. Note that a simple cast using PyArray_CastToType does not work if the
-// byte string contains non ASCII characters.
-absl::StatusOr<PyArrayObject*> DecodeByteArray(PyArrayObject* array) {
-  // Allocate the output array. We cannot allocate the array as unicode array
-  // because we don't know the string lengths. We'll cast the array later.
-  auto result = MakeSafePyPtr<PyArrayObject>(
-      PyArray_SimpleNewFromDescr(PyArray_NDIM(array), PyArray_DIMS(array),
-                                 PyArray_DescrFromType(NPY_OBJECT)));
-  COURIER_RET_CHECK(result != nullptr);
-
-  // Create iterators over the input and the output arrays.
-  auto in_iter =
-      MakeSafePyPtr<PyArrayIterObject>(PyArray_IterNew((PyObject*)array));
-  auto out_iter = MakeSafePyPtr<PyArrayIterObject>(
-      PyArray_IterNew((PyObject*)result.get()));
-  COURIER_RET_CHECK(in_iter != nullptr);
-  COURIER_RET_CHECK(out_iter != nullptr);
-
-  while (PyArray_ITER_NOTDONE(in_iter.get())) {
-    auto in_item = MakeSafePyPtr(
-        PyArray_ToScalar(in_iter->dataptr, in_iter->ao));
-    COURIER_RET_CHECK(in_item != nullptr);
-
-    auto out_item = MakeSafePyPtr(
-        PyUnicode_FromEncodedObject(in_item.get(), nullptr, nullptr));
-    COURIER_RET_CHECK(out_item != nullptr)
-        << "Failed to convert bytes object to unicode.";
-
-    COURIER_RET_CHECK(PyArray_SETITEM(result.get(),
-                                      reinterpret_cast<char*>(
-                                          PyArray_ITER_DATA(out_iter.get())),
-                                      out_item.get()) == 0);
-
-    PyArray_ITER_NEXT(in_iter.get());
-    PyArray_ITER_NEXT(out_iter.get());
-  }
-
-  // Now cast the array to unicode.
-  return reinterpret_cast<PyArrayObject*>(PyArray_CastToType(
-      result.get(), PyArray_DescrFromType(NPY_UNICODE), /* fortran */ 0));
 }
 
 }  // namespace

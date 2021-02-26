@@ -44,9 +44,6 @@ message SerializedObject {
     // tensor_value but has its own target as the bfloat16 numpy dtype is not
     // shared between tensorflow and JAX.
     tensorflow.TensorProto jax_tensor_value = 15;
-    // Holds Numpy arrays of unicode type. The array is serialized to a string
-    // tensor and cast back to a unicode/string array upon deserialization.
-    tensorflow.TensorProto numpy_unicode_tensor_value = 16;
   }
 }
 
