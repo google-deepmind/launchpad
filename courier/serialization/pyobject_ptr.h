@@ -21,8 +21,11 @@
 
 namespace courier {
 
+template <typename T>
 struct DecrementsPyRefcount {
-  void operator()(PyObject *ptr) const { Py_DECREF(ptr); }
+  void operator()(T* ptr) const {
+    Py_DECREF(reinterpret_cast<PyObject*>(ptr));
+  }
 };
 
 // PyObjectPtr wraps an underlying Python object and decrements the
@@ -30,7 +33,16 @@ struct DecrementsPyRefcount {
 //
 // This class does not acquire the GIL in the destructor, so the GIL must be
 // held when the destructor is called.
-using PyObjectPtr = std::unique_ptr<PyObject, DecrementsPyRefcount>;
+using PyObjectPtr = std::unique_ptr<PyObject, DecrementsPyRefcount<PyObject>>;
+
+// Same as PyObjectPtr but allows holding derived types.
+template <typename T>
+using PyGenericPtr = std::unique_ptr<T, DecrementsPyRefcount<T>>;
+
+template <typename T = PyObject>
+PyGenericPtr<T> MakeSafePyPtr(PyObject* object) {
+  return PyGenericPtr<T>(reinterpret_cast<T*>(object));
+}
 
 };  // namespace courier
 

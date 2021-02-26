@@ -42,8 +42,13 @@ absl::Status DeserializeTensor(const courier::SerializedObject& buffer,
 absl::Status DeserializeTensor(const courier::SerializedObject& buffer,
                                tensorflow::Tensor* tensor_value,
                                tensorflow::Allocator* allocator) {
-  if (buffer.has_tensor_value()) {
-    if (!tensor_value->FromProto(allocator, buffer.tensor_value())) {
+  // A string tensor is serialized in numpy_unicode_tensor_value if the client
+  // is using Python.
+  if (buffer.has_tensor_value() || buffer.has_numpy_unicode_tensor_value()) {
+    const auto& tensor = buffer.has_tensor_value()
+                             ? buffer.tensor_value()
+                             : buffer.numpy_unicode_tensor_value();
+    if (!tensor_value->FromProto(allocator, tensor)) {
       return absl::InternalError("Failed to parse TensorProto.");
     }
     return absl::OkStatus();
