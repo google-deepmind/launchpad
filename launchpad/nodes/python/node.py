@@ -128,6 +128,14 @@ class PyClassNode(PyNode[HandleType, type(None)],
   """
 
   def __init__(self, constructor: Callable[..., WorkerType], *args, **kwargs):
+    """Initializes a new instance of the `PyClassNode` class.
+
+    Args:
+      constructor: A function that when called returns a Python object with a
+        run method.
+      *args: Arguments passed to the constructor.
+      **kwargs: Key word arguments passed to the constructor.
+    """
     super().__init__(self.run)
     self._constructor = constructor
     self._args = args
@@ -153,17 +161,32 @@ class PyClassNode(PyNode[HandleType, type(None)],
                                       (self._args, self._kwargs))
     return self._constructor(*args, **kwargs)
 
-  def disable_run(self)  -> bool:
+  def disable_run(self) -> None:
+    """Prevents the node from calling `run` on the Python object.
+
+    Note that the Python object is still constructed even if `disable_run` has
+    been called.
+    """
     self._should_run = False
 
-  def enable_run(self) -> bool:
+  def enable_run(self) -> None:
+    """Ensures `run` is called on the Python object.
+
+    This is the default state and callers don't need to call `enable_run` unless
+    `disable_run` has been called.
+    """
     self._should_run = True
 
   def run(self) -> None:
+    """Constructs Python object and (maybe) calls its `run` method.
+
+    The `run` method is not called if `disable_run` has ben called previously or
+    if the constructed Python object does not have a `run` method.
+    """
     instance = self._construct_instance()
     if hasattr(instance, 'run') and self._should_run:
       instance.run()
     else:
-      logging.warn(
+      logging.warning(
           'run() not defined on the instance (or disable_run() was called.).'
           'Exiting...')
