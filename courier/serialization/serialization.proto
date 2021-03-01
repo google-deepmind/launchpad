@@ -45,6 +45,12 @@ message SerializedObject {
     // shared between tensorflow and JAX.
     tensorflow.TensorProto jax_tensor_value = 15;
   }
+
+  // If payload is a `tensor_value` and `is_numpy_unicode_tensor` is true, then
+  // the tensor is cast to a unicode tensor when deserialized for Python. This
+  // ensures that numpy unicode tensors sent via Courier are also received as
+  // numpy unicode tensors in Python clients.
+  bool is_numpy_unicode_tensor = 16;
 }
 
 message SerializedList {
