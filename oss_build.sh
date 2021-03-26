@@ -18,27 +18,16 @@
 # Exit if any process returns non-zero status.
 set -e
 set -o pipefail
+cd "$(dirname "$0")"
 
 # Flags
-PYTHON_VERSIONS=3.6 # Options 3.6 (default), 3.7, 3.8
+PYTHON_VERSIONS=3.8 # Options 3.6, 3.7, 3.8 (default)
 CLEAN=false # Set to true to run bazel clean.
 OUTPUT_DIR=/tmp/launchpad/dist/
-PYTHON_TESTS=true
+INSTALL=true # Should the built package be installed.
 
 ABI=cp36
 PIP_PKG_EXTRA_ARGS="" # Extra args passed to `build_pip_package`.
-
-if [[ $# -lt 1 ]] ; then
-  echo "Usage:"
-  echo "--release [Indicates this is a release build. Otherwise nightly.]"
-  echo "--python [3.6(default)|3.7|3.8]"
-  echo "--clean  [true to run bazel clean]"
-  echo "--tf_dep_override  [Required tensorflow version to pass to setup.py."
-  echo "                    Examples: tensorflow==2.3.0rc0  or tensorflow>=2.3.0]"
-  echo "--python_tests  [true (default) to run python tests.]"
-  echo "--output_dir  [location to copy .whl file.]"
-  exit 1
-fi
 
 while [[ $# -gt -0 ]]; do
   key="$1"
@@ -54,8 +43,8 @@ while [[ $# -gt -0 ]]; do
       CLEAN="$2" # `true` to run bazel clean. False otherwise.
       shift
       ;;
-      --python_tests)
-      PYTHON_TESTS="$2"
+      --install)
+      INSTALL="$2" # `true` to install built package. False otherwise.
       shift
       ;;
       --output_dir)
@@ -69,6 +58,14 @@ while [[ $# -gt -0 ]]; do
       ;;
     *)
       echo "Unknown flag: $key"
+      echo "Usage:"
+      echo "--release [Indicates this is a release build. Otherwise nightly.]"
+      echo "--python  [3.6|3.7|3.8(default)]"
+      echo "--clean   [true to run bazel clean]"
+      echo "--install [true to install built package]"
+      echo "--tf_dep_override  [Required tensorflow version to pass to setup.py."
+      echo "                    Examples: tensorflow==2.3.0rc0  or tensorflow>=2.3.0]"
+      echo "--output_dir  [location to copy .whl file.]"
       exit 1
       ;;
   esac
@@ -103,6 +100,15 @@ for python_version in $PYTHON_VERSIONS; do
   bazel build -c opt --copt=-mavx --test_output=errors //...
 
   # Builds Launchpad and creates the wheel package.
-  /tmp/launchpad/launchpad/pip_package/build_pip_package.sh --dst $OUTPUT_DIR $PIP_PKG_EXTRA_ARGS
+  /tmp/launchpad/launchpad/pip_package/build_pip_package.sh --dst $OUTPUT_DIR/fresh $PIP_PKG_EXTRA_ARGS
+
+  # Install built package.
+  if [ "$INSTALL" = "true" ]; then
+    $PYTHON_BIN_PATH -mpip install --upgrade $OUTPUT_DIR/fresh/*
+  fi
+
+  chmod 666 $OUTPUT_DIR/fresh/*
+  mv $OUTPUT_DIR/fresh/* $OUTPUT_DIR/
+  rm -r $OUTPUT_DIR/fresh
 
 done

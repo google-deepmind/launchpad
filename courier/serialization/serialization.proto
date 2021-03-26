@@ -46,11 +46,38 @@ message SerializedObject {
     tensorflow.TensorProto jax_tensor_value = 15;
   }
 
-  // If payload is a `tensor_value` and `is_numpy_unicode_tensor` is true, then
-  // the tensor is cast to a unicode tensor when deserialized for Python. This
-  // ensures that numpy unicode tensors sent via Courier are also received as
-  // numpy unicode tensors in Python clients.
-  bool is_numpy_unicode_tensor = 16;
+  // Holds type information in case `payload` was constructed from a numpy
+  // array. We need this information to ensure that numpy arrays types are
+  // preserved when being serialized and de-serialized.
+  enum NumpyMetadata {
+    // Payload was not constructed from a numpy array.
+    NO_NUMPY_ARRAY = 0;
+
+    // Payload was constructed from a numpy array of type unicode. The tensor is
+    // cast to a unicode tensor when deserialized for Python. This ensures that
+    // numpy unicode tensors sent via Courier are also received as numpy unicode
+    // tensors in Python clients.
+    UNICODE_TENSOR = 1;
+
+    // Payload was constructed from a numpy array of type object. The tensor is
+    // constructed from `numpy_object_tensor_payload` instead of
+    // `payload.tensor_value` when de-serializing to Python. Note that
+    // `tensor_value` is still used for all other de-serialization endpoints
+    // (e.g. C++, TensorFlow). This ensures that numpy arrays of type object are
+    // deserialized to numpy arrays of type object.
+    OBJECT_TENSOR = 2;
+  }
+  NumpyMetadata numpy_metadata = 16;
+
+  // Entries of the numpy object tensor. Note that when this is populated,
+  // `tensor_value` contains string representations of the objects and this
+  // field holds best-effort serializations of the objects.
+  SerializedNumpyObjectTensor numpy_object_tensor = 17;
+}
+
+message SerializedNumpyObjectTensor {
+  repeated SerializedObject payload = 1;
+  repeated int64 shape = 2;
 }
 
 message SerializedList {

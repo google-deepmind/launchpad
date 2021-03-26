@@ -1,4 +1,8 @@
-FROM ubuntu:20.04
+ARG base_image="ubuntu:20.04"
+FROM $base_image
+
+ARG python_version="3.8"
+ARG abi="38"
 
 WORKDIR /tmp/launchpad
 
@@ -8,21 +12,17 @@ RUN ln -fs /usr/share/zoneinfo/Europe/Dublin /etc/localtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
   byobu \
-  python3.8-dev \
+  python${python_version}-dev \
   python3-pip \
-  python3-venv \
-  python3-setuptools \
   tmux \
   xterm
 
-RUN pip3 install --upgrade setuptools wheel
+RUN python${python_version} -mpip install --upgrade setuptools wheel
 
 COPY dist /tmp/launchpad
 
-RUN pip3 install /tmp/launchpad/*
+RUN python${python_version} -mpip install /tmp/launchpad/*${abi}*.whl
 
 COPY run_python_tests.sh .
 
 ENV PYTHONPATH=/tmp/launchpad
-
-CMD ["bash", "run_python_tests.sh"]

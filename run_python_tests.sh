@@ -17,7 +17,28 @@
 set +x
 set -e
 
-LOCATION=`python3 -c 'import launchpad as lp; print(lp.__path__[0])'`
+# Flags
+PYTHON=3.8
+
+while [[ $# -gt -0 ]]; do
+  key="$1"
+  case $key in
+      --python)
+      PYTHON="$2"
+      shift
+      ;;
+    *)
+      echo "Unknown flag: $key"
+      echo "Usage:"
+      echo "--python  [3.6|3.7|3.8(default)]"
+      exit 1
+      ;;
+  esac
+  shift # past argument or value
+done
+
+
+LOCATION=`python${PYTHON} -c 'import launchpad as lp; print(lp.__path__[0])'`
 
 py_test() {
   echo "===========Running Python tests============"
@@ -25,16 +46,15 @@ py_test() {
   for test_file in `find $LOCATION -name '*_test.py' -print`
   do
     echo "####=======Testing ${test_file}=======####"
-    python3 "${test_file}"
+    python${PYTHON} "${test_file}"
   done
 }
 
 test_terminal () {
-  LAUNCHPAD_LAUNCH_LOCAL_TERMINAL=$@ python3 -m launchpad.examples.consumer_producers.launch --lp_launch_type=local_mp
+  LAUNCHPAD_LAUNCH_LOCAL_TERMINAL=$@ python${PYTHON} -m launchpad.examples.consumer_producers.launch --lp_launch_type=local_mp
 }
 
 py_test
-test_terminal xterm
 test_terminal tmux_session
 test_terminal byobu_session
 test_terminal current_terminal

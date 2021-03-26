@@ -79,6 +79,7 @@ class SetupToolsHelper(object):
     required_packages = [
         'absl-py',
         'cloudpickle',
+        'dataclasses',
         'dm-reverb[tensorflow]',
         'dm-tree',
         'grpcio',

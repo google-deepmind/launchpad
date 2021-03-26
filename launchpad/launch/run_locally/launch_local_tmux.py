@@ -30,16 +30,20 @@ tty_write = print
 
 flags.DEFINE_string('tmux_open_window', None,
                     'Window in new Tmux session to switch to.')
+flags.DEFINE_string('tmux_session_name', 'launchpad',
+                    'Prefix session name to use for the Tmux session.')
 
 
 def launch_with_tmux_session(commands_to_launch,
-                             session_name_prefix='launchpad'):
+                             session_name_prefix=None):
   """Launch multiple CommandToLaunch tuples in a new tmux session."""
 
   if not feature_testing.has_tmux():
     raise ValueError(
         'tmux is not available, please choose another way to launch '
         'or install it.')
+
+  session_name_prefix = session_name_prefix or flags.FLAGS.tmux_session_name
 
   return _launch_with_multiplex_session(commands_to_launch,
                                         session_name_prefix,
@@ -149,9 +153,10 @@ def _launch_with_multiplex_session(commands_to_launch, session_name_prefix,
       f'Opened new {multiplexer} session called `{session_name}`. '
       f'If you are already in a tmux session, use `Ctrl+B W` as a '
       f'convenient way to switch to the new session. '
-      f'Otherwise run \n\n  {multiplexer} a -t "{session_name}"\n\nYou can '
-      f'terminate all the processes and the {multiplexer} session by pressing '
-      f'Ctrl-C here.\n')
+      f'Otherwise run \n\n  {multiplexer} a -t "{session_name}"\n\nTo change '
+      f'the name of the tmux sessions use the `--tmux_session_name` flag. You '
+      f'can terminate all the processes and the {multiplexer} session by '
+      f'pressing Ctrl-C here.\n')
   if flags.FLAGS.tmux_open_window is not None:
     command = [
         multiplexer, 'switch-client', '-t',

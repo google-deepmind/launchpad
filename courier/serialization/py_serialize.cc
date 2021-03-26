@@ -200,6 +200,62 @@ absl::Status SerializeAsTensorProto(PyObject* object,
   return absl::OkStatus();
 }
 
+// Serializes a numpy array of type object.
+absl::StatusOr<SerializedNumpyObjectTensor> SerializeObjectArray(
+    PyArrayObject* array) {
+  SerializedNumpyObjectTensor result;
+
+  // Store the shape information in the result proto.
+  result.mutable_shape()->Reserve(PyArray_NDIM(array));
+  for (int i = 0; i < PyArray_NDIM(array); ++i) {
+    result.add_shape(PyArray_DIM(array, i));
+  }
+
+  // Iterate over the flattened array and serialize all objects individually.
+  auto iter =
+      MakeSafePyPtr<PyArrayIterObject>(PyArray_IterNew((PyObject*)array));
+  COURIER_RET_CHECK(iter != nullptr);
+
+  while (PyArray_ITER_NOTDONE(iter.get())) {
+    auto item = MakeSafePyPtr(PyArray_ToScalar(iter->dataptr, iter->ao));
+    COURIER_RET_CHECK(item != nullptr);
+    COURIER_RETURN_IF_ERROR(
+        SerializePyObject(item.get(), result.add_payload()));
+    PyArray_ITER_NEXT(iter.get());
+  }
+  return result;
+}
+
+// De-serializes a numpy array of type object.
+absl::StatusOr<PyArrayObject*> DeserializeObjectArray(
+    const SerializedNumpyObjectTensor& serialized) {
+  // Allocate the output array.
+  auto result = MakeSafePyPtr<PyArrayObject>(PyArray_SimpleNewFromDescr(
+      serialized.shape_size(), const_cast<int64_t*>(serialized.shape().data()),
+      PyArray_DescrFromType(NPY_OBJECT)));
+  COURIER_RET_CHECK(result != nullptr);
+
+  // Create iterators over the input and the output arrays.
+  auto iter = MakeSafePyPtr<PyArrayIterObject>(
+      PyArray_IterNew((PyObject*)result.get()));
+  COURIER_RET_CHECK(iter != nullptr);
+
+  auto elem_iter = serialized.payload().begin();
+  while (PyArray_ITER_NOTDONE(iter.get())) {
+    COURIER_RET_CHECK(elem_iter != serialized.payload().end())
+        << "Invalid SerializedNumpyObject proto.";
+
+    COURIER_ASSIGN_OR_RETURN(auto out_item, DeserializePyObject(*elem_iter++));
+
+    COURIER_RET_CHECK(
+        PyArray_SETITEM(result.get(),
+                        reinterpret_cast<char*>(PyArray_ITER_DATA(iter.get())),
+                        out_item.get()) == 0);
+    PyArray_ITER_NEXT(iter.get());
+  }
+  return result.release();
+}
+
 // In Python:
 //
 //   from jax.numpy import bfloat16
@@ -234,7 +290,19 @@ absl::Status SerializeNdArray(PyObject* object, SerializedObject* buffer) {
   // Unicode arrays are converted to string tensors, which are first
   // deserialized to byte arrays and then cast back to string.
   if (array_type == NPY_UNICODE) {
-    buffer->set_is_numpy_unicode_tensor(true);
+    buffer->set_numpy_metadata(SerializedObject::UNICODE_TENSOR);
+    return SerializeAsTensorProto(object, buffer->mutable_tensor_value());
+  }
+
+  // Entries of object arrays are stored in two fields. String representation
+  // of the objects are stored in `tensor_value`. These are used when the object
+  // is de-serialized for C++ or TensorFlow. A best-effort object serialization
+  // is stored in `numpy_object_tensor_payload`. This is used when the array is
+  // de-serialized for Python.
+  if (array_type == NPY_OBJECT) {
+    buffer->set_numpy_metadata(SerializedObject::OBJECT_TENSOR);
+    COURIER_ASSIGN_OR_RETURN(*buffer->mutable_numpy_object_tensor(),
+                             SerializeObjectArray(array));
     return SerializeAsTensorProto(object, buffer->mutable_tensor_value());
   }
 
@@ -269,7 +337,7 @@ absl::Status SerializeNdArray(PyObject* object, SerializedObject* buffer) {
 // necessary to correctly handle unicode arrays, which are serialized to byte
 // arrays. Note that a simple cast using PyArray_CastToType does not work if the
 // byte string contains non ASCII characters.
-absl::StatusOr<PyArrayObject*> DecodeByteArray(PyArrayObject* array) {
+absl::StatusOr<PyArrayObject*> DeserializeByteArray(PyArrayObject* array) {
   // Allocate the output array. We cannot allocate the array as unicode array
   // because we don't know the string lengths. We'll cast the array later.
   auto result = MakeSafePyPtr<PyArrayObject>(
@@ -286,12 +354,13 @@ absl::StatusOr<PyArrayObject*> DecodeByteArray(PyArrayObject* array) {
   COURIER_RET_CHECK(out_iter != nullptr);
 
   while (PyArray_ITER_NOTDONE(in_iter.get())) {
-    auto in_item =
-        MakeSafePyPtr(PyArray_ToScalar(in_iter->dataptr, in_iter->ao));
+    // Note: We do not need to increment the reference count here since our use
+    // of in_item is only temporary.
+    auto in_item = PyArray_ToScalar(in_iter->dataptr, in_iter->ao);
     COURIER_RET_CHECK(in_item != nullptr);
 
     auto out_item = MakeSafePyPtr(
-        PyUnicode_FromEncodedObject(in_item.get(), nullptr, nullptr));
+        PyUnicode_FromEncodedObject(in_item, nullptr, nullptr));
     COURIER_RET_CHECK(out_item != nullptr)
         << "Failed to convert bytes object to unicode.";
 

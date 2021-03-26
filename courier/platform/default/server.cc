@@ -56,12 +56,15 @@ class ServerImpl : public Server {
   }
 
   absl::Status Stop() {
-    grpc_server_->Shutdown();
-    LOG(INFO) << "Courier server on port " << port_ << " shutting down.";
+    if (grpc_server_) {
+      grpc_server_->Shutdown();
+      LOG(INFO) << "Courier server on port " << port_ << " shutting down.";
+    }
     return absl::OkStatus();
   }
 
   absl::Status Join() {
+    COURIER_CHECK(grpc_server_ != nullptr);
     grpc_server_->Wait();
     return absl::OkStatus();
   }

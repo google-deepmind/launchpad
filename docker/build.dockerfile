@@ -66,7 +66,4 @@ RUN rm get-pip.py
 RUN ln -s "/usr/include/x86_64-linux-gnu/python3.8" "/dt7/usr/include/x86_64-linux-gnu/python3.8"
 RUN ln -s "/usr/include/x86_64-linux-gnu/python3.8" "/dt8/usr/include/x86_64-linux-gnu/ppython3.8"
 
-COPY . /tmp/launchpad
-RUN cd /tmp/launchpad && bash oss_build.sh --python ${python_version}
-
 CMD ["/bin/bash"]
