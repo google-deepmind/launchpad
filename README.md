@@ -3,7 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/dm-launchpad.svg)](https://badge.fury.io/py/dm-launchpad)
 
 Launchpad is a library that simplifies writing distributed programs by
-seamlessly launching them on variety of different platforms. Switching between
+seamlessly launching them on a variety of different platforms. Switching between
 local and distributed execution requries only a flag change.
 
 Launchpad introduces a programming model that represents a distributed system
@@ -17,8 +17,8 @@ two services, is created when the handle associated with one node is given
 to another at construction time. This edge originates from the receiving node,
 indicating that the receiving node will be the one initiating communication.
 This process allows Launchpad to define cross-service communication simply
-by passing handles to nodes. Launchpad provides following types of nodes (you
-can implement your own types as needed):
+by passing handles to nodes. The open sourced version of Launchpad currently
+provides following types of nodes (you can implement your own types as needed):
 
 *   **PyNode** - a simple node executing provided Python code upon entry.
     It is similar to a main function, but with the distinction that
@@ -266,8 +266,8 @@ program.
 *   It is possible to disable automatic execution of a node's `run()` method
     before launching. Do so by calling `disable_run()` on the node in question.
 *   In order to call methods to test on a Courier node you will need to
-    explicitly dereference the node first. Do so by calling `create_handle()`
-    followed by `dereference()` on the node in question.
+    explicitly dereference the handle of the node first. Do so by calling
+    `create_handle()` followed by `dereference()` on the node in question.
 
 Below is an incomplete example illustrating the above concepts. A complete
 example can be found [here](https://github.com/deepmind/launchpad/tree/master/launchpad/examples/consumer_producers/launch_test.py).
