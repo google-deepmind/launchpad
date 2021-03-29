@@ -27,6 +27,10 @@ provides following types of nodes (you can implement your own types as needed):
     communicate by calling public methods on each other either synchronously
     or asynchronously via futures. The underlying remote procedure calls
     are handled transparently by Launchpad.
+*   **CacheNode** - a **CourierNode** subclass that forwards calls to another
+    target **CourierNode** and caches the response. The cached response is used
+    for serving future incoming client calls. The target node is repeatedly
+    polled to refresh the cache.
 *   **ReverbNode** - it exposes functionality of Reverb, an easy-to-use data
     storage and transport system primarily used by RL algorithms as
     an experience replay. You can read more about Reverb
