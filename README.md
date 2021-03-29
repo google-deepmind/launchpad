@@ -126,7 +126,8 @@ the consecutive runs, make sure to not exit the Docker container.
 
 ## Quick Start
 
-The complete implementation can be found [here](https://github.com/deepmind/launchpad/tree/master/launchpad/examples/consumer_producers/).
+The complete implementation can be found
+[here](https://github.com/deepmind/launchpad/tree/master/launchpad/examples/consumer_producers/).
 
 ## Implement example nodes {#implement-nodes}
 
@@ -248,7 +249,8 @@ python3 -m launch --lp_launch_type=local_mp
 
 The `--lp_launch_type` controls how the program is launched. In the above case
 it is launched locally with each node executed in a separate process.
-List of supported execution modes can be found [here](https://github.com/deepmind/launchpad/tree/master/launchpad/context.py).
+List of supported execution modes can be found
+[here](https://github.com/deepmind/launchpad/tree/master/launchpad/context.py).
 
 ## Add a test {#test}
 
