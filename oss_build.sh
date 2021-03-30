@@ -26,7 +26,6 @@ CLEAN=false # Set to true to run bazel clean.
 OUTPUT_DIR=/tmp/launchpad/dist/
 INSTALL=true # Should the built package be installed.
 
-ABI=cp36
 PIP_PKG_EXTRA_ARGS="" # Extra args passed to `build_pip_package`.
 
 while [[ $# -gt -0 ]]; do
@@ -81,6 +80,7 @@ for python_version in $PYTHON_VERSIONS; do
 
   if [ "$python_version" = "3.6" ]; then
     export PYTHON_BIN_PATH=/usr/bin/python3.6 && export PYTHON_LIB_PATH=/usr/local/lib/python3.6/dist-packages
+    ABI=cp36
   elif [ "$python_version" = "3.7" ]; then
     export PYTHON_BIN_PATH=/usr/local/bin/python3.7 && export PYTHON_LIB_PATH=/usr/local/lib/python3.7/dist-packages
     ABI=cp37
@@ -97,7 +97,7 @@ for python_version in $PYTHON_VERSIONS; do
 
   # Build Launchpad and run all bazel Python tests. All other tests are executed
   # later.
-  bazel build -c opt --copt=-mavx --test_output=errors //...
+  bazel build -c opt --copt=-mavx --config=manylinux2010 --test_output=errors //...
 
   # Builds Launchpad and creates the wheel package.
   /tmp/launchpad/launchpad/pip_package/build_pip_package.sh --dst $OUTPUT_DIR/fresh $PIP_PKG_EXTRA_ARGS
