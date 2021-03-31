@@ -54,11 +54,11 @@ def launch(program: lp_program.Program,
     # to_executables() is a static method, so we can call it from any of the
     # nodes in this group.
     
-    
+    # pytype: disable=wrong-arg-count
     commands.extend(nodes[0].to_executables(nodes, label,
                                             nodes[0]._launch_context))
     
-    
+    # pytype: enable=wrong-arg-count
 
   signal_handling.exit_gracefully_on_sigint()
   signal_handling.exit_gracefully_on_sigquit()

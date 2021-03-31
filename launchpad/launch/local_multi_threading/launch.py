@@ -60,11 +60,11 @@ def vanilla_thread_handler(program):
     # to_executables() is a static method, so we can call it from any of the
     # nodes in this group.
     
-    
+    # pytype: disable=wrong-arg-count
     executables = nodes[0].to_executables(nodes, label,
                                           nodes[0]._launch_context)
     
-    
+    # pytype: enable=wrong-arg-count
     for executable in executables:
       thread = threading.Thread(target=executable, daemon=True)
       thread.start()

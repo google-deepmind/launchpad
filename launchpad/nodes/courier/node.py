@@ -97,7 +97,7 @@ class CourierNode(python.PyClassNode[CourierHandle, WorkerType],
     self._args = args
     self._kwargs = kwargs
     # Somehow pytype doesn't recognize CourierNode as the subclass.
-    self._collect_input_handles()  
+    self._collect_input_handles()  # pytype:disable=wrong-arg-types
 
   def create_handle(self) -> CourierHandle:
     return self._track_handle(CourierHandle(self._address))
