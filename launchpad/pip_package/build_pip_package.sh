@@ -49,7 +49,7 @@ function prepare_src() {
 
   echo $(date) : "=== Preparing sources in dir: ${TMPDIR}"
 
-  if [ ! -d bazel-bin/launchpad ]; then
+  if [ ! -d bazel-bin/courier ]; then
     echo "Could not find bazel-bin.  Did you run from the root of the build tree?"
     exit 1
   fi
