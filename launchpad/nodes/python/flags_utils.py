@@ -46,9 +46,6 @@ def _flag_to_placeholder(key):
   if flag_type not in flag_type_to_placeholder:
     raise NotImplementedError(f'Flag type {flag_type} is not yet supported.')
   placeholder = flag_type_to_placeholder[flag_type]
-  if (isinstance(placeholder, dict) and
-      isinstance(config_flags.get_config_filename(FLAGS[key]), str)):
-    placeholder['is_file'] = True
   return placeholder
 
 

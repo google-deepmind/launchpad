@@ -49,12 +49,21 @@ py_test() {
     python${PYTHON} "${test_file}"
   done
 }
-
 test_terminal () {
   LAUNCHPAD_LAUNCH_LOCAL_TERMINAL=$@ python${PYTHON} -m launchpad.examples.consumer_producers.launch --lp_launch_type=local_mp
 }
 
+N_CPU=$(grep -c ^processor /proc/cpuinfo)
+
+# Run static type-checking.
+pytype -k -x /tmp/launchpad/launchpad/pip_package/ \
+/tmp/launchpad/launchpad/examples/consumer_producers/launch_test.py \
+-j "${N_CPU}" /tmp/launchpad/launchpad/
+
+# Run all tests.
 py_test
+
+# Test different terminals.
 test_terminal tmux_session
 test_terminal byobu_session
 test_terminal current_terminal

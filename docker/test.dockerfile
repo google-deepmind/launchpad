@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   tmux \
   xterm
 
-RUN python${python_version} -mpip install --upgrade setuptools wheel
+RUN python${python_version} -mpip install --upgrade setuptools wheel pytype
 
 COPY dist /tmp/launchpad
 

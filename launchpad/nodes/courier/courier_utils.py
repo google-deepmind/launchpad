@@ -50,11 +50,6 @@ def make_courier_server(instance: Any, *courier_args,
     func = getattr(instance, method_name)
     logging.info('Binding: %s', method_name)
     if _should_expose_method(func, method_name):
-      if func.__dict__.get('_should_bindtf', False):
-        kwargs = dict(method_name=method_name, input_tensors=[])
-        kwargs.update(**func(skip_execution=True))
-        server.BindTF(**kwargs)
-      else:
-        server.Bind(method_name, func)
+      server.Bind(method_name, func)
 
   return server

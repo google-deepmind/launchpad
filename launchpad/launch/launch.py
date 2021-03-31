@@ -73,7 +73,8 @@ def launch(
     programs = cast(Sequence[lp_program.Program], [programs])
 
   if len(programs) > 1:
-    promptutil.tty_write(
+    writer = print
+    writer(
         'Multiple programs are provided but launch type is {}. Launching only '
         'the first program...'.format(launch_type))
   program = programs[0]
