@@ -20,17 +20,15 @@ process upon exception (instead of entering pdb).
 """
 
 import collections
-from concurrent import futures
 import os
 import sys
 import threading
 import traceback
 
-from typing import Mapping, Optional, Sequence, Text
-
 from absl import logging
 
 from launchpad import context
+from launchpad.launch.local_multi_threading import thread_waiter
 
 
 def _run_worker(worker_func):
@@ -49,57 +47,6 @@ def _run_worker(worker_func):
     # Abort the main process.
     os.kill(os.getpid(), 9)
     
-
-
-class _Threads:
-  """Encapsulates the running threads of a launched Program."""
-
-  def __init__(self, thread_dict: Mapping[Text, Sequence[threading.Thread]]):
-    """Initializes a _Threads.
-
-    Args:
-      thread_dict: Mapping from node group label to list of running threads
-          for that group.
-    """
-    self.thread_dict = thread_dict
-
-  def wait(self, labels_to_wait_for: Optional[Sequence[Text]] = None):
-    """Wait for threads to finish.
-
-    Args:
-      labels_to_wait_for: If supplied, only wait for these groups' threads to
-          finish (but still raise an exception if any thread from any group
-          fails).
-
-    Raises:
-      RuntimeError: if any thread raises an exception.
-    """
-    threads_to_wait_for = set()
-    for label in (labels_to_wait_for if labels_to_wait_for is not None
-                  else self.thread_dict):
-      threads_to_wait_for.update(self.thread_dict[label])
-
-    all_threads = set()
-    for threads in self.thread_dict.values():
-      all_threads.update(threads)
-    should_exit = threading.Event()
-    executor = futures.ThreadPoolExecutor(len(all_threads))
-    def waiter(thread):
-      while thread.is_alive() and not should_exit.is_set():
-        thread.join(0.01)
-      return thread
-    thread_futures = [executor.submit(waiter, t) for t in all_threads]
-    while threads_to_wait_for:
-      done, thread_futures = futures.wait(
-          thread_futures, return_when=futures.FIRST_COMPLETED)
-      for future in done:
-        future.result()
-      threads_to_wait_for.difference_update(f.result() for f in done)
-    should_exit.set()
-
-  def join(self):
-
-    self.wait()
 
 
 
@@ -134,9 +81,9 @@ def launch(program):
     
     
     for executable in executables:
-      thread = threading.Thread(target=_run_worker, args=(executable,))
-      thread.daemon = True
+      thread = threading.Thread(
+          target=_run_worker, args=(executable,), daemon=True)
       thread.start()
       thread_dict[label].append(thread)
 
-  return _Threads(thread_dict)
+  return thread_waiter.ThreadWaiter(thread_dict)

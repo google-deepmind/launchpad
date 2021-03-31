@@ -16,12 +16,14 @@
 """Local Multithreading Launcher implementation."""
 
 
+import collections
 import threading
 
 from absl import flags
 from launchpad import context
 from launchpad import program as lp_program
 from launchpad.launch import signal_handling
+from launchpad.launch.local_multi_threading import thread_waiter
 
 
 
@@ -45,18 +47,15 @@ def launch(program: lp_program.Program):
     node.bind_addresses()
 
   thread_handler = vanilla_thread_handler
-  signal_handling.exit_gracefully_on_sigquit()
-  thread_handler = thread_handler(program)
 
-  thread_joiner = threading.Thread(target=thread_handler)
-  thread_joiner.start()
-  return thread_joiner
+  signal_handling.exit_gracefully_on_sigquit()
+  return thread_handler(program)
 
 
 def vanilla_thread_handler(program):
   """Runs the threads directly."""
 
-  threads = []
+  thread_dict = collections.defaultdict(list)
   for label, nodes in program.groups.items():
     # to_executables() is a static method, so we can call it from any of the
     # nodes in this group.
@@ -69,12 +68,8 @@ def vanilla_thread_handler(program):
     for executable in executables:
       thread = threading.Thread(target=executable, daemon=True)
       thread.start()
-      threads.append(thread)
+      thread_dict[label].append(thread)
 
-  def _thread_joiner():
-    for thread in threads:
-      thread.join()
-
-  return _thread_joiner
+  return thread_waiter.ThreadWaiter(thread_dict)
 
 
