@@ -47,6 +47,8 @@ while [[ $# -gt -0 ]]; do
   shift # past argument or value
 done
 
+MOUNT_CMD="--mount type=bind,src=${PWD},dst=/tmp/launchpad"
+
 run_docker() {
   set +e
   set -x
@@ -55,7 +57,8 @@ run_docker() {
     if [[ $FLAGS_debug_docker ]]; then
       IMAGE=`docker container ls --last 1 | tail -n 1 | sed -r 's/.* ([a-z0-9]{12}).*/\1/'`
       echo "Launchpad build failed, entering Docker image $IMAGE for debugging."
-      docker run --rm -it $IMAGE bash
+      docker run --rm ${MOUNT_CMD} \
+        -it $IMAGE bash
     fi
     exit 1
   fi
@@ -67,7 +70,7 @@ run_docker docker build --tag launchpad:build \
   --build-arg python_version="${PYTHON}" \
   -f "docker/build.dockerfile" .
 
-run_docker docker run --rm --mount "type=bind,src=$PWD,dst=/tmp/launchpad" \
+run_docker docker run --rm ${MOUNT_CMD} \
   launchpad:build /tmp/launchpad/oss_build.sh --python "${PYTHON}" \
   --clean ${CLEAN} --install false
 
@@ -86,7 +89,17 @@ for python_version in $PYTHON; do
     -f "docker/test.dockerfile" .
 
   # Run tests.
-  run_docker docker run -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-    --rm launchpad:test bash run_python_tests.sh --python ${python_version}
+  run_docker docker run -e DISPLAY=$DISPLAY ${MOUNT_CMD} -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+    --rm launchpad:test bash /tmp/launchpad/run_python_tests.sh --python ${python_version}
 
 done
+
+echo "All tests passed! Built wheel(s):"
+ls -la dist/
+echo "To enter docker image used for building, execute:"
+echo "> docker run ${MOUNT_CMD} --entrypoint bash --rm -it launchpad:build"
+echo "From there you can for instance 'cd /tmp/launchpad && bazel build ...'"
+
+echo "To enter docker image used for testing, execute:"
+echo "> docker run ${MOUNT_CMD} --entrypoint bash --rm -it launchpad:test"
+echo "From there you can for instance 'python3 -m launchpad.examples.consumer_producers.launch --lp_launch_type=local_mt'"
