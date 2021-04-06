@@ -100,7 +100,7 @@ The next step is to enter the built Docker image, binding checked out
 Launchpad's sources to /tmp/launchpad within the container.
 ```
 $ docker run --rm --mount "type=bind,src=$PWD,dst=/tmp/launchpad" \
-  -it launchpad:local bash
+  -it launchpad:devel bash
 ```
 
 At this point you can build and install Launchpad within the container by
