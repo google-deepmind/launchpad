@@ -91,6 +91,7 @@ You can specify `tensorflow_pip` parameter to set the version
 of Tensorflow to build against. You can also specify which version(s) of Python
 container should support. The command below enables support for Python
 3.6, 3.7, and 3.8.
+```
 $ docker build --tag launchpad:devel \
   --build-arg tensorflow_pip=tensorflow==2.3.0 \
   --build-arg python_version="3.6 3.7 3.8" - < docker/build.dockerfile
