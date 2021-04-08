@@ -382,6 +382,7 @@ absl::StatusOr<PyArrayObject*> DeserializeByteArray(PyArrayObject* array) {
   return unicode_array.release();
 }
 
+
 }  // namespace
 
 absl::Status SerializePyObject(PyObject* object, SerializedObject* buffer) {
