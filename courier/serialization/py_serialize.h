@@ -19,6 +19,7 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "courier/platform/tensor_conversion.h"
 #include "courier/serialization/pyobject_ptr.h"
 #include "courier/serialization/serialization.pb.h"
 
@@ -31,7 +32,10 @@ absl::Status SerializePyObject(PyObject* object, SerializedObject* buffer);
 absl::StatusOr<SerializedObject> SerializePyObject(PyObject* object);
 
 absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
-    const SerializedObject& buffer);
+    const SerializedObject& buffer, TensorLookup& tensor_lookup);
+
+absl::StatusOr<SafePyObjectPtr> DeserializePyObject(
+    const SerializedObject& buffer, TensorLookup& tensor_lookup);
 
 absl::StatusOr<SafePyObjectPtr> DeserializePyObject(
     const SerializedObject& buffer);

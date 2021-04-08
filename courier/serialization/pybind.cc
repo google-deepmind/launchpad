@@ -15,6 +15,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 
+#include "courier/platform/status_macros.h"
+#include "courier/platform/tensor_conversion.h"
 #include "courier/serialization/py_serialize.h"
 #include "pybind11_abseil/absl_casters.h"
 #include "pybind11_abseil/status_casters.h"
@@ -50,11 +52,10 @@ absl::StatusOr<SerializedObject> SerializeToProto(const py::handle& handle) {
 
 absl::StatusOr<py::object> DeserializeFromProto(
     const SerializedObject& buffer) {
-  auto result = DeserializePyObjectUnsafe(buffer);
-  if (!result.ok()) {
-    return result.status();
-  }
-  return py::reinterpret_steal<py::object>(result.value());
+  COURIER_ASSIGN_OR_RETURN(auto tensor_lookup, CreateTensorLookup(buffer));
+  COURIER_ASSIGN_OR_RETURN(auto result,
+                           DeserializePyObjectUnsafe(buffer, tensor_lookup));
+  return py::reinterpret_steal<py::object>(result);
 }
 
 PYBIND11_MODULE(pybind, m) {

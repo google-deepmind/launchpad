@@ -29,6 +29,7 @@
 #include "courier/handlers/interface.h"
 #include "courier/platform/logging.h"
 #include "courier/platform/status_macros.h"
+#include "courier/platform/tensor_conversion.h"
 #include "courier/serialization/py_serialize.h"
 #include "courier/serialization/serialization.pb.h"
 
@@ -79,13 +80,17 @@ class PyCallHandler : public HandlerInterface {
   absl::StatusOr<courier::CallResult> Call(
       absl::string_view endpoint,
       const courier::CallArguments& arguments) override {
-      pybind11::gil_scoped_acquire gil;
+    // Converting TensorProto to Tensor does not require the GIL so we perform
+    // this (potentially slow) conversion before acquiring the GIL.
+    COURIER_ASSIGN_OR_RETURN(auto lookup, CreateTensorLookup(arguments));
+
+    pybind11::gil_scoped_acquire gil;
 
     // Deserialize args.
     courier::SafePyObjectPtr py_args(PyTuple_New(arguments.args_size()));
     for (int i = 0; i < arguments.args_size(); i++) {
       COURIER_ASSIGN_OR_RETURN(courier::SafePyObjectPtr py_arg,
-                               DeserializePyObject(arguments.args(i)));
+                               DeserializePyObject(arguments.args(i), lookup));
       PyTuple_SET_ITEM(py_args.get(), i, py_arg.release());
     }
 
@@ -93,7 +98,7 @@ class PyCallHandler : public HandlerInterface {
     courier::SafePyObjectPtr py_kwargs(PyDict_New());
     for (const auto& pair : arguments.kwargs()) {
       COURIER_ASSIGN_OR_RETURN(courier::SafePyObjectPtr py_value,
-                               DeserializePyObject(pair.second));
+                               DeserializePyObject(pair.second, lookup));
       PyDict_SetItemString(py_kwargs.get(), pair.first.data(), py_value.get());
     }
 

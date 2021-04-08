@@ -53,3 +53,24 @@ lp_cc_library(
     hdrs = ["logging.h"],
     deps = ["//courier/platform/default:logging"],
 )
+
+lp_cc_library(
+    name = "tensor_conversion_hdr",
+    hdrs = ["tensor_conversion.h"],
+    deps = [
+        "//courier/serialization:serialization_cc_proto",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+lp_cc_library(
+    name = "tensor_conversion",
+    hdrs = ["tensor_conversion.h"],
+    deps = [
+        "//courier/platform/default:tensor_conversion",
+        "//courier/serialization:serialization_cc_proto",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)

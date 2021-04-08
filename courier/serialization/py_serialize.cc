@@ -23,12 +23,14 @@
 #include "courier/platform/default/py_utils.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
+#include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/mutex.h"
 #include "courier/platform/status_macros.h"
+#include "courier/platform/tensor_conversion.h"
 #include "courier/serialization/serialization.pb.h"
 #include "tensorflow/python/lib/core/bfloat16.h"
 #include "tensorflow/python/lib/core/ndarray_tensor.h"
@@ -228,7 +230,8 @@ absl::StatusOr<SerializedNumpyObjectTensor> SerializeObjectArray(
 
 // De-serializes a numpy array of type object.
 absl::StatusOr<PyArrayObject*> DeserializeObjectArray(
-    const SerializedNumpyObjectTensor& serialized) {
+    const SerializedNumpyObjectTensor& serialized,
+    TensorLookup& tensor_lookup) {
   // Allocate the output array.
   auto result = MakeSafePyPtr<PyArrayObject>(PyArray_SimpleNewFromDescr(
       serialized.shape_size(), const_cast<int64_t*>(serialized.shape().data()),
@@ -245,7 +248,8 @@ absl::StatusOr<PyArrayObject*> DeserializeObjectArray(
     COURIER_RET_CHECK(elem_iter != serialized.payload().end())
         << "Invalid SerializedNumpyObject proto.";
 
-    COURIER_ASSIGN_OR_RETURN(auto out_item, DeserializePyObject(*elem_iter++));
+    COURIER_ASSIGN_OR_RETURN(auto out_item,
+                             DeserializePyObject(*elem_iter++, tensor_lookup));
 
     COURIER_RET_CHECK(
         PyArray_SETITEM(result.get(),
@@ -544,7 +548,7 @@ absl::StatusOr<SerializedObject> SerializePyObject(PyObject* object) {
 }
 
 absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
-    const SerializedObject& buffer) {
+    const SerializedObject& buffer, TensorLookup& tensor_lookup) {
   CHECK(Py_IsInitialized()) << "The Python interpreter has not been "
                                "initialized using Py_Initialize()";
   switch (buffer.payload_case()) {
@@ -577,10 +581,12 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
       }
       PyObject* py_dict = PyDict_New();
       for (int i = 0; i < dict.keys_size(); ++i) {
-        COURIER_ASSIGN_OR_RETURN(SafePyObjectPtr py_key,
-                                 DeserializePyObject(dict.keys(i)));
-        COURIER_ASSIGN_OR_RETURN(SafePyObjectPtr py_value,
-                                 DeserializePyObject(dict.values(i)));
+        COURIER_ASSIGN_OR_RETURN(
+            SafePyObjectPtr py_key,
+            DeserializePyObject(dict.keys(i), tensor_lookup));
+        COURIER_ASSIGN_OR_RETURN(
+            SafePyObjectPtr py_value,
+            DeserializePyObject(dict.values(i), tensor_lookup));
         PyDict_SetItem(py_dict, py_key.get(), py_value.get());
       }
       return py_dict;
@@ -590,16 +596,18 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
       if (list.is_tuple()) {
         PyObject* py_tuple = PyTuple_New(list.items_size());
         for (int i = 0; i < list.items_size(); ++i) {
-          COURIER_ASSIGN_OR_RETURN(SafePyObjectPtr py_item,
-                                   DeserializePyObject(list.items(i)));
+          COURIER_ASSIGN_OR_RETURN(
+              SafePyObjectPtr py_item,
+              DeserializePyObject(list.items(i), tensor_lookup));
           PyTuple_SET_ITEM(py_tuple, i, py_item.release());
         }
         return py_tuple;
       } else {
         PyObject* py_list = PyList_New(list.items_size());
         for (int i = 0; i < list.items_size(); ++i) {
-          COURIER_ASSIGN_OR_RETURN(SafePyObjectPtr py_item,
-                                   DeserializePyObject(list.items(i)));
+          COURIER_ASSIGN_OR_RETURN(
+              SafePyObjectPtr py_item,
+              DeserializePyObject(list.items(i), tensor_lookup));
           PyList_SET_ITEM(py_list, i, py_item.release());
         }
         return py_list;
@@ -623,7 +631,8 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
       // Deserialize args.
       COURIER_ASSIGN_OR_RETURN(
           SafePyObjectPtr py_args,
-          DeserializePyObject(buffer.reduced_object_value().args()));
+          DeserializePyObject(buffer.reduced_object_value().args(),
+                              tensor_lookup));
 
       // Make instance.
       PyObject* py_object = PyObject_CallObject(py_class, py_args.get());
@@ -634,7 +643,8 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
               SerializedObject::kNoneValue) {
         COURIER_ASSIGN_OR_RETURN(
             SafePyObjectPtr py_state,
-            DeserializePyObject(buffer.reduced_object_value().state()));
+            DeserializePyObject(buffer.reduced_object_value().state(),
+                                tensor_lookup));
         if (PyObject_HasAttrString(py_object, "__setstate__")) {
           SafePyObjectPtr py_setstate_call(
               PyObject_GetAttrString(py_object, "__setstate__"));
@@ -665,7 +675,8 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
               SerializedObject::kNoneValue) {
         COURIER_ASSIGN_OR_RETURN(
             SafePyObjectPtr py_items,
-            DeserializePyObject(buffer.reduced_object_value().items()));
+            DeserializePyObject(buffer.reduced_object_value().items(),
+                                tensor_lookup));
 
         // Call extend on the object.
         SafePyObjectPtr extend_fn(
@@ -684,7 +695,8 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
               SerializedObject::kNoneValue) {
         COURIER_ASSIGN_OR_RETURN(
             SafePyObjectPtr py_kvpairs,
-            DeserializePyObject(buffer.reduced_object_value().kvpairs()));
+            DeserializePyObject(buffer.reduced_object_value().kvpairs(),
+                                tensor_lookup));
 
         // Set each k/v pair on the item.
         for (int i = 0; i < PyList_Size(py_kvpairs.get()); ++i) {
@@ -704,8 +716,16 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
 }
 
 absl::StatusOr<SafePyObjectPtr> DeserializePyObject(
+    const SerializedObject& buffer, TensorLookup& tensor_lookup) {
+  COURIER_ASSIGN_OR_RETURN(PyObject * obj,
+                           DeserializePyObjectUnsafe(buffer, tensor_lookup));
+  return SafePyObjectPtr(obj);
+}
+absl::StatusOr<SafePyObjectPtr> DeserializePyObject(
     const SerializedObject& buffer) {
-  COURIER_ASSIGN_OR_RETURN(PyObject * obj, DeserializePyObjectUnsafe(buffer));
+  TensorLookup empty_lookup;
+  COURIER_ASSIGN_OR_RETURN(PyObject * obj,
+                           DeserializePyObjectUnsafe(buffer, empty_lookup));
   return SafePyObjectPtr(obj);
 }
 
@@ -719,7 +739,9 @@ absl::StatusOr<PyObject*> DeserializePyObjectFromString(
     const std::string& str) {
   SerializedObject buffer;
   buffer.ParseFromString(str);
-  COURIER_ASSIGN_OR_RETURN(SafePyObjectPtr obj, DeserializePyObject(buffer));
+  COURIER_ASSIGN_OR_RETURN(auto tensor_lookup, CreateTensorLookup(buffer));
+  COURIER_ASSIGN_OR_RETURN(SafePyObjectPtr obj,
+                           DeserializePyObject(buffer, tensor_lookup));
   return obj.release();
 }
 

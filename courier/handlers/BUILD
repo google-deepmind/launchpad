@@ -24,6 +24,7 @@ lp_cc_library(
         ":interface",
         "//courier/platform:logging",
         "//courier/platform:status_macros",
+        "//courier/platform:tensor_conversion",
         "//courier/platform/default:py_utils",
         "//courier/serialization:py_serialize",
         "//courier/serialization:serialization_cc_proto",
