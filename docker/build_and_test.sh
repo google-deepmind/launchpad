@@ -78,10 +78,7 @@ for python_version in $PYTHON; do
 
   # Install Launchpad in a fresh Docker image for testing.
   abi=$(echo cp${python_version} | sed 's/\.//')
-  base_image='ubuntu:20.04'
-  if [[ $python_version != '3.8' ]]; then
-    base_image='tensorflow/tensorflow:2.2.0-custom-op-ubuntu16'
-  fi
+  base_image="python:$python_version"
   run_docker docker build --tag launchpad:test \
     --build-arg python_version=$python_version \
     --build-arg abi=$abi \

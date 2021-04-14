@@ -1,4 +1,4 @@
-ARG base_image="ubuntu:20.04"
+ARG base_image="python:3.8"
 FROM $base_image
 
 ARG python_version="3.8"
@@ -8,10 +8,7 @@ ARG abi="38"
 RUN ln -fs /usr/share/zoneinfo/Europe/Dublin /etc/localtime
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  build-essential \
   byobu \
-  python${python_version}-dev \
-  python3-pip \
   tmux \
   xterm
 
