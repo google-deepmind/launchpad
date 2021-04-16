@@ -18,6 +18,7 @@ set -e
 # Flags
 DEBUG_DOCKER=true
 CLEAN=false
+RELEASE=false
 PYTHON=3.8
 
 while [[ $# -gt -0 ]]; do
@@ -35,12 +36,17 @@ while [[ $# -gt -0 ]]; do
       CLEAN="$2"
       shift
       ;;
+      --release)
+      RELEASE="$2"
+      shift
+      ;;
     *)
       echo "Unknown flag: $key"
       echo "Usage:"
       echo "--debug_docker [Enter the Docker image upon failure for debugging.]"
       echo "--python  [3.6|3.7|3.8(default)]"
       echo "--clean   [true to run bazel clean]"
+      echo "--release [true to build a release binary]"
       exit 1
       ;;
   esac
@@ -66,13 +72,21 @@ run_docker() {
   set -e
 }
 
+TENSORFLOW='tf-nightly'
+RELEASE_FLAG=''
+if [[ $RELEASE == 'true' ]]; then
+  TENSORFLOW='tensorflow>=2.3.0'
+  RELEASE_FLAG='--release'
+fi
+
 run_docker docker build --tag launchpad:build \
   --build-arg python_version="${PYTHON}" \
+  --build-arg tensorflow_pip="${TENSORFLOW}" \
   -f "docker/build.dockerfile" .
 
 run_docker docker run --rm ${MOUNT_CMD} \
   launchpad:build /tmp/launchpad/oss_build.sh --python "${PYTHON}" \
-  --clean ${CLEAN} --install false
+  --clean ${CLEAN} --install false --tf_package $TENSORFLOW $RELEASE_FLAG
 
 for python_version in $PYTHON; do
 

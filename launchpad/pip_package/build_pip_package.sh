@@ -78,7 +78,7 @@ function usage() {
   echo "  Options:"
   echo "    --release         build a release version"
   echo "    --dst             path to copy the .whl into."
-  echo "    --tf-version      tensorflow version dependency passed to setup.py."
+  echo "    --tf_package      tensorflow version dependency passed to setup.py."
   echo ""
   exit 1
 }
@@ -99,9 +99,9 @@ function main() {
     elif [[ "$1" == "--dst" ]]; then
       shift
       DST_DIR=$1
-    elif [[ "$1" == "--tf-version" ]]; then
+    elif [[ "$1" == "--tf_package" ]]; then
       shift
-      TF_VERSION_FLAG="--tf-version $1"
+      TF_VERSION_FLAG="--tf_package $1"
     fi
 
     if [[ -z "$1" ]]; then

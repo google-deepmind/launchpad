@@ -16,6 +16,6 @@ RUN python${python_version} -mpip install --upgrade setuptools wheel pytype
 
 COPY dist /tmp/launchpad
 
-RUN python${python_version} -mpip install /tmp/launchpad/*${abi}*.whl
+RUN WHL=`ls /tmp/launchpad/*${abi}*.whl` && python${python_version} -mpip install $WHL[tensorflow,reverb]
 
 WORKDIR /

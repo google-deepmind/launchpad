@@ -58,9 +58,17 @@ do our best to keep things in working order, things may break or segfault.
 
 > :warning: Launchpad currently only supports Linux based OSes.
 
-The recommended way to install Launchpad is with `pip`.
+The recommended way to install Launchpad is with `pip`. We also provide
+instructions to build from source using the same docker images we use for
+releases.
+
+TensorFlow can be installed separately or as part of the `pip` install.
+Installing TensorFlow as part of the install ensures compatibility.
 
 ```shell
+$ pip install dm-launchpad[tensorflow]
+
+# Without Tensorflow install and version dependency check.
 $ pip install dm-launchpad
 ```
 
@@ -69,7 +77,17 @@ $ pip install dm-launchpad
 [![PyPI version](https://badge.fury.io/py/dm-launchpad-nightly.svg)](https://badge.fury.io/py/dm-launchpad-nightly)
 
 ```shell
+$ pip install dm-launchpad-nightly[tensorflow]
+
+# Without Tensorflow install and version dependency check.
 $ pip install dm-launchpad-nightly
+```
+
+Similarily, [Reverb](https://github.com/deepmind/reverb) can be installed
+ensuring compatibility:
+
+```shell
+$ pip install dm-launchpad[reverb]
 ```
 
 ### Develop Launchpad inside a docker container

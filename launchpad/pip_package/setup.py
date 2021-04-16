@@ -54,13 +54,15 @@ class InstallCommand(InstallCommandBase):
 class SetupToolsHelper(object):
   """Helper to execute `setuptools.setup()`."""
 
-  def __init__(self, release=False):
+  def __init__(self, release, tf_package):
     """Initialize ReleaseBuilder class.
 
     Args:
       release: True to do a release build. False for a nightly build.
+      tf_package: Version of Tensorflow to depend on.
     """
     self.release = release
+    self.tf_package = tf_package
 
   def _get_version(self):
     """Returns the version and project name to associate with the build."""
@@ -80,7 +82,6 @@ class SetupToolsHelper(object):
         'absl-py',
         'cloudpickle',
         'dataclasses',
-        'dm-reverb[tensorflow]',
         'dm-tree',
         'grpcio',
         'mock',
@@ -89,6 +90,17 @@ class SetupToolsHelper(object):
         'psutil',
     ]
     return required_packages
+
+  def _get_tensorflow_packages(self):
+    """Returns packages needed to install Tensorflow."""
+    return [self.tf_package]
+
+  def _get_reverb_packages(self):
+    """Returns packages needed to install Reverb."""
+    if self.release:
+      return ['dm-reverb']
+    else:
+      return ['dm-reverb-nightly']
 
   def run_setup(self):
     # Builds the long description from the README.
@@ -114,6 +126,10 @@ class SetupToolsHelper(object):
         headers=list(find_files('*.proto', 'launchpad')),
         include_package_data=True,
         install_requires=self._get_required_packages(),
+        extras_require={
+            'tensorflow': self._get_tensorflow_packages(),
+            'reverb': self._get_reverb_packages(),
+        },
         distclass=BinaryDistribution,
         cmdclass={
             'install': InstallCommand,
@@ -147,12 +163,18 @@ if __name__ == '__main__':
   parser.add_argument(
       '--release',
       action='store_true',
-      help='Pass as true to do a release build')
+      default=False,
+      help='Pass as true to do a release build.')
+  parser.add_argument(
+      '--tf_package',
+      default='tf-nightly',
+      help='Version of Tensorflow to depend on.')
   FLAGS, unparsed = parser.parse_known_args()
   # Go forward with only non-custom flags.
   sys.argv.clear()
   # Downstream `setuptools.setup` expects args to start at the second element.
   unparsed.insert(0, 'foo')
   sys.argv.extend(unparsed)
-  setup_tools_helper = SetupToolsHelper(release=FLAGS.release)
+  setup_tools_helper = SetupToolsHelper(release=FLAGS.release,
+                                        tf_package=FLAGS.tf_package)
   setup_tools_helper.run_setup()

@@ -50,9 +50,9 @@ while [[ $# -gt -0 ]]; do
       OUTPUT_DIR="$2"
       shift
       ;;
-      --tf_dep_override)
+      --tf_package)
       # Setup.py is told this is the tensorflow dependency.
-      PIP_PKG_EXTRA_ARGS="${PIP_PKG_EXTRA_ARGS} --tf-version ${2}"
+      PIP_PKG_EXTRA_ARGS="${PIP_PKG_EXTRA_ARGS} --tf_package ${2}"
       shift
       ;;
     *)
@@ -62,8 +62,8 @@ while [[ $# -gt -0 ]]; do
       echo "--python  [3.6|3.7|3.8(default)]"
       echo "--clean   [true to run bazel clean]"
       echo "--install [true to install built package]"
-      echo "--tf_dep_override  [Required tensorflow version to pass to setup.py."
-      echo "                    Examples: tensorflow==2.3.0rc0  or tensorflow>=2.3.0]"
+      echo "--tf_package  [Required tensorflow version to pass to setup.py."
+      echo "               Examples: tensorflow==2.3.0rc0  or tensorflow>=2.3.0]"
       echo "--output_dir  [location to copy .whl file.]"
       exit 1
       ;;
