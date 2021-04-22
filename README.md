@@ -46,10 +46,10 @@ distributed executions, etc.
 
 -   [Installation](#installation)
 -   [Quick Start](#quick-start)
-    -   [Implement example nodes](#implement-nodes)
-    -   [Define the topology](#define-topology)
-    -   [Launch the program](#launch)
-    -   [Add a test](#test)
+    -   [Implement example nodes](#implement-example-nodes)
+    -   [Define the topology](#define-the-topology)
+    -   [Launch the program](#launch-the-program)
+    -   [Add a test](#add-a-test)
 
 ## Installation
 
@@ -152,7 +152,7 @@ the consecutive runs, make sure to not exit the Docker container.
 The complete implementation can be found
 [here](https://github.com/deepmind/launchpad/tree/master/launchpad/examples/consumer_producers/).
 
-## Implement example nodes {#implement-nodes}
+## Implement example nodes
 
 In this producer-consumer example we have one consumer and multiple producers.
 The consumer sends work to the producers, which perform some time intensive
@@ -220,7 +220,7 @@ class Consumer:
     self._stop_program()
 ```
 
-## Define the topology {#define-topology}
+## Define the topology
 
 The next step is to instantiate nodes for the consumer and producers and then
 connect them so that the consumer can call methods on the producers. The
@@ -262,7 +262,7 @@ if __name__ == '__main__':
   app.run(main)
 ```
 
-## Launch the program {#launch}
+## Launch the program
 
 To launch the program (assuming it is called `launch.py`), simply run:
 
@@ -275,7 +275,7 @@ it is launched locally with each node executed in a separate process.
 List of supported execution modes can be found
 [here](https://github.com/deepmind/launchpad/tree/master/launchpad/context.py).
 
-## Add a test {#test}
+## Add a test
 
 Here are some points to keep in mind when creating a test for a Launchpad
 program.
