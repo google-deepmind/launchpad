@@ -4,20 +4,20 @@
 
 Launchpad is a library that simplifies writing distributed programs by
 seamlessly launching them on a variety of different platforms. Switching between
-local and distributed execution requries only a flag change.
+local and distributed execution requires only a flag change.
 
 Launchpad introduces a programming model that represents a distributed system
 as a graph data structure (a **Program**) describing the system’s topology.
 Each node in the program graph represents a service in the distributed system,
 i.e. the fundamental unit of computation that we are interested in running.
 As nodes are added to this graph, Launchpad constructs a handle for each of them.
-A handle ultimately represents a client to the yet to be constructed service.
+A handle ultimately represents a client to the yet-to-be-constructed service.
 A directed edge in the program graph, representing communication between
 two services, is created when the handle associated with one node is given
 to another at construction time. This edge originates from the receiving node,
 indicating that the receiving node will be the one initiating communication.
 This process allows Launchpad to define cross-service communication simply
-by passing handles to nodes. The open sourced version of Launchpad currently
+by passing handles to nodes. The open-sourced version of Launchpad currently
 provides following types of nodes (you can implement your own types as needed):
 
 *   **PyNode** - a simple node executing provided Python code upon entry.
@@ -154,8 +154,8 @@ The complete implementation can be found
 
 ## Implement example nodes
 
-In this producer-consumer example we have one consumer and multiple producers.
-The consumer sends work to the producers, which perform some time intensive
+In this producer-consumer example, we have one consumer and multiple producers.
+The consumer sends work to the producers, which perform some time-intensive
 task before returning the result to the consumer. Finally, the consumer
 summarizes the work done by all of the producers.
 
@@ -164,12 +164,12 @@ summarizes the work done by all of the producers.
 The producer in this example has just one method which performs some work (for
 you to implement) in a given context provided by the caller. Any method of the
 class can be exposed for other nodes to call by wrapping a node with a
-**CourierNode**. In a typical setup all nodes live in separate processes or on
-a distinct machines, while the communication between the nodes is takes care of
+**CourierNode**. In a typical setup, all nodes live in separate processes or on
+distinct machines, while the communication between the nodes is taken care of
 transparently by Launchpad. Some care has to be taken though. For
 example, the `work()` method may be called from multiple threads within the same
 process, so if the producer were to have any shared state then access to it must
-be made thread safe. In this case the producer is stateless so it is not a
+be made thread-safe. In this case, the producer is stateless so it is not a
 concern.
 
 ```python
