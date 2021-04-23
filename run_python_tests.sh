@@ -38,12 +38,13 @@ while [[ $# -gt -0 ]]; do
 done
 
 
-LOCATION=`python${PYTHON} -c 'import launchpad as lp; print(lp.__path__[0])'`
+LAUNCHPAD=`python${PYTHON} -c 'import launchpad as lp; print(lp.__path__[0])'`
+COURIER=`python${PYTHON} -c 'import courier; print(courier.__path__[0])'`
 
 py_test() {
   echo "===========Running Python tests============"
 
-  for test_file in `find $LOCATION -name '*_test.py' -print`
+  for test_file in `find $LAUNCHPAD $COURIER -name '*_test.py' -print`
   do
     echo "####=======Testing ${test_file}=======####"
     python${PYTHON} "${test_file}"

@@ -28,6 +28,28 @@ import datetime
 from typing import List, Optional, Union
 
 from courier.python import py_client
+from pybind11_abseil.status import StatusNotOk as StatusThrown
+from pybind11_abseil.status import StatusNotOk
+
+
+def translate_status(s):
+  """Translate Pybind11 status to Exception."""
+  exc = StatusNotOk(s.message())
+  exc.code = s.code()
+  return exc
+
+
+
+
+def exception_handler(func):
+
+  def inner_function(*args, **kwargs):
+    try:
+      return func(*args, **kwargs)
+    except StatusThrown as e:
+      raise translate_status(e.status)
+
+  return inner_function
 
 
 class _AsyncClient:
@@ -133,6 +155,7 @@ class Client:
     Returns:
       Callable function for the method.
     """
+    @exception_handler
     def func(*args, **kwargs):
       return self._client.PyCall(method, list(args), kwargs,
                                  self._wait_for_ready, self._call_timeout,
@@ -142,6 +165,7 @@ class Client:
     return func
 
 
+@exception_handler
 def list_methods(client: Client) -> List[str]:
   """Lists the methods which are available on the server.
 
