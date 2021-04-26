@@ -25,10 +25,23 @@ namespace {
 
 namespace py = pybind11;
 
+struct RouterUnique : public Router {
+  using Router::Router;
+};
+
+template <typename T>
+struct unique_ptr_nogil_deleter {
+  void operator()(T *ptr) {
+    pybind11::gil_scoped_release nogil;
+    delete ptr;
+  }
+};
+
 PYBIND11_MODULE(router, m) {
   py::google::ImportStatusModule();
 
-  py::class_<Router>(m, "Router")
+  py::class_<Router, std::unique_ptr<Router, unique_ptr_nogil_deleter<Router>>>(
+      m, "Router")
       .def(py::init<>())
       .def("Bind", &Router::Bind)
       .def("Unbind", &Router::Unbind, py::call_guard<py::gil_scoped_release>());

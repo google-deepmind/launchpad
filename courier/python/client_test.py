@@ -57,6 +57,18 @@ class PyIntegrationTest(absltest.TestCase):
 
     self._client = client.Client(self._server.address)
 
+  def tearDown(self):
+    super(PyIntegrationTest, self).tearDown()
+    self._server.Unbind('no_args')
+    self._server.Unbind('lambda_add')
+    self._server.Unbind('method_add')
+    self._server.Unbind('add_default')
+    self._server.Unbind('exception_method')
+    self._server.Unbind('slow_method')
+    self._server.Unbind('rebind')
+    self._server.Unbind('bytes_value')
+    self._server.Unbind('unicode_value')
+
   def testLambdaCall(self):
     result = self._client.lambda_add(12, 5)
     self.assertEqual(result, 17)
@@ -103,7 +115,6 @@ class PyIntegrationTest(absltest.TestCase):
 
   def testAsyncFutureCancel(self):
     future = self._client.futures.slow_method()
-    time.sleep(4)
     self.assertTrue(future.cancel())
     with self.assertRaises(futures.CancelledError):
       future.result()

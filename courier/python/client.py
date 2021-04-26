@@ -81,7 +81,11 @@ class _AsyncClient:
       f = futures.Future()
 
       def set_exception(s):
-        f.set_exception(translate_status(s))
+        try:
+          f.set_exception(translate_status(s))
+        except futures.InvalidStateError:
+          # Call could have been already canceled by the user.
+          pass
 
       canceller = self._client.AsyncPyCall(method, list(args), kwargs,
                                            f.set_result, set_exception,
