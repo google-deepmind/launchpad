@@ -128,35 +128,4 @@ class CourierNode(python.PyClassNode[CourierHandle, WorkerType],
     return self._address
 
 
-class _CacherWorker:
-  """A class to be instantiated via CourierNode, which runs courier cacher."""
 
-  def __init__(self, target_client: CourierClient, refresh_interval_ms: int,
-               stale_after_ms: int):
-    self._target_client = target_client
-    self._refresh_interval_ms = refresh_interval_ms
-    self._stale_after_ms = stale_after_ms
-    self._server = None  # type: courier.Server
-
-  def set_courier_server(self, server):
-    self._server = server
-
-  def run(self):
-    self._server.BindCacher(
-        target_server_address=self._target_client.address,
-        poll_interval=datetime.timedelta(
-            milliseconds=self._refresh_interval_ms),
-        stale_after=datetime.timedelta(milliseconds=self._stale_after_ms))
-    self._server.Start()
-    logging.info('Caching calls made to Courier server: %s.',
-                 self._target_client.address)
-    self._server.Join()
-
-
-class CacherNode(CourierNode[_CacherWorker]):
-  """Courier cacher as a Launchpad node."""
-
-  def __init__(self, target_handle: CourierHandle, refresh_interval_ms: int,
-               stale_after_ms: int):
-    super().__init__(_CacherWorker, target_handle, refresh_interval_ms,
-                     stale_after_ms)

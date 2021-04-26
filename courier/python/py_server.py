@@ -72,33 +72,6 @@ class Server:
   def Bind(self, method_name: str, py_func):
     self._router.Bind(method_name, pybind.BuildPyCallHandler(py_func))
 
-  def BindCacher(self,
-                 target_server_address,
-                 poll_interval,
-                 stale_after,
-                 max_cached_endpoints=16):
-    """Binds a Cacher handler to all endpoints of this server.
-
-    Cacher forwards calls to a target server and caches the response. The cached
-    response is used for serving incoming client calls. The endpoint on the
-    target server is repeatedly polled to refresh the cache. If the call request
-    arguments are not empty, the order in which the unnamed arguments are given
-    is important for resolving the cached endpoint. Currently supported argument
-    types are int, bool, byte, string, or lists/structs/maps of these.
-
-    Args:
-      target_server_address: Address of the Courier server to forward to. Can be
-        a Courier server name.
-      poll_interval: [timedelta] Interval in which to refresh the cache.
-      stale_after: [timedelta] Specifies a timeout after which an item in the
-        cache is considered stale and will no longer be served to clients
-      max_cached_endpoints: [int] Number of simultaneous cached endpoints that
-        the Cacher could serve.
-    """
-    self._router.Bind(
-        '*',
-        pybind.BuildCacherHandler(target_server_address, poll_interval,
-                                  stale_after, max_cached_endpoints))
 
   def Join(self):
     if not self._server:

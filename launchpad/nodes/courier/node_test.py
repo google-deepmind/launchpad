@@ -79,34 +79,6 @@ class CourierNodeTest(absltest.TestCase):
     self.assertIn(bar_handle, foo_node._input_handles)
 
 
-class CacherNodeTest(absltest.TestCase):
-
-  def test_bind_cacher(self):
-    # Mock a CourierHandle
-    mock_handle = mock.create_autospec(lp_courier.CourierHandle, instance=True)
-    mock_client = mock.create_autospec(courier.Client, instance=True)
-    mock_handle.dereference.return_value = mock_client
-    mock_client.address = 'localhost:12345'
-
-    with mock.patch.object(courier, 'Server') as mock_server_cls:
-      # Mock courier server
-      mock_server = mock.Mock()
-      mock_server_cls.return_value = mock_server
-
-      node = lp_courier.CacherNode(mock_handle, 100, 200)
-
-      # Bind all addresses
-      address_builder.bind_addresses([node])
-
-      node.run()
-
-      # Verify methods are called with right arguments
-      mock_server.BindCacher.assert_called_once_with(
-          target_server_address='localhost:12345',
-          poll_interval=datetime.timedelta(milliseconds=100),
-          stale_after=datetime.timedelta(milliseconds=200))
-      mock_server.Start.assert_called_once_with()
-      mock_server.Join.assert_called_once_with()
 
 
 if __name__ == '__main__':
