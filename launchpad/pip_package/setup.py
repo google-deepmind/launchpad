@@ -81,7 +81,7 @@ class SetupToolsHelper(object):
     required_packages = [
         'absl-py',
         'cloudpickle',
-        'dataclasses',
+        'dataclasses; python_version < "3.7"',
         'dm-tree',
         'grpcio',
         'mock',
