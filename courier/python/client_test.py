@@ -21,12 +21,12 @@ import threading
 import time
 from absl.testing import absltest
 
-from courier.python import client
-from courier.python import py_server
+from courier.python import client  # pytype: disable=import-error
+from courier.python import py_server  # pytype: disable=import-error
 
 import mock
 
-from pybind11_abseil.status import StatusNotOk
+from pybind11_abseil.status import StatusNotOk  # pytype: disable=import-error
 
 
 class _A:

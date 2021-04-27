@@ -60,7 +60,7 @@ run_docker() {
   set -x
   "$@"
   if [[ $? != 0 ]]; then
-    if [[ $FLAGS_debug_docker ]]; then
+    if [[ $DEBUG_DOCKER ]]; then
       IMAGE=`docker container ls --last 1 | tail -n 1 | sed -r 's/.* ([a-z0-9]{12}).*/\1/'`
       echo "Launchpad build failed, entering Docker image $IMAGE for debugging."
       docker run --rm ${MOUNT_CMD} \

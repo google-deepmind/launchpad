@@ -14,6 +14,6 @@
 
 import tensorflow as _tf; del _tf
 """Courier module."""
-from courier.python.client import Client
-from courier.python.client import list_methods
-from courier.python.py_server import Server
+from courier.python.client import Client  # pytype: disable=import-error
+from courier.python.client import list_methods  # pytype: disable=import-error
+from courier.python.py_server import Server  # pytype: disable=import-error

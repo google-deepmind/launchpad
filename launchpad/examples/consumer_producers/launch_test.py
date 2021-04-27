@@ -30,7 +30,7 @@ class LaunchTest(absltest.TestCase):
     # mapping of label->nodes, stored as a dict in `program.groups`
     (consumer_node,) = program.groups['consumer']
     # Disable the automatic execution of its `run()` method.
-    consumer_node.disable_run()
+    consumer_node.disable_run()  # pytype: disable=attribute-error
 
     # Launch all workers declared by the program. Remember to set the launch
     # type here (test & multithreaded).

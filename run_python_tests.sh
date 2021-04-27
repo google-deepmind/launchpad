@@ -59,7 +59,7 @@ N_CPU=$(grep -c ^processor /proc/cpuinfo)
 # Run static type-checking.
 pytype -k -x /tmp/launchpad/launchpad/pip_package/ \
 /tmp/launchpad/launchpad/examples/consumer_producers/launch_test.py \
--j "${N_CPU}" /tmp/launchpad/launchpad/
+/tmp/launchpad/configure.py -j "${N_CPU}" /tmp/launchpad/
 
 # Run all tests.
 py_test

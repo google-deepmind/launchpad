@@ -28,8 +28,8 @@ import datetime
 from typing import List, Optional, Union
 
 from courier.python import py_client
-from pybind11_abseil.status import StatusNotOk as StatusThrown
-from pybind11_abseil.status import StatusNotOk
+from pybind11_abseil.status import StatusNotOk as StatusThrown  # pytype: disable=import-error
+from pybind11_abseil.status import StatusNotOk  # pytype: disable=import-error
 
 
 def translate_status(s):
