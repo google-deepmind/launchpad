@@ -1,3 +1,4 @@
+import tensorflow as _tf; del _tf
 # Copyright 2020 DeepMind Technologies Limited. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import tensorflow as _tf; del _tf
 """Courier module."""
 from courier.python.client import Client  # pytype: disable=import-error
 from courier.python.client import list_methods  # pytype: disable=import-error
