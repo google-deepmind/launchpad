@@ -29,6 +29,7 @@ flags.DEFINE_float('lp_dummy_float', 0., 'Internal implementation details.')
 flags.DEFINE_integer('lp_dummy_int', 0, 'Internal implementation details.')
 flags.DEFINE_boolean('lp_dummy_bool', False, 'Internal implementation details.')
 flags.DEFINE_list('lp_dummy_list', [], 'Internal implementation details.')
+flags.DEFINE_enum('lp_dummy_enum', '', [''], 'Internal implementation details.')
 
 
 def _flag_to_placeholder(key):
@@ -40,6 +41,7 @@ def _flag_to_placeholder(key):
       FLAGS['lp_dummy_int'].flag_type(): FLAGS.lp_dummy_int,
       FLAGS['lp_dummy_bool'].flag_type(): FLAGS.lp_dummy_bool,
       FLAGS['lp_dummy_list'].flag_type(): FLAGS.lp_dummy_list,
+      FLAGS['lp_dummy_enum'].flag_type(): FLAGS.lp_dummy_enum,
       FLAGS['lp_dummy_config'].flag_type(): {},
   }
 
