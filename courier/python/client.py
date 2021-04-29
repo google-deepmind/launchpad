@@ -83,7 +83,7 @@ class _AsyncClient:
       def set_exception(s):
         try:
           f.set_exception(translate_status(s))
-        except futures.InvalidStateError:
+        except futures.InvalidStateError:  # pytype: disable=module-attr
           # Call could have been already canceled by the user.
           pass
 
