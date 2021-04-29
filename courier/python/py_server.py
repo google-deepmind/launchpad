@@ -31,7 +31,6 @@ from courier.python import router
 from courier.python import server
 import portpicker
 from six.moves import map
-import tensorflow.compat.v1 as tf
 import tree as nest
 
 
