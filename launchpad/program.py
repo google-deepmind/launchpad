@@ -69,6 +69,7 @@ class Program(object):
       # reset even if an exception occurs.
       self._current_group = None
 
+
   def get_all_nodes(self) -> List[base.Node]:
     return list(itertools.chain(*self._groups.values()))
 
