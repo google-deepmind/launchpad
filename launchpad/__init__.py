@@ -18,6 +18,7 @@
 
 
 
+from launchpad import lazy_loader
 
 # Basic types
 from launchpad import flags
@@ -33,5 +34,8 @@ from launchpad.nodes.courier.node import CourierNode
 from launchpad.nodes.courier.node import CourierClient
 from launchpad.nodes.python.node import PyClassNode
 from launchpad.nodes.python.node import PyNode
-from launchpad.nodes.reverb.node import ReverbNode
 from launchpad.program_stopper.program_stopper import make_program_stopper
+
+module = lazy_loader.LazyModule(__name__)
+ReverbNode = module.add('ReverbNode', 'launchpad.nodes.reverb.node',
+                        'ReverbNode')

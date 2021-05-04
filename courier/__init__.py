@@ -1,4 +1,13 @@
-import tensorflow as _tf; del _tf
+from ctypes import cdll
+import pkgutil
+import os
+tf = pkgutil.get_loader("tensorflow")
+if tf:
+  cdll.LoadLibrary(os.path.join(os.path.dirname(tf.path), 'libtensorflow_framework.so.2'))  # pytype:disable=attribute-error
+del tf
+del cdll
+del pkgutil
+del os
 # Copyright 2020 DeepMind Technologies Limited. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

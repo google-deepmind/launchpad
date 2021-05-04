@@ -16,6 +16,7 @@
 """Tests for launchpad.nodes.courier.node."""
 
 import datetime
+import sys
 import threading
 from unittest import mock
 
@@ -57,6 +58,8 @@ class CourierNodeTest(absltest.TestCase):
     threading.Thread(target=node.run).start()
     client = handle.dereference()
     self.assertEqual(client.ping(), 'pong')
+    # Make sure Tensorflow is not imported.
+    self.assertNotIn('tensorflow', sys.modules)
 
   def test_cyclic_reference(self):
 

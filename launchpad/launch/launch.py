@@ -16,6 +16,7 @@
 """Launch program in different ways based on FLAGS.lp_launch_type."""
 
 import sys
+import typing
 from typing import Any, Dict, Mapping, Optional, Sequence, Union, cast
 
 from absl import flags
