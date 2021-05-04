@@ -42,6 +42,25 @@ def find_gnome_terminal_server():
   return None
 
 
+def _run_gnome_command(command, env):
+  """Launches gnome command, retrying until gnome server is ready."""
+  retry_backoff = 0.1
+  while True:
+    process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+    stdout, stderr = process.communicate()
+    process.wait()
+    if ('# Error creating terminal' not in stderr.decode('UTF-8') or
+        retry_backoff > 10):
+      if stdout:
+        print(stdout)
+      if stderr:
+        print(stderr)
+      break
+    time.sleep(retry_backoff)
+    retry_backoff *= 2
+
+
 def _launch_in_windows(commands_to_launch, app_id):
   """Launches commands in gnome windows."""
   for window_index, command_to_launch in enumerate(commands_to_launch):
@@ -63,7 +82,7 @@ def _launch_in_windows(commands_to_launch, app_id):
     env = {}
     env.update(os.environ)
     env.update(command_to_launch.env_overrides)
-    subprocess.Popen(terminal_command_list, env=env)
+    _run_gnome_command(terminal_command_list, env)
 
 
 def _launch_in_tabs(commands_to_launch, app_id):
@@ -106,9 +125,9 @@ def _launch_in_tabs(commands_to_launch, app_id):
           subprocess.list2cmdline(env_overrides + terminal_command_list) + '\n')
 
   os.chmod(command_file_path, os.stat(command_file_path).st_mode | stat.S_IEXEC)
-  subprocess.Popen(
+  _run_gnome_command(
       ['gnome-terminal', '--app-id', app_id, '--', command_file_path],
-      env=os.environ).wait()
+      os.environ)
 
 
 def launch_with_gnome_terminal(commands_to_launch, use_tabs=False):
@@ -158,7 +177,6 @@ def launch_with_gnome_terminal(commands_to_launch, use_tabs=False):
   ],
                                     env=os.environ,
                                     preexec_fn=preexec_fn)
-  time.sleep(5)
   if use_tabs:
     _launch_in_tabs(commands_to_launch, app_id)
   else:
