@@ -20,6 +20,7 @@
 
 
 # Basic types
+from launchpad import flags
 from launchpad.context import LaunchType
 from launchpad.program import Program
 

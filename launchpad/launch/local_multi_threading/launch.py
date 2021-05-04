@@ -21,6 +21,7 @@ import threading
 
 from absl import flags
 from launchpad import context
+from launchpad import flags as lp_flags  
 from launchpad import program as lp_program
 from launchpad.launch import signal_handling
 from launchpad.launch.local_multi_threading import thread_waiter

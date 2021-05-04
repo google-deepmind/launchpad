@@ -22,18 +22,13 @@ from absl import flags
 from absl import logging
 from absl.testing import absltest
 from launchpad import context
+from launchpad import flags as lp_flags  
 from launchpad import program as lp_program
 from launchpad.launch.local_multi_processing import launch as launch_local_multiprocessed
 from launchpad.launch.local_multi_threading import launch as launch_local_multithreaded
 from launchpad.launch.test_multi_threading import launch as launch_test_multithreaded
 
 FLAGS = flags.FLAGS
-
-_DEFAULT_LAUNCH_TYPE = context.LaunchType.LOCAL_MULTI_THREADING.value
-flags.DEFINE_enum('lp_launch_type', _DEFAULT_LAUNCH_TYPE,
-                  [t.value for t in context.LaunchType],
-                  'How to launch a Launchpad program when launch() is called',
-                  allow_override=True)
 
 
 

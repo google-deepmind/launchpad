@@ -29,6 +29,7 @@ from absl import logging
 import cloudpickle
 import dataclasses
 
+from launchpad import flags as lp_flags  
 from launchpad.launch.local_multi_processing import commands as mp_commands
 from launchpad.nodes.python import flags_utils
 

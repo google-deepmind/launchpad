@@ -20,16 +20,10 @@ from typing import Any, Dict, List
 
 from absl import flags
 
+from launchpad import flags as lp_flags  
+
 
 FLAGS = flags.FLAGS
-
-# For inferring flag types only.
-flags.DEFINE_string('lp_dummy_str', '', 'Internal implementation details.')
-flags.DEFINE_float('lp_dummy_float', 0., 'Internal implementation details.')
-flags.DEFINE_integer('lp_dummy_int', 0, 'Internal implementation details.')
-flags.DEFINE_boolean('lp_dummy_bool', False, 'Internal implementation details.')
-flags.DEFINE_list('lp_dummy_list', [], 'Internal implementation details.')
-flags.DEFINE_enum('lp_dummy_enum', '', [''], 'Internal implementation details.')
 
 
 def _flag_to_placeholder(key):

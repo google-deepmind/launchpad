@@ -21,17 +21,12 @@ import subprocess
 
 from absl import flags
 from absl import logging
+from launchpad import flags as lp_flags  
 from launchpad.launch.run_locally import feature_testing
 import psutil
 
 
 tty_write = print
-
-
-flags.DEFINE_string('tmux_open_window', None,
-                    'Window in new Tmux session to switch to.')
-flags.DEFINE_string('tmux_session_name', 'launchpad',
-                    'Prefix session name to use for the Tmux session.')
 
 
 def launch_with_tmux_session(commands_to_launch,
