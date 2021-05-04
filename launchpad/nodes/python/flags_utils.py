@@ -52,13 +52,10 @@ def _flag_to_placeholder(key):
 
 
 def _maybe_parse_jax_flags():
-  if getattr(_maybe_parse_jax_flags, 'already_called', False):
-    return
-  if 'jax' in sys.modules:
+  if 'jax' in sys.modules and not sys.modules['jax'].config.use_absl:
     # JAX doesn't add absl flags by default. Making them visible in flags.FLAGS
     # allows us to figure out the correct flag types.
     sys.modules['jax'].config.config_with_absl()
-    _maybe_parse_jax_flags.already_called = True
 
 
 def get_flags_to_populate(args: List[Any]) -> Dict[str, Any]:
