@@ -50,6 +50,9 @@ class LazyModule(types.ModuleType):
       return res
     raise AttributeError(f'module {__name__!r} has no attribute {name!r}')
 
+  def __reduce__(self):
+    return self.__class__, (self._parent,)
+
 
 class LazyImport(types.ModuleType):
   """Lazily import a module, mainly to avoid pulling in large dependencies."""
