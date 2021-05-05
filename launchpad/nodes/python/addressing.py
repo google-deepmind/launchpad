@@ -15,10 +15,9 @@
 
 """Addressing for PyNodes."""
 
-import getpass
 import os
 import typing
-from typing import Any, List
+from typing import Any, List, Optional
 
 from absl import flags
 from absl import logging
