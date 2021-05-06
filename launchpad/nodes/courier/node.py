@@ -67,7 +67,7 @@ class CourierNode(python.PyClassNode[CourierHandle, WorkerType],
                *args,
                courier_kwargs=None,
                **kwargs):
-    super().__init__(constructor, *args, **kwargs)
+    super().__init__(constructor, *args, **kwargs)  # pytype:disable=wrong-arg-types
     self._address = lp_address.Address(COURIER_PORT_NAME)
     self.allocate_address(self._address)
     if courier_kwargs is None:
@@ -103,7 +103,7 @@ class CourierNode(python.PyClassNode[CourierHandle, WorkerType],
     return self._track_handle(CourierHandle(self._address))
 
   def run(self) -> None:
-    instance = self._construct_instance()
+    instance = self._construct_instance()  # pytype:disable=wrong-arg-types
     self._server = courier_utils.make_courier_server(
         instance,
         port=lp_address.get_port_from_address(self._address.resolve()),
