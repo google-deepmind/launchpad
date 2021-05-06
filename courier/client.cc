@@ -118,8 +118,15 @@ Client::Client(absl::string_view server_address) :
 }
 
 Client::~Client() {
-  cq_.Shutdown();
-  cq_thread_.join();
+  Shutdown();
+}
+
+void Client::Shutdown() {
+  if (!shutdown_) {
+    shutdown_ = true;
+    cq_.Shutdown();
+    cq_thread_.join();
+  }
 }
 
 absl::StatusOr<courier::CallResult> Client::CallF(

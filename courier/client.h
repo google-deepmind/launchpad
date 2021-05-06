@@ -91,6 +91,9 @@ class Client {
   // Lists the methods available on the server.
   absl::StatusOr<std::vector<std::string>> ListMethods();
 
+  // Not thread safe. Called by the destructor if not called explicitly.
+  void Shutdown();
+
  private:
   friend class AsyncRequest;
   // Initializes the stub RPC client. This has to be called outside of the
@@ -105,6 +108,7 @@ class Client {
 
   grpc::CompletionQueue cq_;
   std::thread cq_thread_;
+  bool shutdown_ = false;
 
   // Ensures initialization is only done once.
   absl::Mutex init_mu_;

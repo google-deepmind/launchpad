@@ -59,15 +59,7 @@ class PyIntegrationTest(absltest.TestCase):
 
   def tearDown(self):
     super(PyIntegrationTest, self).tearDown()
-    self._server.Unbind('no_args')
-    self._server.Unbind('lambda_add')
-    self._server.Unbind('method_add')
-    self._server.Unbind('add_default')
-    self._server.Unbind('exception_method')
-    self._server.Unbind('slow_method')
-    self._server.Unbind('rebind')
-    self._server.Unbind('bytes_value')
-    self._server.Unbind('unicode_value')
+    self._server.Stop()
 
   def testLambdaCall(self):
     result = self._client.lambda_add(12, 5)

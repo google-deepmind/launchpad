@@ -138,6 +138,9 @@ class Client:
     self._async_client = _AsyncClient(self._client, self._wait_for_ready,
                                       self._call_timeout, self._compress)
 
+  def __del__(self):
+    self._client.Shutdown()
+
   def __reduce__(self):
     return self.__class__, self._init_args
 

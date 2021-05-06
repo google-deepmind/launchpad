@@ -132,6 +132,8 @@ PYBIND11_MODULE(py_client, m) {
       .def("PyCall", &PyClient::PyCall)
       .def("AsyncPyCall", &PyClient::AsyncPyCall)
       .def("ListMethods", &PyClient::ListMethods,
+           py::call_guard<py::gil_scoped_release>())
+      .def("Shutdown", &PyClient::Shutdown,
            py::call_guard<py::gil_scoped_release>());
 }
 
