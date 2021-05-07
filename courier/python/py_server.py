@@ -29,6 +29,8 @@ from typing import Optional
 from courier.handlers.python import pybind
 from courier.python import router
 from courier.python import server
+# Numpy import needed for proper operation of ../serialization/py_serialize.cc
+import numpy  
 import portpicker
 from six.moves import map
 import tree as nest

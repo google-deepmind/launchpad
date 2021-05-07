@@ -28,6 +28,8 @@ import datetime
 from typing import List, Optional, Union
 
 from courier.python import py_client
+# Numpy import needed for proper operation of ../serialization/py_serialize.cc
+import numpy  
 from pybind11_abseil.status import StatusNotOk as StatusThrown  # pytype: disable=import-error
 from pybind11_abseil.status import StatusNotOk  # pytype: disable=import-error
 
