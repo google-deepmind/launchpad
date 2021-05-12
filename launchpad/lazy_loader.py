@@ -22,6 +22,10 @@ import typing
 
 ImportSymbol = collections.namedtuple('ImportSymbol', 'module member')
 
+# Set to true in your local workspace to work around issues with lazy imports.
+# Please report any cases of usage to stanczyk@, so we can address them.
+_DISABLE_LAZY_IMPORTS = False
+
 
 class LazyModule(types.ModuleType):
   """Turns a given __init__ module into lazily importing specified symbols."""
@@ -36,7 +40,7 @@ class LazyModule(types.ModuleType):
   def add(self, local_name, module, member=None):
     symbol = ImportSymbol(module, member)
     self._symbols[local_name] = symbol
-    if typing.TYPE_CHECKING:
+    if typing.TYPE_CHECKING or _DISABLE_LAZY_IMPORTS:
       return self.__getattr__(local_name)
     return symbol
 
@@ -61,6 +65,8 @@ class LazyImport(types.ModuleType):
     self._local_name = local_name
     self._parent_module_globals = parent_module_globals
     super(LazyImport, self).__init__(name)
+    if _DISABLE_LAZY_IMPORTS:
+      self._load()
 
   def _load(self):
     """Load the module and insert it into the parent's globals."""
