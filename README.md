@@ -305,3 +305,9 @@ class LaunchTest(absltest.TestCase):
     consumer = consumer_node.create_handle().dereference()
     # Perform actual test here by calling methods on `consumer` ...
 ```
+
+## Acknowledgements
+
+We greatly appreciate all the help from [Reverb](https://github.com/deepmind/reverb)
+and [TF-Agents](https://github.com/tensorflow/agents) teams in setting
+up building and testing setup for Launchpad.
