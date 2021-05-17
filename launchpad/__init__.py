@@ -36,6 +36,5 @@ from launchpad.nodes.python.node import PyClassNode
 from launchpad.nodes.python.node import PyNode
 from launchpad.program_stopper.program_stopper import make_program_stopper
 
-module = lazy_loader.LazyModule(__name__)
-ReverbNode = module.add('ReverbNode', 'launchpad.nodes.reverb.node',
-                        'ReverbNode')
+with lazy_loader.LazyModule(__name__):
+  from launchpad.nodes.reverb.node import ReverbNode

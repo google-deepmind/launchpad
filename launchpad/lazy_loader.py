@@ -27,6 +27,25 @@ ImportSymbol = collections.namedtuple('ImportSymbol', 'module member')
 _DISABLE_LAZY_IMPORTS = False
 
 
+class _MemberToLoad():
+  """Module member to load in a lazy way."""
+
+  def __init__(self, name, parent):
+    self._name = name
+    self._parent = parent
+
+
+class _ModuleToLoad():
+  """Module to load in a lazy way."""
+
+  def __init__(self, name, parent):
+    self._name = name
+    self._parent = parent
+
+  def __getattr__(self, item):
+    return _MemberToLoad(item, self)
+
+
 class LazyModule(types.ModuleType):
   """Turns a given __init__ module into lazily importing specified symbols."""
 
@@ -35,6 +54,29 @@ class LazyModule(types.ModuleType):
     self._symbols = dict()
     super(LazyModule, self).__init__(parent)
     self.__dict__.update(sys.modules[self._parent].__dict__)
+
+  def _find_and_load(self, name, import_):
+    del import_
+    return _ModuleToLoad(name, self)
+
+  def __enter__(self):
+    if typing.TYPE_CHECKING or _DISABLE_LAZY_IMPORTS:
+      return
+    self._org_find_and_load = importlib._bootstrap._find_and_load
+    # Start capturing import statements.
+    importlib._bootstrap._find_and_load = self._find_and_load
+
+  def __exit__(self, type_, value, traceback):
+    if typing.TYPE_CHECKING or _DISABLE_LAZY_IMPORTS:
+      return
+    # Stop capturing import statements and register all lazy imports.
+    importlib._bootstrap._find_and_load = self._org_find_and_load
+    members = sys.modules[self._parent].__dict__
+    for name in members:
+      member = members[name]
+      if isinstance(member, _MemberToLoad):
+        self.add(name, member._parent._name, member._name)
+    # Replace original module with LazyModule.
     sys.modules[self._parent] = self
 
   def add(self, local_name, module, member=None):
@@ -52,7 +94,7 @@ class LazyModule(types.ModuleType):
         res = res.__dict__[symbol.member]
       self.__dict__[name] = res
       return res
-    raise AttributeError(f'module {__name__!r} has no attribute {name!r}')
+    raise AttributeError(f'module {self._parent!r} has no attribute {name!r}')
 
   def __reduce__(self):
     return self.__class__, (self._parent,)
