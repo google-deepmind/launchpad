@@ -20,6 +20,7 @@ function build_wheel() {
   DESTDIR="$2"
   RELEASE_FLAG="$3"
   TF_VERSION_FLAG="$4"
+  REVERB_VERSION_FLAG="$5"
 
   # Before we leave the top-level directory, make sure we know how to
   # call python.
@@ -32,7 +33,7 @@ function build_wheel() {
   pushd ${TMPDIR} > /dev/null
 
   echo $(date) : "=== Building wheel"
-  "${PYTHON_BIN_PATH}" setup.py bdist_wheel ${PKG_NAME_FLAG} ${RELEASE_FLAG} ${TF_VERSION_FLAG} --plat manylinux2010_x86_64 > /dev/null
+  "${PYTHON_BIN_PATH}" setup.py bdist_wheel ${PKG_NAME_FLAG} ${RELEASE_FLAG} ${TF_VERSION_FLAG} ${REVERB_VERSION_FLAG} --plat manylinux2010_x86_64 > /dev/null
   DEST=${TMPDIR}/dist/
   if [[ ! "$TMPDIR" -ef "$DESTDIR" ]]; then
     mkdir -p ${DESTDIR}
@@ -79,6 +80,7 @@ function usage() {
   echo "    --release         build a release version"
   echo "    --dst             path to copy the .whl into."
   echo "    --tf_package      tensorflow version dependency passed to setup.py."
+  echo "    --reverb_package  reverb version dependency passed to setup.py."
   echo ""
   exit 1
 }
@@ -87,6 +89,8 @@ function main() {
   RELEASE_FLAG=""
   # Tensorflow version dependency passed to setup.py, e.g. tensorflow>=2.3.0.
   TF_VERSION_FLAG=""
+  # Reverb version dependency passed to setup.py, e.g. dm-reverb==0.3.0.
+  REVERB_VERSION_FLAG=""
   # This is where the source code is copied and where the whl will be built.
   DST_DIR=""
 
@@ -102,6 +106,9 @@ function main() {
     elif [[ "$1" == "--tf_package" ]]; then
       shift
       TF_VERSION_FLAG="--tf_package $1"
+    elif [[ "$1" == "--reverb_package" ]]; then
+      shift
+      REVERB_VERSION_FLAG="--reverb_package $1"
     fi
 
     if [[ -z "$1" ]]; then
@@ -116,7 +123,7 @@ function main() {
   fi
 
   prepare_src "$TMPDIR"
-  build_wheel "$TMPDIR" "$DST_DIR" "$RELEASE_FLAG" "$TF_VERSION_FLAG"
+  build_wheel "$TMPDIR" "$DST_DIR" "$RELEASE_FLAG" "$TF_VERSION_FLAG" "$REVERB_VERSION_FLAG"
 }
 
 main "$@"

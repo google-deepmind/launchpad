@@ -26,6 +26,10 @@ from setuptools.command.install import install as InstallCommandBase
 from setuptools.dist import Distribution
 from version import launchpad_version
 
+# Version dependencies for a release build.
+TENSORFLOW_VERSION = 'tensorflow~=2.5.0'
+REVEB_VERSION = 'dm-reverb==0.3.0'
+
 
 class BinaryDistribution(Distribution):
 
@@ -54,15 +58,17 @@ class InstallCommand(InstallCommandBase):
 class SetupToolsHelper(object):
   """Helper to execute `setuptools.setup()`."""
 
-  def __init__(self, release, tf_package):
+  def __init__(self, release, tf_package, reverb_package):
     """Initialize ReleaseBuilder class.
 
     Args:
       release: True to do a release build. False for a nightly build.
       tf_package: Version of Tensorflow to depend on.
+      reverb_package: Version of Reverb to depend on.
     """
     self.release = release
     self.tf_package = tf_package
+    self.reverb_package = reverb_package
 
   def _get_version(self):
     """Returns the version and project name to associate with the build."""
@@ -97,10 +103,7 @@ class SetupToolsHelper(object):
 
   def _get_reverb_packages(self):
     """Returns packages needed to install Reverb."""
-    if self.release:
-      return ['dm-reverb']
-    else:
-      return ['dm-reverb-nightly']
+    return [self.reverb_package]
 
   def run_setup(self):
     # Builds the long description from the README.
@@ -168,8 +171,12 @@ if __name__ == '__main__':
       help='Pass as true to do a release build.')
   parser.add_argument(
       '--tf_package',
-      default='tf-nightly',
+      required=True,
       help='Version of Tensorflow to depend on.')
+  parser.add_argument(
+      '--reverb_package',
+      required=True,
+      help='Version of Reverb to depend on.')
   FLAGS, unparsed = parser.parse_known_args()
   # Go forward with only non-custom flags.
   sys.argv.clear()
@@ -177,5 +184,6 @@ if __name__ == '__main__':
   unparsed.insert(0, 'foo')
   sys.argv.extend(unparsed)
   setup_tools_helper = SetupToolsHelper(release=FLAGS.release,
-                                        tf_package=FLAGS.tf_package)
+                                        tf_package=FLAGS.tf_package,
+                                        reverb_package=FLAGS.reverb_package)
   setup_tools_helper.run_setup()

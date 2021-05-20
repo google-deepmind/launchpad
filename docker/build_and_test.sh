@@ -20,6 +20,8 @@ DEBUG_DOCKER=true
 CLEAN=false
 RELEASE=false
 PYTHON=3.8
+TF_PACKAGE=tf-nightly
+REVERB_PACKAGE=dm-reverb-nightly
 
 while [[ $# -gt -0 ]]; do
   key="$1"
@@ -38,6 +40,14 @@ while [[ $# -gt -0 ]]; do
       ;;
       --release)
       RELEASE="$2"
+      shift
+      ;;
+      --tf_package)
+      TF_PACKAGE="$2"
+      shift
+      ;;
+      --reverb_package)
+      REVERB_PACKAGE="$2"
       shift
       ;;
     *)
@@ -72,21 +82,20 @@ run_docker() {
   set -e
 }
 
-TENSORFLOW='tf-nightly'
 RELEASE_FLAG=''
 if [[ $RELEASE == 'true' ]]; then
-  TENSORFLOW='tensorflow>=2.3.0'
   RELEASE_FLAG='--release'
 fi
 
 run_docker docker build --tag launchpad:build \
   --build-arg python_version="${PYTHON}" \
-  --build-arg tensorflow_pip="${TENSORFLOW}" \
+  --build-arg tensorflow_pip="${TF_PACKAGE}" \
   -f "docker/build.dockerfile" .
 
 run_docker docker run --rm ${MOUNT_CMD} \
   launchpad:build /tmp/launchpad/oss_build.sh --python "${PYTHON}" \
-  --clean ${CLEAN} --install false --tf_package $TENSORFLOW $RELEASE_FLAG
+  --clean ${CLEAN} --install false --tf_package $TF_PACKAGE \
+  --reverb_package $REVERB_PACKAGE $RELEASE_FLAG
 
 for python_version in $PYTHON; do
 
