@@ -16,7 +16,7 @@
 """Reverb replay buffers."""
 
 
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Optional, Sequence
 
 from absl import logging
 from launchpad import address as lp_address
@@ -68,7 +68,7 @@ class ReverbNode(python.PyNode):
 
   def __init__(self,
                priority_tables_fn: PriorityTablesFactory,
-               checkpoint_ctor: CheckpointerFactory = None):
+               checkpoint_ctor: Optional[CheckpointerFactory] = None):
     super().__init__(self.run)
     self._priority_tables_fn = priority_tables_fn
     self._checkpoint_ctor = checkpoint_ctor
