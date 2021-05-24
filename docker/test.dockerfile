@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   tmux \
   xterm
 
-RUN python${python_version} -mpip install --upgrade setuptools wheel pytype==2021.1.28
+RUN python${python_version} -mpip install --upgrade setuptools wheel attrs==20.3.0 pytype
 
 COPY dist /tmp/launchpad
 
