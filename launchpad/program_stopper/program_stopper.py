@@ -34,6 +34,7 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
     A callable. When called, it stops the running program.
   """
   launch_type = context.LaunchType(launch_type)
+
   if launch_type in [
       context.LaunchType.TEST_MULTI_THREADING,
       context.LaunchType.TEST_MULTI_PROCESSING

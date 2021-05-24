@@ -25,6 +25,7 @@ from typing import Any, Generic, List, Optional, Sequence, Set, TypeVar
 from launchpad import address as lp_address
 from launchpad import context as lp_context
 from launchpad.nodes import dereference
+from launchpad.program_stopper import program_stopper
 
 ClientType = TypeVar('ClientType')
 HandleType = TypeVar('HandleType', bound='Handle')
@@ -76,8 +77,16 @@ class Node(Generic[HandleType], metaclass=abc.ABCMeta):
     # Addresses owned by this node (i.e., addresses used to run servers).
     self.addresses = []  # type: List[lp_address.Address]
 
+  def _initialize_context(self, launch_type: lp_context.LaunchType,
+                          launch_config: Any):
+    self._launch_context.initialize(
+        launch_type, launch_config,
+        program_stopper.make_program_stopper(launch_type))
+
   def _track_handle(self, handle: HandleType) -> HandleType:
-    """Keeps track of created handles. MUST be called in create_handle().
+    """Keeps track of created handles.
+
+    MUST be called in create_handle().
 
     This is called so that the node knows about the handle it creates. The
     reason we don't automate this is because we'll lose return annotation if
@@ -86,6 +95,7 @@ class Node(Generic[HandleType], metaclass=abc.ABCMeta):
 
     Args:
       handle: The handle (MUST be created by this node) to track.
+
     Returns:
       The same handle that was passed in, for the nicer syntax on call site.
     """

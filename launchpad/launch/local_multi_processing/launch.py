@@ -35,7 +35,7 @@ def launch(program: lp_program.Program,
   for label, nodes in program.groups.items():
     launch_config = local_resources.get(label, None)
     for node in nodes:
-      node._launch_context.initialize(  
+      node._initialize_context(  
           context.LaunchType.LOCAL_MULTI_PROCESSING,
           launch_config=launch_config)
 

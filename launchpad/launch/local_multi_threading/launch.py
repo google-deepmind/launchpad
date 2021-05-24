@@ -33,7 +33,7 @@ def launch(program: lp_program.Program):
   # Set up the launch context (launch type & launch config) for all nodes
   for label, nodes in program.groups.items():
     for node in nodes:
-      node._launch_context.initialize(  
+      node._initialize_context(  
           context.LaunchType.LOCAL_MULTI_THREADING,
           launch_config=None)
 

@@ -66,6 +66,7 @@ class PyNode(base.Node[HandleType], Generic[HandleType, ReturnType]):
         (self._func_args, self._func_kwargs))
 
   def _construct_function(self):
+    context.set_context(self._launch_context)  
     args, kwargs = tree.map_structure(dereference.maybe_dereference,
                                       (self._func_args, self._func_kwargs))
     return functools.partial(self._function, *args, **kwargs)()

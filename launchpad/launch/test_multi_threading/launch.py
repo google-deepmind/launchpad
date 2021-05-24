@@ -55,7 +55,7 @@ def _run_worker(worker_func):
 def launch(program, test_case: Optional[absltest.TestCase] = None):
   """Launches the program as a multi-threaded integration test."""
   for node in program.get_all_nodes():
-    node._launch_context.initialize(  
+    node._initialize_context(  
         context.LaunchType.TEST_MULTI_THREADING,
         launch_config=None)
 

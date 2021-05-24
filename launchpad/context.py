@@ -15,8 +15,9 @@
 """Platform-specific configuration on the node."""
 
 import enum
+import threading
 
-from typing import Any
+from typing import Any, Callable, Optional
 
 
 class LaunchType(enum.Enum):
@@ -42,6 +43,7 @@ class LaunchContext(object):
   def __init__(self):
     self._launch_type = None
     self._launch_config = None
+    self._program_stopper = None
     self._is_initialized = False
 
   @property
@@ -54,13 +56,34 @@ class LaunchContext(object):
     self._check_inititialized()
     return self._launch_config
 
+  @property
+  def program_stopper(self) -> Callable[[], None]:
+    self._check_inititialized()
+    return self._program_stopper
+
   def _check_inititialized(self):
     if not self._is_initialized:
       raise RuntimeError(
           'Launch context is not yet initialized. It should be initialized by '
           'calling initialize() at launch time.')
 
-  def initialize(self, launch_type: LaunchType, launch_config: Any):
+  def initialize(self, launch_type: LaunchType, launch_config: Any,
+                 program_stopper: Optional[Callable[[], None]] = None):
     self._launch_config = launch_config
     self._launch_type = launch_type
+    self._program_stopper = program_stopper
     self._is_initialized = True
+
+
+_LAUNCH_CONTEXT = threading.local()
+
+
+def get_context():
+  context = getattr(_LAUNCH_CONTEXT, 'lp_context', None)
+  assert context, ("Launchpad context was not instantiated. Do you try to "
+                   "access it outside of the main node's thread?")
+  return context
+
+
+def set_context(context: LaunchContext):
+  _LAUNCH_CONTEXT.lp_context = context
