@@ -15,6 +15,8 @@
 """Utilities for waiting threads, useful in multithreading launch."""
 
 from concurrent import futures
+import ctypes
+import signal
 import threading
 from typing import Mapping, Optional, Sequence, Text
 
@@ -22,14 +24,33 @@ from typing import Mapping, Optional, Sequence, Text
 class ThreadWaiter:
   """Encapsulates the running threads of a launched Program."""
 
-  def __init__(self, thread_dict: Mapping[Text, Sequence[threading.Thread]]):
-    """Initializes a ThreadWaiter.
+  def __init__(self):
+    """Initializes a ThreadWaiter."""
+    self.thread_dict: Mapping[Text, Sequence[threading.Thread]] = {}
+    self._stop_requested = False
+    signal.signal(signal.SIGUSR1, lambda signum, unused_frame: self._stop())
+
+  def set_threads(self, thread_dict: Mapping[Text, Sequence[threading.Thread]]):
+    """Set collection of threads to handle.
 
     Args:
       thread_dict: Mapping from node group label to list of running threads for
         that group.
     """
     self.thread_dict = thread_dict
+    if self._stop_requested:
+      self.kill_threads()
+
+  def _stop(self):
+    self._stop_requested = True
+    self.kill_threads()
+
+  def kill_threads(self):
+    for threads in self.thread_dict.values():
+      for thread in threads:
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+            ctypes.c_long(thread.ident), ctypes.py_object(SystemExit))
+        assert res < 2, "Exception raise failure"
 
   def wait(self, labels_to_wait_for: Optional[Sequence[Text]] = None):
     """Waits for threads to finish.

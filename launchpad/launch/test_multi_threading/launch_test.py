@@ -17,12 +17,24 @@
 
 import os
 import threading
+import time
 from unittest import mock
 
 from absl.testing import absltest
+from launchpad import context
 from launchpad import program as lp_program
 from launchpad.launch.test_multi_threading import launch
 from launchpad.nodes.python import node as python
+from launchpad.program_stopper import program_stopper
+
+
+def _block():
+  while True:
+    time.sleep(1)
+
+
+def _stop(stopper):
+  stopper()
 
 
 class LaunchTest(absltest.TestCase):
@@ -53,6 +65,29 @@ class LaunchTest(absltest.TestCase):
     with mock.patch.object(os, 'kill', mock_kill):
       launch.launch(program)
       has_run.wait()
+
+  def test_program_stopper(self):
+    # This verifies the program stopper works for test_multi_threading
+    p = lp_program.Program('test')
+
+    with p.group('block'):
+      p.add_node(python.PyNode(_block))
+
+    with p.group('stop'):
+      p.add_node(python.PyNode(_stop, program_stopper.make_program_stopper(
+          context.LaunchType.TEST_MULTI_THREADING)))
+
+    threads = launch.launch(p, test_case=self)
+    threads.wait()
+
+  def test_cleanup(self):
+    # Test verifies that test cleanup works.
+    p = lp_program.Program('test')
+
+    with p.group('block'):
+      p.add_node(python.PyNode(_block))
+
+    launch.launch(p, test_case=self)
 
 
 if __name__ == '__main__':

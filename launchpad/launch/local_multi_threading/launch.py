@@ -56,6 +56,7 @@ def launch(program: lp_program.Program):
 def vanilla_thread_handler(program):
   """Runs the threads directly."""
 
+  waiter = thread_waiter.ThreadWaiter()
   thread_dict = collections.defaultdict(list)
   for label, nodes in program.groups.items():
     # to_executables() is a static method, so we can call it from any of the
@@ -71,6 +72,7 @@ def vanilla_thread_handler(program):
       thread.start()
       thread_dict[label].append(thread)
 
-  return thread_waiter.ThreadWaiter(thread_dict)
+  waiter.set_threads(thread_dict)
+  return waiter
 
 

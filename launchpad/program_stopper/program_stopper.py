@@ -34,14 +34,10 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
     A callable. When called, it stops the running program.
   """
   launch_type = context.LaunchType(launch_type)
-
-  if launch_type is context.LaunchType.TEST_MULTI_THREADING:
-
-    raise NotImplementedError(
-        'Program stoppers for test launch types are not yet supported! '
-        'Please mock lp.make_program_stopper().')
-
-  if launch_type is context.LaunchType.TEST_MULTI_PROCESSING:
+  if launch_type in [
+      context.LaunchType.TEST_MULTI_THREADING,
+      context.LaunchType.TEST_MULTI_PROCESSING
+  ]:
     launcher_process_id = os.getpid()
 
     def ask_launcher_for_termination(unused_mark_as_completed=False):

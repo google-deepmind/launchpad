@@ -40,6 +40,7 @@ def launch(
                    ],
     launch_type: Optional[Union[context.LaunchType, str]] = None,
     local_resources: Optional[Dict[str, Any]] = None,
+    test_case: absltest.TestCase = None,
     terminal: Optional[str] = None,
 ) -> Any:
   """Launches a Launchpad program.
@@ -53,6 +54,8 @@ def launch(
       launch type from command line (by just passing --lp_launch_type=...).
     local_resources: (for local/test multiprocessing launch) A dictionary to
       specify per-node launch configuration.
+    test_case: (for test multiprocessing launch) test case in which the program
+      is launched.
     terminal: (for local multiprocessing launch) Terminal to use to run the
       commands. Valid choices are gnome-terminal, gnome-terminal-tabs, xterm,
       tmux_session, current_terminal, and output_to_files.
@@ -81,6 +84,6 @@ def launch(
     return launch_local_multiprocessed.launch(program, local_resources,
                                               terminal)
   elif launch_type is context.LaunchType.TEST_MULTI_THREADING:
-    return launch_test_multithreaded.launch(program)
+    return launch_test_multithreaded.launch(program, test_case=test_case)
   else:
     logging.fatal('Unknown launch type: %s', launch_type)

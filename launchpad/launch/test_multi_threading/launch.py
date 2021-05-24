@@ -24,8 +24,10 @@ import os
 import sys
 import threading
 import traceback
+from typing import Optional
 
 from absl import logging
+from absl.testing import absltest
 
 from launchpad import context
 from launchpad.launch.local_multi_threading import thread_waiter
@@ -50,7 +52,7 @@ def _run_worker(worker_func):
 
 
 
-def launch(program):
+def launch(program, test_case: Optional[absltest.TestCase] = None):
   """Launches the program as a multi-threaded integration test."""
   for node in program.get_all_nodes():
     node._launch_context.initialize(  
@@ -70,6 +72,7 @@ def launch(program):
 
 
   thread_dict = collections.defaultdict(list)
+  waiter = thread_waiter.ThreadWaiter()
   for label, nodes in program.groups.items():
     # to_executables() is a static method, so we can call it from any of the
     # nodes in this group.
@@ -85,5 +88,7 @@ def launch(program):
           target=_run_worker, args=(executable,), daemon=True)
       thread.start()
       thread_dict[label].append(thread)
-
-  return thread_waiter.ThreadWaiter(thread_dict)
+  waiter.set_threads(thread_dict)
+  if test_case is not None:
+    test_case.addCleanup(waiter.kill_threads)
+  return waiter
