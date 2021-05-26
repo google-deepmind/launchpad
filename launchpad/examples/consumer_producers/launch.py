@@ -16,7 +16,7 @@
 
 
 
-from typing import Callable, List
+from typing import List
 
 from absl import app
 from absl import flags
@@ -34,16 +34,13 @@ class Consumer:
   def __init__(
       self,
       producers: List[lp.CourierClient],
-      stop_fn: Callable[[], None],
   ) -> None:
     """Initializes a Consumer.
 
     Args:
       producers: a list of Producer handles.
-      stop_fn: a callable for conditional stopping of the program.
     """
     self._producers = producers
-    self._stop_program = stop_fn
 
   def run(self) -> None:
     """Entry point of the consumer."""
@@ -55,7 +52,7 @@ class Consumer:
 
     # Stop the whole program (consumer and producers). Simply returning here
     # would stop the consumer but not the producers.
-    self._stop_program()
+    lp.stop()
 
   def step(self) -> None:
     """Tells all the producers to perform one step of work."""
@@ -98,10 +95,7 @@ def make_program(num_producers: int) -> lp.Program:
 
   # Launch a single consumer that connects to the list of producers.
   # Note: The use of `label` here actually creates a group with one single node.
-  node = lp.CourierNode(
-      Consumer,
-      producers=producers,
-      stop_fn=lp.make_program_stopper(FLAGS.lp_launch_type))
+  node = lp.CourierNode(Consumer, producers=producers)
   program.add_node(node, label='consumer')
 
   return program

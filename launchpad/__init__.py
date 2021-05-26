@@ -34,6 +34,8 @@ from launchpad.nodes.courier.node import CourierNode
 from launchpad.nodes.courier.node import CourierClient
 from launchpad.nodes.python.node import PyClassNode
 from launchpad.nodes.python.node import PyNode
+# Stopping a program
+from launchpad.stop_program.stop import stop
 from launchpad.program_stopper.program_stopper import make_program_stopper
 
 with lazy_loader.LazyModule(__name__):
