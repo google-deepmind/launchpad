@@ -28,8 +28,7 @@ from launchpad.program_stopper import program_stopper
 
 def _get_default_py_node_config():
   return local_multi_processing.PythonProcess(
-      interpreter='third_party/py/launchpad/launch/'
-      'test_multi_processing/interpreter')
+  )
 
 
 def _noop():

@@ -27,6 +27,7 @@ from launchpad import flags as lp_flags
 from launchpad import program as lp_program
 from launchpad.launch.local_multi_processing import launch as launch_local_multiprocessed
 from launchpad.launch.local_multi_threading import launch as launch_local_multithreaded
+from launchpad.launch.test_multi_processing import launch as launch_test_multiprocessed
 from launchpad.launch.test_multi_threading import launch as launch_test_multithreaded
 
 FLAGS = flags.FLAGS
@@ -85,5 +86,9 @@ def launch(
                                               terminal)
   elif launch_type is context.LaunchType.TEST_MULTI_THREADING:
     return launch_test_multithreaded.launch(program, test_case=test_case)
+  elif launch_type is context.LaunchType.TEST_MULTI_PROCESSING:
+    assert test_case is not None
+    return launch_test_multiprocessed.launch(
+        program, test_case=test_case, local_resources=local_resources)
   else:
     logging.fatal('Unknown launch type: %s', launch_type)
