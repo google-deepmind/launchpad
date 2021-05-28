@@ -53,7 +53,7 @@ absl::Status ToUtilStatus(const ::tensorflow::Status& s) {
 
 }  // namespace tensorflow
 
-namespace util {
+namespace util_task_python_clif {
 
 absl::Status StatusFromPyException() {
   if (!PyErr_Occurred()) {
@@ -62,7 +62,7 @@ absl::Status StatusFromPyException() {
   return absl::InvalidArgumentError("ToUtilStatus failure.");
 }
 
-}  // namespace util
+}  // namespace util_task_python_clif
 
 
 ABSL_FLAG(bool, py_serialize_debug_check_finite, false,
@@ -113,13 +113,13 @@ absl::StatusOr<PyObject*> ImportClass(const std::string& module,
 
   SafePyObjectPtr py_module(PyImport_ImportModule(module.data()));
   if (!py_module) {
-    COURIER_RETURN_IF_ERROR(util::StatusFromPyException());
+    COURIER_RETURN_IF_ERROR(util_task_python_clif::StatusFromPyException());
     return absl::InvalidArgumentError(
         absl::StrCat("Failed to import module: ", module));
   }
   PyObject* py_class = PyObject_GetAttrString(py_module.get(), name.data());
   if (py_class == nullptr) {
-    COURIER_RETURN_IF_ERROR(util::StatusFromPyException());
+    COURIER_RETURN_IF_ERROR(util_task_python_clif::StatusFromPyException());
     return absl::InvalidArgumentError(
         absl::StrCat("Failed to import class: ", module, ".", name));
   }
@@ -538,7 +538,7 @@ absl::Status SerializePyObject(PyObject* object, SerializedObject* buffer) {
           "Object not serializable: ", PyString_AsString(repr.get())));
     }
   }
-  return util::StatusFromPyException();
+  return util_task_python_clif::StatusFromPyException();
 }
 
 absl::StatusOr<SerializedObject> SerializePyObject(PyObject* object) {
@@ -652,7 +652,8 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
           SafePyObjectPtr py_result(
               PyObject_CallObject(py_setstate_call.get(), py_state_args.get()));
           if (py_result == nullptr) {
-            COURIER_RETURN_IF_ERROR(util::StatusFromPyException());
+            COURIER_RETURN_IF_ERROR(
+                util_task_python_clif::StatusFromPyException());
             return absl::InternalError("__setstate__ call failed");
           }
         } else {
@@ -684,7 +685,8 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
         SafePyObjectPtr py_result(PyObject_CallMethodObjArgs(
             py_object, extend_fn.get(), py_items.get(), NULL));
         if (py_result == nullptr) {
-          COURIER_RETURN_IF_ERROR(util::StatusFromPyException());
+          COURIER_RETURN_IF_ERROR(
+              util_task_python_clif::StatusFromPyException());
           return absl::InternalError("extend call failed");
         }
       }
