@@ -175,25 +175,23 @@ class Producer:
 ```
 
 The consumer defines an initializer and a `run()` method. The initializer takes
-a list of handles to the producers (**CourierNode**s) and a stop function to
-call when its task is done. Calling the stop function causes the consumer and
-all producers to exit.
+a list of handles to the producers (**CourierNode**s).
 
 Any Launchpad **PyClassNode** with a `run()` method will have that method called
 automatically upon program entry. Here the `run()` method simply calls `work()`
-on each producer and collects the results.
+on each producer and collects the results. At the end, it calls
+`launchpad.stop()` to terminate all nodes running within a program.
 
 ```python
 class Consumer:
-  def __init__(self, producers, stop_fn):
+  def __init__(self, producers):
     self._producers = producers
-    self._stop_program = stop_fn
 
   def run(self):
     results = [producer.work(context)
                for context, producer in enumerate(self._producers)]
     logging.info('Results: %s', results)
-    self._stop_program()
+    lp.stop()
 ```
 
 In the example above, `work()` methods are called sequentially, so there is no
@@ -204,16 +202,15 @@ on all of their results when calling `future.result()`.
 
 ```python
 class Consumer:
-  def __init__(self, producers, stop_fn):
+  def __init__(self, producers):
     self._producers = producers
-    self._stop_program = stop_fn
 
   def run(self):
     futures = [producer.futures.work(context)
                for context, producer in enumerate(self._producers)]
     results = [future.result() for future in futures]
     logging.info('Results: %s', results)
-    self._stop_program()
+    launchpad.stop()
 ```
 
 ## Define the topology
@@ -240,8 +237,7 @@ def make_program(num_producers):
     ]
   node = lp.CourierNode(
       Consumer,
-      producers=producers,
-      stop_fn=lp.make_program_stopper(FLAGS.lp_launch_type))
+      producers=producers)
   program.add_node(node, label='consumer')
   return program
 ```
