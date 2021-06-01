@@ -163,9 +163,7 @@ def launch_with_gnome_terminal(commands_to_launch, use_tabs=False):
   # app-ids must be character only. Turn numbers in timestep to characters.
   timestamp = ''.join(['abcdefghij'[int(c)] for c in timestamp])
   app_id = 'launchpad.locallaunch.{}'.format(timestamp)
-  # Gnome terminal server waits for 10 seconds. If no terminal has connected
-  # to it by then it will terminate. Wait half that time after starting up the
-  # server to make sure the server is running before starting up terminals.
+
   def preexec_fn():
     # Prevents SIGINT from killing gnome-terminal-server too early
     signal.signal(signal.SIGINT, signal.SIG_IGN)
