@@ -124,7 +124,7 @@ class _Processes:
 
 def launch(program: lp_program.Program,
            test_case: absltest.TestCase,
-           local_resources: Mapping[str, Any] = None):
+           local_resources: Optional[Mapping[str, Any]] = None):
   """Launches a program using multiple processes as a test."""
   # Set up the launch context (launch type & launch config) for all nodes
   local_resources = local_resources or {}

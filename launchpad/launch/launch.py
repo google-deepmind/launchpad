@@ -41,7 +41,7 @@ def launch(
                    ],
     launch_type: Optional[Union[context.LaunchType, str]] = None,
     local_resources: Optional[Dict[str, Any]] = None,
-    test_case: absltest.TestCase = None,
+    test_case: Optional[absltest.TestCase] = None,
     terminal: Optional[str] = None,
 ) -> Any:
   """Launches a Launchpad program.

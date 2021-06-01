@@ -37,7 +37,9 @@ class Program(object):
     # Group to add nodes to. Used by group()
     self._current_group = None  # type: str
 
-  def add_node(self, node: base.Node, label: str = None) -> HandleType:
+  def add_node(self,
+               node: base.Node,
+               label: Optional[str] = None) -> HandleType:
     """Adds node to the program."""
 
     if self._current_group:

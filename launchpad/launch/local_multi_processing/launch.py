@@ -17,7 +17,7 @@
 
 import subprocess
 import threading
-from typing import Any, Mapping
+from typing import Any, Mapping, Optional
 
 from launchpad import context
 from launchpad import program as lp_program
@@ -27,7 +27,7 @@ from launchpad.launch.run_locally import run_locally
 
 
 def launch(program: lp_program.Program,
-           local_resources: Mapping[str, Any] = None,
+           local_resources: Optional[Mapping[str, Any]] = None,
            terminal: str = 'gnome-terminal'):
   """Launches a program using multiple processes."""
   # Set up the launch context (launch type & launch config) for all nodes

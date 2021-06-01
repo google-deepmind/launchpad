@@ -27,6 +27,7 @@ Using an unbound address will trigger an error.
 import abc
 import os
 import re
+from typing import Optional
 
 import portpicker
 
@@ -62,7 +63,7 @@ class Address(object):
     name: Name of this address.
   """
 
-  def __init__(self, name: str = None):
+  def __init__(self, name: Optional[str] = None):
     """Initializes an address object.
 
     Args:
