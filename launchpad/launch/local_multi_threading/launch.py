@@ -15,8 +15,8 @@
 
 """Local Multithreading Launcher implementation."""
 
-
 import collections
+import subprocess
 import threading
 
 from absl import flags
@@ -73,6 +73,11 @@ def vanilla_thread_handler(program):
       thread_dict[label].append(thread)
 
   waiter.set_threads(thread_dict)
+
+  # The following prevents the main process from exiting, while the child
+  # threads are still running, but still allow post-launching actions
+  threading.Thread(target=subprocess.Popen(['sleep', 'infinity']).wait).start()
+
   return waiter
 
 
