@@ -19,36 +19,11 @@ This is very similar to local_multi_threading/launch.py but terminates the
 process upon exception (instead of entering pdb).
 """
 
-import collections
-import os
-import sys
-import threading
-import traceback
 from typing import Optional
-
-from absl import logging
 from absl.testing import absltest
 
 from launchpad import context
-from launchpad.launch.local_multi_threading import thread_waiter
-
-
-def _run_worker(worker_func):
-  """Runs a worker (as a callable) but terminates the process upon exception."""
-  try:
-    worker_func()
-  except Exception:  
-    logging.warning(
-        'A worker has died with error type: %s, '
-        'error value:\n %s. \n\nShutting down test...',
-        *sys.exc_info()[:2])
-    # Somehow pylint thinks some arguments are missing
-    
-    logging.error('Traceback:\n%s',
-                  ''.join(traceback.format_exception(*sys.exc_info())))
-    # Abort the main process.
-    os.kill(os.getpid(), 9)
-    
+from launchpad.launch import worker_manager
 
 
 
@@ -71,8 +46,10 @@ def launch(program, test_case: Optional[absltest.TestCase] = None):
 
 
 
-  thread_dict = collections.defaultdict(list)
-  waiter = thread_waiter.ThreadWaiter()
+  manager = worker_manager.WorkerManager(daemon_workers=not test_case)
+  if test_case is not None:
+    test_case.addCleanup(manager.cleanup_after_test, test_case)
+
   for label, nodes in program.groups.items():
     # to_executables() is a static method, so we can call it from any of the
     # nodes in this group.
@@ -84,11 +61,6 @@ def launch(program, test_case: Optional[absltest.TestCase] = None):
     
     # pytype: enable=wrong-arg-count
     for executable in executables:
-      thread = threading.Thread(
-          target=_run_worker, args=(executable,), daemon=True)
-      thread.start()
-      thread_dict[label].append(thread)
-  waiter.set_threads(thread_dict)
-  if test_case is not None:
-    test_case.addCleanup(waiter.kill_threads)
-  return waiter
+      manager.thread_worker(label, executable)
+
+  return manager

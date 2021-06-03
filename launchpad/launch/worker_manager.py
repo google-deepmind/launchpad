@@ -217,6 +217,9 @@ class WorkerManager:
     self.wait(raise_error=False)
     self._dont_kill()
 
+  def join(self):
+    self.wait()
+
   def wait(self, labels_to_wait_for: Optional[Sequence[Text]] = None,
            raise_error=True, return_on_first_completed=False):
     """Waits for workers to finish.

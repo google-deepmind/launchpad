@@ -40,7 +40,7 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
 
     def ask_launcher_for_termination(mark_as_completed=False):
       del mark_as_completed
-      os.kill(launcher_process_id, signal.SIGUSR1)
+      os.kill(launcher_process_id, signal.SIGTERM)
 
     return ask_launcher_for_termination
 

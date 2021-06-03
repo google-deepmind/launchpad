@@ -15,10 +15,8 @@
 
 """Tests for launchpad.launch.test_multi_threading.launch."""
 
-import os
 import threading
 import time
-from unittest import mock
 
 from absl.testing import absltest
 from launchpad import context
@@ -47,7 +45,7 @@ class LaunchTest(absltest.TestCase):
 
     program = lp_program.Program('test')
     program.add_node(python.PyNode(run), label='run')
-    launch.launch(program)
+    launch.launch(program, test_case=self)
     has_run.wait()
 
   def test_handle_exception(self):
@@ -57,14 +55,9 @@ class LaunchTest(absltest.TestCase):
     program = lp_program.Program('test')
     program.add_node(python.PyNode(run), label='run')
 
-    # Mock os.kill() so as to make sure it is called.
-    has_run = threading.Event()
-    def mock_kill(pid, unused_signal):
-      self.assertEqual(pid, os.getpid())
-      has_run.set()
-    with mock.patch.object(os, 'kill', mock_kill):
-      launch.launch(program)
-      has_run.wait()
+    with self.assertRaisesRegex(RuntimeError, 'Launchpad has stopped working'):
+      waiter = launch.launch(program, test_case=self)
+      waiter.wait()
 
   def test_program_stopper(self):
     # This verifies the program stopper works for test_multi_threading
