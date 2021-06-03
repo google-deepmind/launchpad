@@ -57,7 +57,7 @@ class LaunchTest(absltest.TestCase):
     resources = dict(noop=_get_default_py_node_config())
     processes = launch.launch(p, test_case=self, local_resources=resources)
 
-    p_dict = processes.process_dict
+    p_dict = processes._active_workers
     self.assertEqual(list(p_dict.keys()), ['noop'])
     self.assertLen(p_dict['noop'], 1)
     p_dict['noop'][0].wait()  # Wait until termination
@@ -99,7 +99,7 @@ class LaunchTest(absltest.TestCase):
     processes = launch.launch(p, test_case=self, local_resources=resources)
 
     with self.assertRaisesRegexp(  
-        RuntimeError, 'One of the processes has failed'):
+        RuntimeError, 'One of the workers failed.'):
       processes.wait(['main'])
 
   def test_no_wait_after_failure(self):
@@ -115,7 +115,7 @@ class LaunchTest(absltest.TestCase):
     # One process crashes and the other blocks indefinitely. In this case wait()
     # should return upon the first failure.
     with self.assertRaisesRegexp(  
-        RuntimeError, 'One of the processes has failed'):
+        RuntimeError, 'One of the workers failed.'):
       processes.wait()
 
   def test_grouping(self):
@@ -133,7 +133,7 @@ class LaunchTest(absltest.TestCase):
     resources = dict(
         foo=_get_default_py_node_config(), bar=_get_default_py_node_config())
     processes = launch.launch(p, test_case=self, local_resources=resources)
-    p_dict = processes.process_dict
+    p_dict = processes._active_workers
     self.assertCountEqual(list(p_dict.keys()), ['foo', 'bar'])
     self.assertLen(p_dict['foo'], 1)
     self.assertLen(p_dict['bar'], 2)

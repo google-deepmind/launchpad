@@ -33,93 +33,13 @@ Usage:
                   local_resources=local_resources, test_case=self)
 """
 
-from concurrent import futures
 import os
-import signal
-import subprocess
-from typing import Any, Mapping, Optional, Sequence, Text
+from typing import Any, Mapping, Optional
 
-from absl import logging
 from absl.testing import absltest
 from launchpad import context
 from launchpad import program as lp_program
-import psutil
-
-
-class _Processes:
-  """Encapsulates the running processes of a launched Program."""
-
-  def __init__(self):
-    """Initializes a _Processes."""
-    self.process_dict: Mapping[Text, Sequence[subprocess.Popen]] = {}
-    self._stop_requested = False
-    signal.signal(signal.SIGUSR1,
-                  lambda signum, unused_frame: self._stop())
-
-  def set_processes(self,
-                    process_dict: Mapping[Text, Sequence[subprocess.Popen]]):
-    """Set collection of processes to handle.
-
-    Args:
-      process_dict: Mapping from node group label to list of running processes
-        for that group.
-    """
-    self.process_dict = process_dict
-    if self._stop_requested:
-      self.kill_processes()
-
-  def _stop(self):
-    self._stop_requested = True
-    self.kill_processes()
-
-  def kill_processes(self):
-    for processes in self.process_dict.values():
-      for process in processes:
-        process.kill()
-
-  def wait(self, labels_to_wait_for: Optional[Sequence[Text]] = None):
-    """Wait for processes to finish.
-
-    Args:
-      labels_to_wait_for: If supplied, only wait for these groups' processes to
-        finish (but still raise an exception if any process from any group
-        fails).
-
-    Raises:
-      RuntimeError: if any process raises an exception.
-    """
-    processes_to_wait_for = set()
-    for label in (labels_to_wait_for
-                  if labels_to_wait_for is not None else self.process_dict):
-      processes_to_wait_for.update(self.process_dict[label])
-
-    all_processes = set()
-    for processes in self.process_dict.values():
-      all_processes.update(processes)
-    executor = futures.ThreadPoolExecutor(len(all_processes))
-
-    def waiter(p):
-      return lambda: (p, p.wait())
-
-    process_futures = [executor.submit(waiter(p)) for p in all_processes]
-    while processes_to_wait_for:
-      done, process_futures = futures.wait(
-          process_futures, return_when=futures.FIRST_COMPLETED)
-      for future in done:
-        unused_p, returncode = future.result()
-        if returncode != 0 and not self._stop_requested:
-          raise RuntimeError('One of the processes has failed!')
-      processes_to_wait_for.difference_update(f.result()[0] for f in done)
-
-  def ensure_healthy(self):
-    for label, procs_per_label in self.process_dict.items():
-      for process in procs_per_label:
-        if not psutil.pid_exists(process.pid) and process.returncode:
-          logging.error('Process %d of %s has crashed.', process.pid, label)
-          healthy = False
-    if not healthy:
-      raise RuntimeError(
-          'The processes are not all healthy (see logs above for details)!')
+from launchpad.launch import worker_manager
 
 
 def launch(program: lp_program.Program,
@@ -161,14 +81,12 @@ def launch(program: lp_program.Program,
       # Not to create to actual processes, in case of failures in this loop.
       process_handles[label] = []
 
-  processes = _Processes()
+  manager = worker_manager.WorkerManager(kill_main_thread=False)
   for label, commands in label_to_commands.items():
     for command in commands:
       env = {}
       env.update(os.environ)
       env.update(command.env_overrides)
-      process_handles[label].append(
-          subprocess.Popen(command.command_as_list, env=env))
-  processes.set_processes(process_handles)
-  test_case.addCleanup(processes.kill_processes)
-  return processes
+      manager.process_worker(label, command.command_as_list, env=env)
+  test_case.addCleanup(manager.cleanup_after_test, test_case=test_case)
+  return manager

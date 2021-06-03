@@ -35,10 +35,7 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
   """
   launch_type = context.LaunchType(launch_type)
 
-  if launch_type in [
-      context.LaunchType.TEST_MULTI_THREADING,
-      context.LaunchType.TEST_MULTI_PROCESSING
-  ]:
+  if launch_type is context.LaunchType.TEST_MULTI_THREADING:
     launcher_process_id = os.getpid()
 
     def ask_launcher_for_termination(mark_as_completed=False):
@@ -46,6 +43,15 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
       os.kill(launcher_process_id, signal.SIGUSR1)
 
     return ask_launcher_for_termination
+
+  if launch_type is context.LaunchType.TEST_MULTI_PROCESSING:
+    launcher_process_id = os.getpid()
+
+    def ask_manager_for_termination(mark_as_completed=False):
+      del mark_as_completed
+      os.kill(launcher_process_id, signal.SIGTERM)
+
+    return ask_manager_for_termination
 
   if launch_type is context.LaunchType.LOCAL_MULTI_PROCESSING:
     launcher_process_id = os.getpid()
