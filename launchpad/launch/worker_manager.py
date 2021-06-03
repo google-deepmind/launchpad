@@ -79,13 +79,23 @@ class WorkerManager:
     self._stop_event = threading.Event()
     self._handle_user_stop = handle_user_stop
     self._daemon_workers = daemon_workers
-    signal.signal(signal.SIGTERM, lambda sig, frame: self._stop())
-    signal.signal(signal.SIGQUIT, lambda sig, frame: self._kill())
+    self._old_sigterm = signal.signal(signal.SIGTERM, self._sigterm)
+    self._old_sigquit = signal.signal(signal.SIGQUIT, self._sigquit)
     if handle_user_stop:
       signal.signal(signal.SIGINT, lambda sig, frame: self._stop_by_user())
     self._stop_main_thread = stop_main_thread
     if register_in_thread:
       _WORKER_MANAGERS.manager = self
+
+  def _sigterm(self, sig, frame):
+    if callable(self._old_sigterm):
+      self._old_sigterm(sig, frame)
+    self._stop()
+
+  def _sigquit(self, sig, frame):
+    if callable(self._old_sigquit):
+      self._old_sigquit(sig, frame)
+    self._kill()
 
   def wait_for_stop(self):
     """Blocks until managed runtime is being terminated."""
