@@ -73,11 +73,15 @@ def _get_task_id():
 def main(_):
   functions = cloudpickle.load(open(FLAGS.data_file, 'rb'))
   task_id = _get_task_id()
-  # Worker manager is used here to handle termination signals and provide
-  # preemption support.
-  worker_manager.WorkerManager(register_in_thread=True,
-                               stop_main_thread=True,
-                               handle_user_stop=False)
+
+  use_worker_manager = True
+
+  if use_worker_manager:
+    # Worker manager is used here to handle termination signals and provide
+    # preemption support.
+    worker_manager.WorkerManager(register_in_thread=True,
+                                 stop_main_thread=True,
+                                 handle_user_stop=False)
   with contextlib.suppress():  # no-op context manager
     functions[task_id]()
 
