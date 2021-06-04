@@ -202,8 +202,8 @@ class WorkerManager:
     """Requests all workers to stop and schedule delayed termination."""
     if self._stop_counter == 0:
       self._stop_event.set()
-      old_sig = signal.signal(signal.SIGALRM, lambda s, f: self._stop_or_kill())
-      assert old_sig == signal.SIG_DFL
+      signal.signal(signal.SIGALRM, lambda s, f: self._stop_or_kill())
+
       self._stop_or_kill()
 
   def _dont_kill(self):
