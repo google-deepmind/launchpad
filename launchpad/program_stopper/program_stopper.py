@@ -66,7 +66,7 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
 
     def shut_down_process(mark_as_completed=False):
       del mark_as_completed
-      os.kill(os.getpid(), signal.SIGQUIT)
+      os.kill(os.getpid(), signal.SIGTERM)
 
     return shut_down_process
 

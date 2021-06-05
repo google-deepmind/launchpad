@@ -79,7 +79,8 @@ def main(_):
   if use_worker_manager:
     # Worker manager is used here to handle termination signals and provide
     # preemption support.
-    worker_manager.WorkerManager(register_in_thread=True,
+    worker_manager.WorkerManager(termination_notice_secs=-1,
+                                 register_in_thread=True,
                                  stop_main_thread=True,
                                  handle_user_stop=False)
   with contextlib.suppress():  # no-op context manager

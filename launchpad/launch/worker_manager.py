@@ -20,6 +20,7 @@ import ctypes
 import os
 import signal
 import subprocess
+import sys
 import threading
 import time
 from typing import Optional, Sequence, Text
@@ -55,6 +56,7 @@ class WorkerManager:
   """Encapsulates running threads and processes of a Launchpad Program."""
 
   def __init__(self,
+               termination_notice_secs=10,
                stop_main_thread=False,
                kill_main_thread=True,
                register_in_thread=False,
@@ -63,6 +65,9 @@ class WorkerManager:
     """Initializes a WorkerManager.
 
     Args:
+      termination_notice_secs: Send termination notice that many seconds before
+        hard termination. Set to 0 to trigger hard termination righ away (skip
+        termination notice), set to negative value to disable hard termination.
       stop_main_thread: Should main thread be notified about termination.
       kill_main_thread: When set to false try not to kill the launcher while
         killing workers. This is not possible when thread workers run in the
@@ -75,6 +80,8 @@ class WorkerManager:
     self._workers_count = collections.defaultdict(lambda: 0)
     self._first_failure = None
     self._stop_counter = 0
+    self._alarm_enabled = False
+    self._termination_notice_secs = termination_notice_secs
     self._kill_main_thread = kill_main_thread
     self._stop_event = threading.Event()
     self._handle_user_stop = handle_user_stop
@@ -153,14 +160,16 @@ class WorkerManager:
     parent = psutil.Process(os.getpid())
     for process in parent.children(recursive=True):
       try:
-        process.send_signal(signal.SIGKILL)
+        if not process.name().startswith('envelope_'):
+          process.send_signal(signal.SIGKILL)
       except psutil.NoSuchProcess:
         pass
-    parent.send_signal(signal.SIGKILL)
+    sys.exit(0)
 
   def _kill(self):
     """Kills all workers (and main thread/process if needed)."""
     print(termcolor.colored('Killing entire runtime.', 'blue'))
+    self._disable_alarm()
     if self._kill_main_thread:
       self._kill_all_processes()
     for workers in self._active_workers.values():
@@ -172,15 +181,18 @@ class WorkerManager:
           worker.send_signal(signal.SIGKILL)
 
   def _stop_or_kill(self):
-    """Stops all workers; kills them if they don't stop in 10 seconds."""
-    self._stop_counter += 1
-    pending_secs = 10 - self._stop_counter
+    """Stops all workers; kills them if they don't stop on time."""
+    pending_secs = self._termination_notice_secs - self._stop_counter
+    if pending_secs == 0:
+      self._kill()
+      return
+    if pending_secs < 0:
+      return
     print(
         termcolor.colored(f'Waiting for workers to stop for {pending_secs}s.',
                           'blue'),
         end='\r')
-    if pending_secs <= 0:
-      self._kill()
+    self._stop_counter += 1
     for workers in self._active_workers.values():
       for worker in workers:
         if isinstance(worker, ThreadWorker):
@@ -202,20 +214,23 @@ class WorkerManager:
     """Requests all workers to stop and schedule delayed termination."""
     if self._stop_counter == 0:
       self._stop_event.set()
-      signal.signal(signal.SIGALRM, lambda s, f: self._stop_or_kill())
-
+      if self._termination_notice_secs > 0:
+        self._alarm_enabled = True
+        signal.signal(signal.SIGALRM, lambda s, f: self._stop_or_kill())
+        # assert old_sig == signal.SIG_DFL
       self._stop_or_kill()
 
-  def _dont_kill(self):
-    # All workers have finished, don't kill the runtime.
-    signal.alarm(0)
-    signal.signal(signal.SIGALRM, signal.SIG_DFL)
+  def _disable_alarm(self):
+    if self._alarm_enabled:
+      self._alarm_enabled = False
+      signal.alarm(0)
+      signal.signal(signal.SIGALRM, signal.SIG_DFL)
 
   def stop_and_wait(self):
     """Requests stopping all workers and wait for termination."""
     self._stop()
     self.wait(raise_error=False)
-    self._dont_kill()
+    self._disable_alarm()
 
   def join(self):
     self.wait()
@@ -253,15 +268,14 @@ class WorkerManager:
           time.sleep(0.1)
         return
       except SystemExit:
-        # Keep waiting for all workers to finish.
-        pass
+        return
 
   def cleanup_after_test(self, test_case: absltest.TestCase):
     """Cleanups runtime after a test."""
     self._check_workers()
     self._stop()
     self.wait(raise_error=False)
-    self._dont_kill()
+    self._disable_alarm()
     test_case.assertIsNone(self._first_failure)
 
   def _check_workers(self):

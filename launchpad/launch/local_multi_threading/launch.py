@@ -15,7 +15,7 @@
 
 """Local Multithreading Launcher implementation."""
 
-import collections
+
 import subprocess
 import threading
 
@@ -23,9 +23,9 @@ from absl import flags
 from launchpad import context
 from launchpad import flags as lp_flags  
 from launchpad import program as lp_program
-from launchpad.launch import signal_handling
-from launchpad.launch.local_multi_threading import thread_waiter
+from launchpad.launch import worker_manager
 
+FLAGS = flags.FLAGS
 
 
 def launch(program: lp_program.Program):
@@ -47,20 +47,20 @@ def launch(program: lp_program.Program):
   for node in program.get_all_nodes():
     node.bind_addresses()
 
-  thread_handler = vanilla_thread_handler
-
-  signal_handling.exit_gracefully_on_sigquit()
   return thread_handler(program)
 
 
-def vanilla_thread_handler(program):
-  """Runs the threads directly."""
+def thread_handler(program):
+  """Runs the threads and wraps them in ThreadWaiter."""
 
-  waiter = thread_waiter.ThreadWaiter()
-  thread_dict = collections.defaultdict(list)
+  waiter = worker_manager.WorkerManager(
+      termination_notice_secs=FLAGS.lp_termination_notice_secs,
+      daemon_workers=True,
+  )
   for label, nodes in program.groups.items():
     # to_executables() is a static method, so we can call it from any of the
     # nodes in this group.
+    # Somehow pytype thinks to_executables() gets wrong arg count.
     
     # pytype: disable=wrong-arg-count
     executables = nodes[0].to_executables(nodes, label,
@@ -68,16 +68,9 @@ def vanilla_thread_handler(program):
     
     # pytype: enable=wrong-arg-count
     for executable in executables:
-      thread = threading.Thread(target=executable, daemon=True)
-      thread.start()
-      thread_dict[label].append(thread)
-
-  waiter.set_threads(thread_dict)
-
+      waiter.thread_worker(label, executable)
   # The following prevents the main process from exiting, while the child
   # threads are still running, but still allow post-launching actions
   threading.Thread(target=subprocess.Popen(['sleep', 'infinity']).wait).start()
 
   return waiter
-
-

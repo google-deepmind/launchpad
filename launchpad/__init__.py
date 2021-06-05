@@ -35,6 +35,7 @@ from launchpad.nodes.courier.node import CourierClient
 from launchpad.nodes.python.node import PyClassNode
 from launchpad.nodes.python.node import PyNode
 # Stopping a program
+from launchpad.launch.worker_manager import wait_for_stop
 from launchpad.stop_program.stop import stop
 from launchpad.program_stopper.program_stopper import make_program_stopper
 
