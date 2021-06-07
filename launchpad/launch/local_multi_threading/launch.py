@@ -16,8 +16,7 @@
 """Local Multithreading Launcher implementation."""
 
 
-import subprocess
-import threading
+import atexit
 
 from absl import flags
 from launchpad import context
@@ -51,9 +50,9 @@ def launch(program: lp_program.Program):
 
 
 def thread_handler(program):
-  """Runs the threads and wraps them in ThreadWaiter."""
+  """Runs the threads and wraps them in Worker Manager."""
 
-  waiter = worker_manager.WorkerManager(
+  manager = worker_manager.WorkerManager(
       termination_notice_secs=FLAGS.lp_termination_notice_secs,
       daemon_workers=True,
   )
@@ -68,9 +67,7 @@ def thread_handler(program):
     
     # pytype: enable=wrong-arg-count
     for executable in executables:
-      waiter.thread_worker(label, executable)
-  # The following prevents the main process from exiting, while the child
-  # threads are still running, but still allow post-launching actions
-  threading.Thread(target=subprocess.Popen(['sleep', 'infinity']).wait).start()
+      manager.thread_worker(label, executable)
+  atexit.register(manager.wait)
 
-  return waiter
+  return manager
