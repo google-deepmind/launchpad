@@ -86,8 +86,10 @@ class WorkerManager:
     self._stop_event = threading.Event()
     self._handle_user_stop = handle_user_stop
     self._daemon_workers = daemon_workers
-    self._old_sigterm = signal.signal(signal.SIGTERM, self._sigterm)
-    self._old_sigquit = signal.signal(signal.SIGQUIT, self._sigquit)
+    register_signals = True
+    if register_signals:
+      self._old_sigterm = signal.signal(signal.SIGTERM, self._sigterm)
+      self._old_sigquit = signal.signal(signal.SIGQUIT, self._sigquit)
     if handle_user_stop:
       signal.signal(signal.SIGINT, lambda sig, frame: self._stop_by_user())
     self._stop_main_thread = stop_main_thread
