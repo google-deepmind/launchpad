@@ -31,6 +31,8 @@ provides following types of nodes (you can implement your own types as needed):
     storage and transport system primarily used by RL algorithms as
     an experience replay. You can read more about Reverb
     [here](https://github.com/deepmind/reverb).
+*   **MultiThreadingColocation** - allows to colocate multiple other nodes in
+    a single process.
 
 Using Launchpad involves implementing nodes and defining the topology of your
 distributed program by passing to each node references of the other nodes that

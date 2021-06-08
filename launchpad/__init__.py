@@ -32,8 +32,15 @@ from launchpad.launch.launch import launch
 # Nodes
 from launchpad.nodes.courier.node import CourierNode
 from launchpad.nodes.courier.node import CourierClient
+from launchpad.nodes.multi_threading_colocation.node import MultiThreadingColocation
 from launchpad.nodes.python.node import PyClassNode
 from launchpad.nodes.python.node import PyNode
+# Addressing
+from launchpad.address import Address
+from launchpad.address import AbstractAddressBuilder
+from launchpad.address import get_port_from_address
+from launchpad.address import SimpleLocalAddressBuilder
+
 # Stopping a program
 from launchpad.launch.worker_manager import wait_for_stop
 from launchpad.stop_program.stop import stop
