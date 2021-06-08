@@ -22,6 +22,7 @@ import time
 from absl.testing import absltest
 import courier
 import launchpad as lp
+from launchpad.launch import worker_manager
 
 
 class NodeTest(absltest.TestCase):
@@ -41,7 +42,8 @@ class NodeTest(absltest.TestCase):
           port=lp.get_port_from_address(server_address.resolve()))
       server.Bind('ping', has_ping.set)
       server.Start()
-      server.Join()
+      lp.wait_for_stop()
+      server.Stop()
 
     client_node = lp.PyNode(run_client)
     server_node = lp.PyNode(run_server)
@@ -49,16 +51,37 @@ class NodeTest(absltest.TestCase):
     program.add_node(
         lp.MultiThreadingColocation([client_node, server_node]),
         label='client_server')
-    lp.launch(program, launch_type='test_mt')
+    lp.launch(program, launch_type='test_mt', test_case=self)
     has_ping.wait()
 
+  def test_preemption(self):
+    program = lp.Program('test')
+    preemption_ok = threading.Event()
+
+    def node():
+      try:
+        while True:
+          time.sleep(0.1)
+      except SystemExit:
+        preemption_ok.set()
+
+    def stopper():
+      lp.stop()
+
+    program.add_node(
+        lp.MultiThreadingColocation([lp.PyNode(node), lp.PyNode(stopper)]),
+        label='coloc')
+    lp.launch(program, launch_type='test_mt', test_case=self)
+    preemption_ok.wait()
+
   def test_exception_propagation(self):
-    test_end = threading.Event()
+    manager = worker_manager.WorkerManager(register_in_thread=True)
+    self.addCleanup(manager.cleanup_after_test, self)
 
     def raise_error():
       raise RuntimeError('Foo')
     def wait_test_end():
-      test_end.wait()
+      manager.wait_for_stop()
 
     error_node = lp.PyNode(raise_error)
     waiter_node = lp.PyNode(wait_test_end)
@@ -67,6 +90,8 @@ class NodeTest(absltest.TestCase):
       colo_node.run()
 
   def test_first_completed(self):
+    manager = worker_manager.WorkerManager(register_in_thread=True)
+    self.addCleanup(manager.cleanup_after_test, self)
     quick_done = threading.Event()
     slow_done = threading.Event()
     slow_can_start = threading.Event()
@@ -90,6 +115,8 @@ class NodeTest(absltest.TestCase):
     slow_done.wait()
 
   def test_all_completed(self):
+    manager = worker_manager.WorkerManager(register_in_thread=True)
+    self.addCleanup(manager.cleanup_after_test, self)
     f1_done = threading.Event()
     f2_done = threading.Event()
 
@@ -100,8 +127,6 @@ class NodeTest(absltest.TestCase):
     self.assertTrue(f1_done.is_set())
     self.assertTrue(f2_done.is_set())
 
-
-  @absltest.skip('Not working with WorkerManager yet.')
   def test_stop(self):
     def _sleep():
       while True:
@@ -114,10 +139,9 @@ class NodeTest(absltest.TestCase):
     program.add_node(
         lp.MultiThreadingColocation([lp.PyNode(_sleep),
                                      lp.PyNode(_stop)]), label='node')
-    waiter = lp.launch(program, launch_type='test_mt')
+    waiter = lp.launch(program, launch_type='test_mt', test_case=self)
     waiter.wait()
 
-  @absltest.skip('Not working with WorkerManager yet.')
   def test_nested_stop(self):
     def _sleep():
       while True:
@@ -133,7 +157,7 @@ class NodeTest(absltest.TestCase):
             lp.MultiThreadingColocation([lp.PyNode(_sleep),
                                          lp.PyNode(_stop)])
         ]), label='node')
-    waiter = lp.launch(program, launch_type='test_mt')
+    waiter = lp.launch(program, launch_type='test_mt', test_case=self)
     waiter.wait()
 
 

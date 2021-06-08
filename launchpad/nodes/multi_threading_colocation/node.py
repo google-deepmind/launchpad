@@ -18,23 +18,12 @@
 import collections
 from concurrent import futures
 import itertools
-import threading
 from typing import Any, Sequence
 
+from launchpad.launch import worker_manager
 from launchpad.nodes.python import node as python
 
 HandleType = Any
-
-
-def run_and_return_future(f):
-  future = futures.Future()
-  def run_inner(f=f, future=future):
-    try:
-      future.set_result(f())
-    except Exception as e:  
-      future.set_exception(e)
-  threading.Thread(target=run_inner, daemon=True).start()
-  return future
 
 
 class MultiThreadingColocation(python.PyNode):
@@ -84,23 +73,13 @@ class MultiThreadingColocation(python.PyNode):
     return self._nodes
 
   def run(self):
-    for node in self._nodes:
-      node._launch_context = self._launch_context  
     if not self._nodes:
       raise ValueError('MultiThreadingColocation requires at least one node.')
+    manager = worker_manager.get_worker_manager()
+    group_name = f'coloc_{id(self)}'
 
-    not_done = [run_and_return_future(n.function) for n in self._nodes]
-    done = []
-    while not_done:
-      # Wait with a timeout so that this thread will catch exceptions. In
-      # particular, SystemExit injected by lp.stop().
-      done, not_done = futures.wait(
-          not_done, return_when=self._return_when, timeout=1)
-      if done and self._return_when in [
-          futures.FIRST_EXCEPTION, futures.FIRST_COMPLETED
-      ]:
-        break
-
-    # Any exception will be raised in the main thread.
-    for f in done:
-      f.result()
+    for n in self._nodes:
+      n._launch_context = self._launch_context  
+      manager.thread_worker(group_name, n.function)
+    manager.wait([group_name], return_on_first_completed=(
+        self._return_when == futures.FIRST_COMPLETED))

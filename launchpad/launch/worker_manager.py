@@ -130,10 +130,10 @@ class WorkerManager:
     if self._daemon_workers:
       thread.setDaemon(True)
 
+    thread.start()
     self._workers_count[name] += 1
     self._active_workers[name].append(
         ThreadWorker(thread=thread, future=future))
-    thread.start()
 
   def process_worker(self, name, command, env=None, preexec_fn=None):
     """Adds process worker to the runtime.
