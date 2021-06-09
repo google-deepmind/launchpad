@@ -304,6 +304,24 @@ class LaunchTest(absltest.TestCase):
     # Perform actual test here by calling methods on `consumer` ...
 ```
 
+## Citing Launchpad
+
+If you use Launchpad in your work, please cite the accompanying
+[technical report](https://arxiv.org/pdf/2106.04516):
+
+```bibtex
+@article{yang2021launchpad,
+    title={Launchpad: A Programming Model for Distributed Machine Learning
+           Research},
+    author={Fan Yang and Gabriel Barth-Maron and Piotr Stańczyk and Matthew
+            Hoffman and Siqi Liu and Manuel Kroiss and Aedan Pope and Alban
+            Rrustemi},
+    year={2021},
+    journal={arXiv preprint arXiv:2106.04516},
+    url={https://arxiv.org/abs/2106.04516},
+}
+```
+
 ## Acknowledgements
 
 We greatly appreciate all the help from [Reverb](https://github.com/deepmind/reverb)
