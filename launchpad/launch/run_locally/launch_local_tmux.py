@@ -102,23 +102,6 @@ def _launch_with_multiplex_session(commands_to_launch, session_name_prefix,
     # Kill all subprocesses in the tmux session
     return [int(pid) for pid in p.stdout.replace(b'"', b'').strip().split()]
 
-  # If we succeeded, register a cleanup call to kill the session on exit.
-  def kill_session():
-    """Kills the session and all its child processes."""
-
-    # Kill all subprocesses in the tmux session
-    for pid in get_session_processes():
-      parent = psutil.Process(pid)
-      children = parent.children(recursive=True)
-      for process in children:
-        try:
-          process.send_signal(9)
-        except psutil.NoSuchProcess:
-          pass
-    subprocess.call([multiplexer, 'kill-session', '-t', session_name])
-
-  atexit.register(kill_session)
-
   # Copy over the environment of the current process to the new session.
   for key, value in os.environ.items():
     subprocess.check_call(
