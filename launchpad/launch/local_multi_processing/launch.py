@@ -15,13 +15,10 @@
 
 """Launches a Launchpad program using multiple processes."""
 
-import subprocess
-import threading
 from typing import Any, Mapping, Optional
 
 from launchpad import context
 from launchpad import program as lp_program
-from launchpad.launch import signal_handling
 from launchpad.launch.run_locally import run_locally
 
 
@@ -60,11 +57,4 @@ def launch(program: lp_program.Program,
     
     # pytype: enable=wrong-arg-count
 
-  signal_handling.exit_gracefully_on_sigint()
-  signal_handling.exit_gracefully_on_sigquit()
-
-  run_locally.run_commands_locally(commands, terminal)
-
-  # The following prevents the main process from exiting, while the child
-  # processes are still running, but still allow post-launching actions
-  threading.Thread(target=subprocess.Popen(['sleep', 'infinity']).wait).start()
+  return run_locally.run_commands_locally(commands, terminal)

@@ -36,7 +36,7 @@ class LaunchTest(absltest.TestCase):
 
     # Launch all workers declared by the program. Remember to set the launch
     # type here (test & multithreaded).
-    lp.launch(program, launch_type='test_mt')
+    lp.launch(program, launch_type='test_mt', test_case=self)
 
     # Dereference `consumer_node`'s courier handle explicitly to obtain courier
     # client of it.

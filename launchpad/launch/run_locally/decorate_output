@@ -10,6 +10,11 @@
 #   [my title] 20
 #   [my title] 30
 
+trap '' EXIT
+trap '' TERM
+trap '' QUIT
+trap '' INT
+
 COLOR=${1:?ANSI colour code expected}
 TITLE=${2:?line title expected}
 exec "${@:3}" 2>&1 | sed "s!^!\\x1b[1;${COLOR}m[${TITLE}] !;s!\$!\\x1b[0;0m!"

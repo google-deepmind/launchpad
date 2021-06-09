@@ -15,9 +15,10 @@
 
 """Run commands to launch Launchpad workers output their logging to files."""
 
+import atexit
 import os
-import subprocess
 
+from launchpad.launch import worker_manager
 
 _LOGGING_DIR = '/tmp/launchpad_out/'
 
@@ -29,6 +30,8 @@ def launch_and_output_to_files(commands_to_launch):
     commands_to_launch: An iterable of `CommandToLaunch` namedtuples.
   """
   titles = []
+  manager = worker_manager.WorkerManager()
+  atexit.register(manager.wait)
   for command_to_launch in commands_to_launch:
     env = {}
     env.update(os.environ)
@@ -45,7 +48,6 @@ def launch_and_output_to_files(commands_to_launch):
       os.makedirs(directory)
     print('Logging to: {}'.format(filename))
     with open(filename, 'w') as outfile:
-      subprocess.Popen(command_to_launch.command_as_list,
-                       env=env,
-                       stdout=outfile,
-                       stderr=outfile)
+      manager.process_worker(
+          command_to_launch.title, command_to_launch.command_as_list,
+          env=env, stdout=outfile, stderr=outfile)

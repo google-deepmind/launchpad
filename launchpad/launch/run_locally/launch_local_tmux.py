@@ -22,6 +22,7 @@ import subprocess
 from absl import flags
 from absl import logging
 from launchpad import flags as lp_flags  
+from launchpad.launch import worker_manager
 from launchpad.launch.run_locally import feature_testing
 import psutil
 
@@ -93,20 +94,27 @@ def _launch_with_multiplex_session(commands_to_launch, session_name_prefix,
     else:
       break
 
-  # If we succeeded, register a cleanup call to kill the session on exit.
-  def kill_session():
-    """Kills the session and all its child processes."""
-
+  def get_session_processes():
     p = subprocess.run([
         multiplexer, 'list-panes', '-t', session_name, '-s', '-F',
         '"#{pane_pid}"'], stdout=subprocess.PIPE, check=True)
 
     # Kill all subprocesses in the tmux session
-    for pid in p.stdout.replace(b'"', b'').strip().split():
-      parent = psutil.Process(int(pid))
+    return [int(pid) for pid in p.stdout.replace(b'"', b'').strip().split()]
+
+  # If we succeeded, register a cleanup call to kill the session on exit.
+  def kill_session():
+    """Kills the session and all its child processes."""
+
+    # Kill all subprocesses in the tmux session
+    for pid in get_session_processes():
+      parent = psutil.Process(pid)
       children = parent.children(recursive=True)
       for process in children:
-        process.send_signal(9)
+        try:
+          process.send_signal(9)
+        except psutil.NoSuchProcess:
+          pass
     subprocess.call([multiplexer, 'kill-session', '-t', session_name])
 
   atexit.register(kill_session)
@@ -158,3 +166,8 @@ def _launch_with_multiplex_session(commands_to_launch, session_name_prefix,
         f'{session_name}:{flags.FLAGS.tmux_open_window}'
     ]
     subprocess.run(command, check=True)
+
+  manager = worker_manager.WorkerManager()
+  atexit.register(manager.wait)
+  for pid in get_session_processes():
+    manager.register_existing_process('tmux', psutil.Process(pid))

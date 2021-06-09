@@ -35,7 +35,12 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
   """
   launch_type = context.LaunchType(launch_type)
 
-  if launch_type is context.LaunchType.TEST_MULTI_THREADING:
+  if launch_type in [
+      context.LaunchType.LOCAL_MULTI_PROCESSING,
+      context.LaunchType.LOCAL_MULTI_THREADING,
+      context.LaunchType.TEST_MULTI_PROCESSING,
+      context.LaunchType.TEST_MULTI_THREADING
+  ]:
     launcher_process_id = os.getpid()
 
     def ask_launcher_for_termination(mark_as_completed=False):
@@ -43,31 +48,5 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
       os.kill(launcher_process_id, signal.SIGTERM)
 
     return ask_launcher_for_termination
-
-  if launch_type is context.LaunchType.TEST_MULTI_PROCESSING:
-    launcher_process_id = os.getpid()
-
-    def ask_manager_for_termination(mark_as_completed=False):
-      del mark_as_completed
-      os.kill(launcher_process_id, signal.SIGTERM)
-
-    return ask_manager_for_termination
-
-  if launch_type is context.LaunchType.LOCAL_MULTI_PROCESSING:
-    launcher_process_id = os.getpid()
-
-    def shut_down_local_process_launcher(mark_as_completed=False):
-      del mark_as_completed
-      os.kill(launcher_process_id, signal.SIGINT)
-
-    return shut_down_local_process_launcher
-
-  if launch_type is context.LaunchType.LOCAL_MULTI_THREADING:
-
-    def shut_down_process(mark_as_completed=False):
-      del mark_as_completed
-      os.kill(os.getpid(), signal.SIGTERM)
-
-    return shut_down_process
 
   raise NotImplementedError(f'{launch_type} is not yet supported.')

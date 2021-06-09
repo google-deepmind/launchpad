@@ -20,6 +20,7 @@ from typing import Callable, Generic, TypeVar
 from absl import logging
 import courier
 from launchpad import address as lp_address
+from launchpad.launch import worker_manager
 from launchpad.nodes import base
 from launchpad.nodes.courier import courier_utils
 from launchpad.nodes.python import node as python
@@ -120,7 +121,9 @@ class CourierNode(python.PyClassNode[CourierHandle, WorkerType],
       if hasattr(instance, 'run') and self._should_run:
         # If a run() method is provided, stop the server at the end of run().
         instance.run()
-        self._server.Stop()
+      else:
+        worker_manager.wait_for_stop()
+      self._server.Stop()
       self._server.Join()
 
   @property

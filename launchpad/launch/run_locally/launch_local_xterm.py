@@ -19,6 +19,7 @@ import atexit
 import os
 import subprocess
 
+from launchpad.launch import worker_manager
 from launchpad.launch.run_locally import feature_testing
 
 
@@ -31,7 +32,8 @@ def launch_with_xterm(commands_to_launch):
   if not feature_testing.has_xterm():
     raise ValueError(
         'xterm is not available, please choose another way to launch.')
-  processes = []
+  manager = worker_manager.WorkerManager()
+  atexit.register(manager.wait)
   for window_index, command_to_launch in enumerate(commands_to_launch):
     inner_cmd = '{}; exec $SHELL'.format(
         subprocess.list2cmdline(command_to_launch.command_as_list))
@@ -50,10 +52,4 @@ def launch_with_xterm(commands_to_launch):
     env = {}
     env.update(os.environ)
     env.update(command_to_launch.env_overrides)
-    processes.append(subprocess.Popen(xterm_command_list, env=env))
-
-  def kill_processes():
-    for p in processes:
-      p.kill()
-
-  atexit.register(kill_processes)
+    manager.process_worker(command_to_launch.title, xterm_command_list, env=env)

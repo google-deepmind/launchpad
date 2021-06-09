@@ -14,13 +14,13 @@
 
 """WorkerManager handles thread and process-based runtimes."""
 
+import atexit
 import collections
 from concurrent import futures
 import ctypes
 import os
 import signal
 import subprocess
-import sys
 import threading
 import time
 from typing import Optional, Sequence, Text
@@ -87,6 +87,8 @@ class WorkerManager:
     self._handle_user_stop = handle_user_stop
     self._daemon_workers = daemon_workers
     register_signals = True
+    self._old_sigterm = None
+    self._old_sigquit = None
     if register_signals:
       self._old_sigterm = signal.signal(signal.SIGTERM, self._sigterm)
       self._old_sigquit = signal.signal(signal.SIGQUIT, self._sigquit)
@@ -95,6 +97,13 @@ class WorkerManager:
     self._stop_main_thread = stop_main_thread
     if register_in_thread:
       _WORKER_MANAGERS.manager = self
+
+  def _disable_signals(self):
+    self._disable_alarm()
+    if self._old_sigterm is not None:
+      signal.signal(signal.SIGTERM, self._old_sigterm)
+    if self._old_sigquit is not None:
+      signal.signal(signal.SIGQUIT, self._old_sigquit)
 
   def _sigterm(self, sig, frame):
     if callable(self._old_sigterm):
@@ -135,16 +144,26 @@ class WorkerManager:
     self._active_workers[name].append(
         ThreadWorker(thread=thread, future=future))
 
-  def process_worker(self, name, command, env=None, preexec_fn=None):
+  def process_worker(self, name, command, env=None, **kwargs):
     """Adds process worker to the runtime.
 
     Args:
       name: Name of the worker's group.
       command: Command to execute in the worker.
       env: Environment variables to set for the worker.
-      preexec_fn: Run `preexec_fn` before running commands inside the worker.
+      **kwargs: Other parameters to be passed to `subprocess.Popen`.
     """
-    process = subprocess.Popen(command, env=env or {}, preexec_fn=preexec_fn)  
+    process = subprocess.Popen(command, env=env or {}, **kwargs)  
+    self._workers_count[name] += 1
+    self._active_workers[name].append(process)
+
+  def register_existing_process(self, name: str, process: psutil.Process):
+    """Registers already started worker process.
+
+    Args:
+      name: Name of the workers' group.
+      process: Proxy process to monitor.
+    """
     self._workers_count[name] += 1
     self._active_workers[name].append(process)
 
@@ -157,30 +176,28 @@ class WorkerManager:
     signal.signal(signal.SIGINT, lambda sig, frame: self._kill())
     self._stop()
 
-  def _kill_all_processes(self):
+  def _kill_process_tree(self, pid):
     """Kills all child processes of the current process."""
-    parent = psutil.Process(os.getpid())
+    parent = psutil.Process(pid)
     for process in parent.children(recursive=True):
       try:
-        if not process.name().startswith('envelope_'):
-          process.send_signal(signal.SIGKILL)
+        process.send_signal(signal.SIGKILL)
       except psutil.NoSuchProcess:
         pass
-    sys.exit(0)
+    parent.send_signal(signal.SIGKILL)
 
   def _kill(self):
     """Kills all workers (and main thread/process if needed)."""
-    print(termcolor.colored('Killing entire runtime.', 'blue'))
-    self._disable_alarm()
+    print(termcolor.colored('\nKilling entire runtime.', 'blue'))
     if self._kill_main_thread:
-      self._kill_all_processes()
+      self._kill_process_tree(os.getpid())
     for workers in self._active_workers.values():
       for worker in workers:
         if isinstance(worker, ThreadWorker):
           # Not possible to kill a thread without killing the process.
-          self._kill_all_processes()
+          self._kill_process_tree(os.getpid())
         else:
-          worker.send_signal(signal.SIGKILL)
+          self._kill_process_tree(worker.pid)
 
   def _stop_or_kill(self):
     """Stops all workers; kills them if they don't stop on time."""
@@ -203,8 +220,25 @@ class WorkerManager:
                 ctypes.c_long(worker.thread.ident),
                 ctypes.py_object(SystemExit))
             assert res < 2, 'Exception raise failure'
-        else:
+        elif isinstance(worker, subprocess.Popen):
           worker.send_signal(signal.SIGTERM)
+        else:
+          # Notify all workers running under a proxy process.
+          children = worker.children(recursive=True)
+          worker_found = False
+          for process in children:
+            if process.name() != 'bash' and 'envelope_' not in process.name():
+              try:
+                worker_found = True
+                process.send_signal(signal.SIGTERM)
+              except psutil.NoSuchProcess:
+                pass
+          if not worker_found:
+            # No more workers running, so we can kill the proxy itself.
+            try:
+              worker.send_signal(signal.SIGKILL)
+            except psutil.NoSuchProcess:
+              pass
     if self._stop_main_thread:
       res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
           ctypes.c_long(threading.main_thread().ident),
@@ -232,7 +266,6 @@ class WorkerManager:
     """Requests stopping all workers and wait for termination."""
     self._stop()
     self.wait(raise_error=False)
-    self._disable_alarm()
 
   def join(self):
     self.wait()
@@ -277,11 +310,11 @@ class WorkerManager:
     self._check_workers()
     self._stop()
     self.wait(raise_error=False)
-    self._disable_alarm()
     test_case.assertIsNone(self._first_failure)
 
   def _check_workers(self):
     """Checks status of running workers, terminate runtime in case of errors."""
+    has_workers = False
     for label in self._active_workers:
       still_active = []
       for worker in self._active_workers[label]:
@@ -296,7 +329,7 @@ class WorkerManager:
                 if not self._first_failure and not self._stop_counter:
                   self._first_failure = e
             active = False
-        else:
+        elif isinstance(worker, subprocess.Popen):
           try:
             res = worker.wait(0)
             active = False
@@ -304,8 +337,19 @@ class WorkerManager:
               self._first_failure = RuntimeError('One of the workers failed.')
           except subprocess.TimeoutExpired:
             pass
+        else:
+          try:
+            # We can't obtain return code of external process, so clean
+            # termination is assumed.
+            res = worker.wait(0)
+            active = False
+          except psutil.TimeoutExpired:
+            pass
         if active:
+          has_workers = True
           still_active.append(worker)
       self._active_workers[label] = still_active
-    if self._first_failure and not self._stop_counter:
+    if has_workers and self._first_failure and not self._stop_counter:
       self._stop()
+    elif not has_workers:
+      self._disable_alarm()

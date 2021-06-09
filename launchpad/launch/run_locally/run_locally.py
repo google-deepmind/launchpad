@@ -143,4 +143,4 @@ def run_commands_locally(commands: Sequence[CommandToLaunch], terminal=None):
   for command in commands:
     if not os.access(command.command_as_list[0], os.X_OK):
       raise ValueError("Unable to execute '%s'" % command.command_as_list[0])
-  _LOCAL_LAUNCHER_MAP[_get_terminal(terminal)](commands)
+  return _LOCAL_LAUNCHER_MAP[_get_terminal(terminal)](commands)

@@ -19,6 +19,7 @@ import atexit
 import os
 import subprocess
 
+from launchpad.launch import worker_manager
 import psutil
 
 _COLOUR_PALETTE = [
@@ -36,7 +37,8 @@ def launch_in_current_terminal(commands_to_launch):
   Args:
     commands_to_launch: An iterable of `CommandToLaunch` namedtuples.
   """
-  processes = []
+  manager = worker_manager.WorkerManager()
+  atexit.register(manager.wait)
   decorate_output = os.path.dirname(__file__) + '/decorate_output'
 
   for i, command_to_launch in enumerate(commands_to_launch):
@@ -49,17 +51,6 @@ def launch_in_current_terminal(commands_to_launch):
         ([decorate_output, str(colour), command_to_launch.title] +
          command_to_launch.command_as_list),
         env=env)
-    processes.append(process)
+    manager.register_existing_process(command_to_launch.title,
+                                      psutil.Process(process.pid))
 
-  def kill_processes():
-    for p in processes:
-      parent = psutil.Process(p.pid)
-      children = parent.children(recursive=True)
-      for child in children:
-        try:
-          child.send_signal(9)
-        except psutil.NoSuchProcess:
-          pass
-      p.send_signal(9)
-
-  atexit.register(kill_processes)

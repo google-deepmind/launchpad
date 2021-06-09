@@ -25,6 +25,7 @@ import subprocess
 import tempfile
 import time
 
+from launchpad.launch import worker_manager
 from launchpad.launch.run_locally import feature_testing
 import psutil
 
@@ -137,6 +138,9 @@ def launch_with_gnome_terminal(commands_to_launch, use_tabs=False):
     commands_to_launch: An iterable of `CommandToLaunch` namedtuples.
     use_tabs: Whether or not to run each command in a gnome tab (instead of a
       window)
+
+  Returns:
+    A WorkerManager instance.
   """
   # The new server-client architecture of gnome-terminal removes several
   # extremely useful features. Relevant ones here are
@@ -175,22 +179,15 @@ def launch_with_gnome_terminal(commands_to_launch, use_tabs=False):
   ],
                                     env=os.environ,
                                     preexec_fn=preexec_fn)
+  manager = worker_manager.WorkerManager()
+  atexit.register(manager.wait)
+  manager.register_existing_process('gnome', psutil.Process(server_process.pid))
   if use_tabs:
     _launch_in_tabs(commands_to_launch, app_id)
   else:
     _launch_in_windows(commands_to_launch, app_id)
 
-  def kill_processes():
-    parent = psutil.Process(server_process.pid)
-    children = parent.children(recursive=True)
-    for process in children:
-      try:
-        process.send_signal(9)
-      except psutil.NoSuchProcess:
-        pass
-    server_process.kill()
-
-  atexit.register(kill_processes)
+  return manager
 
 
 def launch_with_gnome_terminal_windows(commands_to_launch):
