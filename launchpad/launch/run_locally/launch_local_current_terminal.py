@@ -20,7 +20,6 @@ import os
 import subprocess
 
 from launchpad.launch import worker_manager
-import psutil
 
 _COLOUR_PALETTE = [
     36,  # Blue
@@ -51,6 +50,5 @@ def launch_in_current_terminal(commands_to_launch):
         ([decorate_output, str(colour), command_to_launch.title] +
          command_to_launch.command_as_list),
         env=env)
-    manager.register_existing_process(command_to_launch.title,
-                                      psutil.Process(process.pid))
+    manager.register_existing_process(command_to_launch.title, process.pid)
 

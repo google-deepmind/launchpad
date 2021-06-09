@@ -157,15 +157,15 @@ class WorkerManager:
     self._workers_count[name] += 1
     self._active_workers[name].append(process)
 
-  def register_existing_process(self, name: str, process: psutil.Process):
+  def register_existing_process(self, name: str, pid: int):
     """Registers already started worker process.
 
     Args:
       name: Name of the workers' group.
-      process: Proxy process to monitor.
+      pid: Pid of the process to monitor.
     """
     self._workers_count[name] += 1
-    self._active_workers[name].append(process)
+    self._active_workers[name].append(psutil.Process(pid))
 
   def _stop_by_user(self):
     """Handles stopping of the runtime by a user."""

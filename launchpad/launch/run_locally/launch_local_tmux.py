@@ -24,7 +24,6 @@ from absl import logging
 from launchpad import flags as lp_flags  
 from launchpad.launch import worker_manager
 from launchpad.launch.run_locally import feature_testing
-import psutil
 
 
 tty_write = print
@@ -153,4 +152,4 @@ def _launch_with_multiplex_session(commands_to_launch, session_name_prefix,
   manager = worker_manager.WorkerManager()
   atexit.register(manager.wait)
   for pid in get_session_processes():
-    manager.register_existing_process('tmux', psutil.Process(pid))
+    manager.register_existing_process('tmux', pid)

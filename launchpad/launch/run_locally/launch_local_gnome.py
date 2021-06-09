@@ -27,7 +27,6 @@ import time
 
 from launchpad.launch import worker_manager
 from launchpad.launch.run_locally import feature_testing
-import psutil
 
 GNOME_TERMINAL_SERVER_PATHS = [
     '/usr/libexec/gnome-terminal-server',
@@ -181,7 +180,7 @@ def launch_with_gnome_terminal(commands_to_launch, use_tabs=False):
                                     preexec_fn=preexec_fn)
   manager = worker_manager.WorkerManager()
   atexit.register(manager.wait)
-  manager.register_existing_process('gnome', psutil.Process(server_process.pid))
+  manager.register_existing_process('gnome', server_process.pid)
   if use_tabs:
     _launch_in_tabs(commands_to_launch, app_id)
   else:
