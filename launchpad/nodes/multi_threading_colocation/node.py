@@ -16,7 +16,6 @@
 """A special node type for colocating multiple PyNodes."""
 
 import collections
-from concurrent import futures
 import itertools
 from typing import Any, Sequence
 
@@ -38,20 +37,19 @@ class MultiThreadingColocation(python.PyNode):
       replay_node = lp.CourierNode(...)
       program.add_node(lp.MultiThreadingColocation([learner_node, replay_node]))
 
-  In `__init__()`, `return_when` defaults to `futures.FIRST_EXCEPTION`, meaning
+  In `__init__()`, `return_on_first_completed` defaults to False, meaning
   it will return from `run()` when 1) any of the colocated PyNodes throws an
-  exception, or 2) all of them finish. This could be set to
-  `futures.FIRST_COMPLETED` so as to wait until any of the nodes finishes (or
-  throws an exception).
+  exception, or 2) all of them finish. This could be set to True so as to wait
+  until any of the nodes finishes (or throws an exception).
   """
 
   def __init__(self,
                nodes: Sequence[python.PyNode],
-               return_when=futures.FIRST_EXCEPTION):
+               return_on_first_completed=False):
     super().__init__(self.run)
     self._nodes = []
     self._name_uniquifier = collections.defaultdict(itertools.count)
-    self._return_when = return_when
+    self._return_on_first_completed = return_on_first_completed
     for node in nodes:
       self.add_node(node)
 
@@ -81,5 +79,5 @@ class MultiThreadingColocation(python.PyNode):
     for n in self._nodes:
       n._launch_context = self._launch_context  
       manager.thread_worker(group_name, n.function)
-    manager.wait([group_name], return_on_first_completed=(
-        self._return_when == futures.FIRST_COMPLETED))
+    manager.wait([group_name],
+                 return_on_first_completed=self._return_on_first_completed)

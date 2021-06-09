@@ -15,7 +15,6 @@
 
 """Tests for launchpad.nodes.multi_threading_colocation.node."""
 
-from concurrent import futures
 import threading
 import time
 
@@ -105,7 +104,7 @@ class NodeTest(absltest.TestCase):
 
     colo_node = lp.MultiThreadingColocation(
         [lp.PyNode(quick), lp.PyNode(slow)],
-        return_when=futures.FIRST_COMPLETED)
+        return_on_first_completed=True)
     colo_node.run()  # Returns immediately without waiting for the slow node.
     self.assertTrue(quick_done.is_set())
     self.assertFalse(slow_done.is_set())
@@ -122,7 +121,7 @@ class NodeTest(absltest.TestCase):
 
     colo_node = lp.MultiThreadingColocation(
         [lp.PyNode(f1_done.set), lp.PyNode(f2_done.set)],
-        return_when=futures.ALL_COMPLETED)
+        return_on_first_completed=False)
     colo_node.run()  # Returns after both f1 and f2 finish.
     self.assertTrue(f1_done.is_set())
     self.assertTrue(f2_done.is_set())
