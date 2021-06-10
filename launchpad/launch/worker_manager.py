@@ -169,10 +169,10 @@ class WorkerManager:
 
   def _stop_by_user(self):
     """Handles stopping of the runtime by a user."""
-    print(
-        termcolor.colored('User-requested termination. Asking workers to stop.',
-                          'blue'))
-    print(termcolor.colored('Press CTRL+C to terminate immediately.', 'blue'))
+    if self._termination_notice_secs != 0:
+      print(termcolor.colored(
+          'User-requested termination. Asking workers to stop.', 'blue'))
+      print(termcolor.colored('Press CTRL+C to terminate immediately.', 'blue'))
     signal.signal(signal.SIGINT, lambda sig, frame: self._kill())
     self._stop()
 
@@ -189,15 +189,16 @@ class WorkerManager:
   def _kill(self):
     """Kills all workers (and main thread/process if needed)."""
     print(termcolor.colored('\nKilling entire runtime.', 'blue'))
-    if self._kill_main_thread:
-      self._kill_process_tree(os.getpid())
+    kill_self = self._kill_main_thread
     for workers in self._active_workers.values():
       for worker in workers:
         if isinstance(worker, ThreadWorker):
           # Not possible to kill a thread without killing the process.
-          self._kill_process_tree(os.getpid())
+          kill_self = True
         else:
           self._kill_process_tree(worker.pid)
+    if kill_self:
+      self._kill_process_tree(os.getpid())
 
   def _stop_or_kill(self):
     """Stops all workers; kills them if they don't stop on time."""
