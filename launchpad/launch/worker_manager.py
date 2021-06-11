@@ -204,6 +204,14 @@ class WorkerManager:
     """Stops all workers; kills them if they don't stop on time."""
     pending_secs = self._termination_notice_secs - self._stop_counter
     if pending_secs == 0:
+      if self._termination_notice_secs > 0:
+        still_running = [
+            label for label in self._active_workers
+            if self._active_workers[label]
+        ]
+        print(termcolor.colored(
+            f'Worker groups that did not terminate in time: {still_running}',
+            'red'))
       self._kill()
       return
     if pending_secs < 0:
