@@ -3,11 +3,12 @@ FROM $base_image
 
 ARG python_version="3.8"
 ARG abi="38"
+ARG APT_COMMAND="apt-get -o Acquire::Retries=3 -y"
 
 # Needed to disable interactive configuration by tzdata.
 RUN ln -fs /usr/share/zoneinfo/Europe/Dublin /etc/localtime
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN ${APT_COMMAND} update && ${APT_COMMAND} install --no-install-recommends \
   byobu \
   tmux \
   xterm
