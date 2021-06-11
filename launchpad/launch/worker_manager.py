@@ -86,6 +86,7 @@ class WorkerManager:
     self._stop_event = threading.Event()
     self._handle_user_stop = handle_user_stop
     self._daemon_workers = daemon_workers
+    self._main_thread = threading.current_thread().ident
     register_signals = True
     self._old_sigterm = None
     self._old_sigquit = None
@@ -257,6 +258,10 @@ class WorkerManager:
 
   def _stop(self):
     """Requests all workers to stop and schedule delayed termination."""
+    if threading.current_thread().ident != self._main_thread:
+      # Only main thread can register SIGALARM, so perform stopping there.
+      psutil.Process(os.getpid()).send_signal(signal.SIGTERM)
+      return
     if self._stop_counter == 0:
       self._stop_event.set()
       if self._termination_notice_secs > 0:
