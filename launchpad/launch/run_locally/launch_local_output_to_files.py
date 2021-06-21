@@ -20,8 +20,11 @@ import os
 
 from launchpad.launch import worker_manager
 
-_LOGGING_DIR = '/tmp/launchpad_out/'
-
+# Use environment variable to direct logging to specified directory.
+if 'LAUNCHPAD_LOGGING_DIR' in os.environ:
+    _LOGGING_DIR = os.environ['LAUNCHPAD_LOGGING_DIR']
+else:
+    _LOGGING_DIR = '/tmp/launchpad_out/'
 
 def launch_and_output_to_files(commands_to_launch):
   """Launch commands given as CommandToLaunch and log the outputs to files.
