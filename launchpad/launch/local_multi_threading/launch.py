@@ -53,7 +53,6 @@ def thread_handler(program):
   """Runs the threads and wraps them in Worker Manager."""
 
   manager = worker_manager.WorkerManager(
-      termination_notice_secs=FLAGS.lp_termination_notice_secs,
       daemon_workers=True,
   )
   for label, nodes in program.groups.items():
