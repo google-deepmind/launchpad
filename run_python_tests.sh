@@ -69,3 +69,4 @@ test_terminal tmux_session
 test_terminal byobu_session
 test_terminal current_terminal
 test_terminal output_to_files
+python${PYTHON} -m launchpad.examples.consumer_producers.launch --lp_launch_type=local_mt
