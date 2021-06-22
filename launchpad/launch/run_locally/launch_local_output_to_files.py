@@ -36,9 +36,9 @@ def launch_and_output_to_files(commands_to_launch):
   titles = []
   manager = worker_manager.WorkerManager()
   atexit.register(manager.wait)
-  print('Logs are being output to: {}. '
+  print(f'Logs are being output to: {_LOGGING_DIR}. '
         'The logging directory can be customized by setting the '
-        'LAUNCHPAD_LOGGING_DIR environment variable.'.format(_LOGGING_DIR))
+        'LAUNCHPAD_LOGGING_DIR environment variable.')
   for command_to_launch in commands_to_launch:
     env = {}
     env.update(os.environ)
@@ -53,7 +53,7 @@ def launch_and_output_to_files(commands_to_launch):
     directory = os.path.dirname(filename)
     if not os.path.exists(directory):
       os.makedirs(directory)
-    print('Logging to: {}'.format(filename))
+    print(f'Logging to: {filename}')
     with open(filename, 'w') as outfile:
       manager.process_worker(
           command_to_launch.title, command_to_launch.command_as_list,
