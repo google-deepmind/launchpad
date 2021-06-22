@@ -26,6 +26,7 @@ if 'LAUNCHPAD_LOGGING_DIR' in os.environ:
 else:
     _LOGGING_DIR = '/tmp/launchpad_out/'
 
+
 def launch_and_output_to_files(commands_to_launch):
   """Launch commands given as CommandToLaunch and log the outputs to files.
 
@@ -35,6 +36,9 @@ def launch_and_output_to_files(commands_to_launch):
   titles = []
   manager = worker_manager.WorkerManager()
   atexit.register(manager.wait)
+  print('Logs are being output to: {}. '
+        'The logging directory can be customized by setting the '
+        'LAUNCHPAD_LOGGING_DIR environment variable.'.format(_LOGGING_DIR))
   for command_to_launch in commands_to_launch:
     env = {}
     env.update(os.environ)
