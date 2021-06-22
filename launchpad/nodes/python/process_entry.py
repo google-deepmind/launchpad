@@ -73,7 +73,8 @@ def _get_task_id():
 def main(_):
   # Allow for importing modules from the current directory.
   sys.path.append(os.getcwd())
-  functions = cloudpickle.load(open(FLAGS.data_file, 'rb'))
+  data_file = FLAGS.data_file
+  functions = cloudpickle.load(open(data_file, 'rb'))
   task_id = _get_task_id()
 
   # Worker manager is used here to handle termination signals and provide
