@@ -73,11 +73,19 @@ class MultiThreadingColocation(python.PyNode):
   def run(self):
     if not self._nodes:
       raise ValueError('MultiThreadingColocation requires at least one node.')
-    manager = worker_manager.get_worker_manager()
+    manager = worker_manager.WorkerManager(
+        termination_notice_secs=-1,  # Make sure this doesn't send SIGKILL.
+        handle_user_stop=False,
+        register_signals=False,
+        daemon_workers=True)
     group_name = f'coloc_{id(self)}'
 
     for n in self._nodes:
       n._launch_context = self._launch_context  
       manager.thread_worker(group_name, n.function)
-    manager.wait([group_name],
-                 return_on_first_completed=self._return_on_first_completed)
+    manager.wait(
+        [group_name],
+        return_on_first_completed=self._return_on_first_completed,
+        raise_error=True,  # Any error from the inner threads will surface.
+        propagate_system_exit=True  # `lp.stop()` propagetes to inner threads.
+    )

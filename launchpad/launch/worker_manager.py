@@ -55,13 +55,15 @@ def wait_for_stop():
 class WorkerManager:
   """Encapsulates running threads and processes of a Launchpad Program."""
 
-  def __init__(self,
-               termination_notice_secs=10,
-               stop_main_thread=False,
-               kill_main_thread=True,
-               register_in_thread=False,
-               handle_user_stop=True,
-               daemon_workers=False):
+  def __init__(
+      self,
+      termination_notice_secs=10,
+      stop_main_thread=False,
+      kill_main_thread=True,
+      register_in_thread=False,
+      handle_user_stop=True,
+      daemon_workers=False,
+      register_signals=None):
     """Initializes a WorkerManager.
 
     Args:
@@ -75,6 +77,7 @@ class WorkerManager:
       register_in_thread: TODO
       handle_user_stop: TODO
       daemon_workers: Start thread worker processes as daemons.
+      register_signals: Whether or not to register signal handlers.
     """
     self._active_workers = collections.defaultdict(list)
     self._workers_count = collections.defaultdict(lambda: 0)
@@ -87,7 +90,8 @@ class WorkerManager:
     self._handle_user_stop = handle_user_stop
     self._daemon_workers = daemon_workers
     self._main_thread = threading.current_thread().ident
-    register_signals = True
+    if register_signals is None:
+      register_signals = True
     self._old_sigterm = None
     self._old_sigquit = None
     if register_signals:
@@ -128,13 +132,14 @@ class WorkerManager:
       function: Entrypoint function to execute in a worker.
     """
     future = futures.Future()
+
     def run_inner(f=function, future=future, manager=self):
       _WORKER_MANAGERS.manager = manager
       try:
         future.set_result(f())
       except Exception as e:  
         future.set_exception(e)
-        raise e
+
     builder = lambda t, n: threading.Thread(target=t, name=n)
     thread = builder(run_inner, name)
     if self._daemon_workers:
@@ -171,8 +176,9 @@ class WorkerManager:
   def _stop_by_user(self):
     """Handles stopping of the runtime by a user."""
     if self._termination_notice_secs != 0:
-      print(termcolor.colored(
-          'User-requested termination. Asking workers to stop.', 'blue'))
+      print(
+          termcolor.colored(
+              'User-requested termination. Asking workers to stop.', 'blue'))
       print(termcolor.colored('Press CTRL+C to terminate immediately.', 'blue'))
     signal.signal(signal.SIGINT, lambda sig, frame: self._kill())
     self._stop()
@@ -210,17 +216,17 @@ class WorkerManager:
             label for label in self._active_workers
             if self._active_workers[label]
         ]
-        print(termcolor.colored(
-            f'Worker groups that did not terminate in time: {still_running}',
-            'red'))
+        print(
+            termcolor.colored(
+                f'Worker groups that did not terminate in time: {still_running}',
+                'red'))
       self._kill()
       return
-    if pending_secs < 0:
-      return
-    print(
-        termcolor.colored(f'Waiting for workers to stop for {pending_secs}s.',
-                          'blue'),
-        end='\r')
+    if pending_secs >= 0:
+      print(
+          termcolor.colored(f'Waiting for workers to stop for {pending_secs}s.',
+                            'blue'),
+          end='\r')
     self._stop_counter += 1
     for workers in self._active_workers.values():
       for worker in workers:
@@ -254,7 +260,9 @@ class WorkerManager:
           ctypes.c_long(threading.main_thread().ident),
           ctypes.py_object(SystemExit))
       assert res < 2, 'Exception raise failure'
-    signal.alarm(1)
+
+    if pending_secs >= 0:
+      signal.alarm(1)
 
   def _stop(self):
     """Requests all workers to stop and schedule delayed termination."""
@@ -284,16 +292,22 @@ class WorkerManager:
   def join(self):
     self.wait()
 
-  def wait(self, labels_to_wait_for: Optional[Sequence[Text]] = None,
-           raise_error=True, return_on_first_completed=False):
+  def wait(self,
+           labels_to_wait_for: Optional[Sequence[Text]] = None,
+           raise_error=True,
+           propagate_system_exit=False,
+           return_on_first_completed=False):
     """Waits for workers to finish.
 
     Args:
       labels_to_wait_for: If supplied, only wait for these groups' workers to
         finish. Wait for all workers otherwise.
       raise_error: Raise an exception upon any worker failure.
-      return_on_first_completed: Whether to return upon the first completed
-        (or failed) worker.
+      propagate_system_exit: Propagate SystemExit by stopping all the workers.
+        Used only if this WorkerManager is to be chained to the WorkerManager
+        created in the main thread.
+      return_on_first_completed: Whether to return upon the first completed (or
+        failed) worker.
 
     Raises:
       RuntimeError: if any worker raises an exception.
@@ -317,7 +331,8 @@ class WorkerManager:
           time.sleep(0.1)
         return
       except SystemExit:
-        return
+        if propagate_system_exit:
+          self._stop()
 
   def cleanup_after_test(self, test_case: absltest.TestCase):
     """Cleanups runtime after a test."""
