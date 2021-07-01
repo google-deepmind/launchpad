@@ -36,7 +36,6 @@ lp_cc_library(
     hdrs = ["router.h"],
     deps = [
         "//courier/handlers:interface",
-        "//courier/platform:logging",
         "//courier/serialization:serialization_cc_proto",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
@@ -52,8 +51,8 @@ lp_cc_library(
     name = "server",
     hdrs = ["server.h"],
     deps = [
-        "//courier:router",
-        "//courier:tf_serialize",
+        ":router",
+        ":tf_serialize",
         "//courier/platform/default:server",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
@@ -64,8 +63,8 @@ lp_cc_library(
     name = "server_hdr",
     hdrs = ["server.h"],
     deps = [
-        "//courier:router",
-        "//courier:tf_serialize",
+        ":router",
+        ":tf_serialize",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
     ],
