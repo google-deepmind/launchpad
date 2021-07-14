@@ -28,6 +28,9 @@ def launch_with_xterm(commands_to_launch):
 
   Args:
     commands_to_launch: An iterable of `CommandToLaunch` namedtuples.
+
+  Returns:
+    Worker manager that can be used to wait for a program execution to finish.
   """
   if not feature_testing.has_xterm():
     raise ValueError(
@@ -52,4 +55,6 @@ def launch_with_xterm(commands_to_launch):
     env = {}
     env.update(os.environ)
     env.update(command_to_launch.env_overrides)
-    manager.process_worker(command_to_launch.title, xterm_command_list, env=env)
+    manager.process_worker(
+        command_to_launch.title, xterm_command_list, env=env)
+  return manager

@@ -139,7 +139,7 @@ def launch_with_gnome_terminal(commands_to_launch, use_tabs=False):
       window)
 
   Returns:
-    A WorkerManager instance.
+    Worker manager that can be used to wait for a program execution to finish.
   """
   # The new server-client architecture of gnome-terminal removes several
   # extremely useful features. Relevant ones here are
@@ -190,8 +190,8 @@ def launch_with_gnome_terminal(commands_to_launch, use_tabs=False):
 
 
 def launch_with_gnome_terminal_windows(commands_to_launch):
-  launch_with_gnome_terminal(commands_to_launch, use_tabs=False)
+  return launch_with_gnome_terminal(commands_to_launch, use_tabs=False)
 
 
 def launch_with_gnome_terminal_tabs(commands_to_launch):
-  launch_with_gnome_terminal(commands_to_launch, use_tabs=True)
+  return launch_with_gnome_terminal(commands_to_launch, use_tabs=True)

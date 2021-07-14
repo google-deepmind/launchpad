@@ -35,6 +35,9 @@ def launch_in_current_terminal(commands_to_launch):
 
   Args:
     commands_to_launch: An iterable of `CommandToLaunch` namedtuples.
+
+  Returns:
+    Worker manager that can be used to wait for a program execution to finish.
   """
   manager = worker_manager.WorkerManager()
   atexit.register(manager.wait)
@@ -51,4 +54,5 @@ def launch_in_current_terminal(commands_to_launch):
          command_to_launch.command_as_list),
         env=env)
     manager.register_existing_process(command_to_launch.title, process.pid)
+  return manager
 

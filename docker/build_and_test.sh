@@ -19,7 +19,7 @@ set -e
 DEBUG_DOCKER=true
 CLEAN=false
 RELEASE=false
-PYTHON=3.8
+PYTHON=3.9
 TF_PACKAGE=tf-nightly
 REVERB_PACKAGE=dm-reverb-nightly
 

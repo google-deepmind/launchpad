@@ -23,7 +23,6 @@ from absl import logging
 import launchpad as lp
 
 
-
 def _sleep():
   try:
     while True:
@@ -65,9 +64,14 @@ def make_program() -> lp.Program:
 
 
 def main(_):
-  program = make_program()
-
-  lp.launch(program)  
+  for _ in range(3):
+    program = make_program()
+    controller = lp.launch(program)
+    if not controller:
+      logging.info('Waiting for program termination is not supported.')
+      return
+    controller.wait()
+    logging.info('Program finished.')
 
 
 if __name__ == '__main__':

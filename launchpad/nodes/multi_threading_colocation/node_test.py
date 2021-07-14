@@ -18,6 +18,7 @@
 import threading
 import time
 
+from absl import logging
 from absl.testing import absltest
 import courier
 import launchpad as lp
@@ -65,6 +66,7 @@ class NodeTest(absltest.TestCase):
         preemption_ok.set()
 
     def stopper():
+      logging.info('Stop program')
       lp.stop()
 
     program.add_node(

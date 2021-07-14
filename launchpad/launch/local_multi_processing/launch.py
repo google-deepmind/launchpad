@@ -56,5 +56,4 @@ def launch(program: lp_program.Program,
                                             nodes[0]._launch_context))
     
     # pytype: enable=wrong-arg-count
-
   return run_locally.run_commands_locally(commands, terminal)

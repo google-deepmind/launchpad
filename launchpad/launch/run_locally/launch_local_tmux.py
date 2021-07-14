@@ -70,6 +70,8 @@ def _launch_with_multiplex_session(commands_to_launch, session_name_prefix,
       however if another session exists the name will be uniquified by appending
       an incrementing counter.
     multiplexer : tmux or byobu
+  Returns:
+    Worker manager that can be used to wait for a program execution to finish.
   """
 
   # Make a new session with the unmodified name, if this fails add a suffix to
@@ -153,3 +155,4 @@ def _launch_with_multiplex_session(commands_to_launch, session_name_prefix,
   atexit.register(manager.wait)
   for pid in get_session_processes():
     manager.register_existing_process('tmux', pid)
+  return manager

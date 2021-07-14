@@ -32,6 +32,9 @@ def launch_and_output_to_files(commands_to_launch):
 
   Args:
     commands_to_launch: An iterable of `CommandToLaunch` namedtuples.
+
+  Returns:
+    Worker manager that can be used to wait for a program execution to finish.
   """
   titles = []
   manager = worker_manager.WorkerManager()
@@ -58,3 +61,4 @@ def launch_and_output_to_files(commands_to_launch):
       manager.process_worker(
           command_to_launch.title, command_to_launch.command_as_list,
           env=env, stdout=outfile, stderr=outfile)
+  return manager
