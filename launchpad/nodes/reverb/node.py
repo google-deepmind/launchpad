@@ -21,6 +21,7 @@ from typing import Any, Callable, Optional, Sequence
 from absl import logging
 from launchpad import address as lp_address
 from launchpad import context
+from launchpad.launch import worker_manager
 from launchpad.nodes import base
 from launchpad.nodes.python import node as python
 import reverb
@@ -89,7 +90,7 @@ class ReverbNode(python.PyNode):
         tables=priority_tables,
         port=lp_address.get_port_from_address(self._address.resolve()),
         checkpointer=checkpointer)
-    self._server.wait()
+    worker_manager.wait_for_stop()
 
   @staticmethod
   def to_executables(nodes: Sequence['ReverbNode'], label: str,
