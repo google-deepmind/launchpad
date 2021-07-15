@@ -79,6 +79,7 @@ class WorkerManager:
       daemon_workers: Start thread worker processes as daemons.
       register_signals: Whether or not to register signal handlers.
     """
+    self._mutex = threading.Lock()
     self._active_workers = collections.defaultdict(list)
     self._workers_count = collections.defaultdict(lambda: 0)
     self._first_failure = None
@@ -131,24 +132,28 @@ class WorkerManager:
       name: Name of the worker group.
       function: Entrypoint function to execute in a worker.
     """
-    future = futures.Future()
+    with self._mutex:
+      future = futures.Future()
 
-    def run_inner(f=function, future=future, manager=self):
-      _WORKER_MANAGERS.manager = manager
-      try:
-        future.set_result(f())
-      except Exception as e:  
-        future.set_exception(e)
+      def run_inner(f=function, future=future, manager=self):
+        _WORKER_MANAGERS.manager = manager
+        try:
+          future.set_result(f())
+        except Exception as e:  
+          future.set_exception(e)
 
-    builder = lambda t, n: threading.Thread(target=t, name=n)
-    thread = builder(run_inner, name)
-    if self._daemon_workers:
-      thread.setDaemon(True)
+      builder = lambda t, n: threading.Thread(target=t, name=n)
+      thread = builder(run_inner, name)
+      if self._daemon_workers:
+        thread.setDaemon(True)
 
-    thread.start()
-    self._workers_count[name] += 1
-    self._active_workers[name].append(
-        ThreadWorker(thread=thread, future=future))
+      thread.start()
+      self._workers_count[name] += 1
+      worker = ThreadWorker(thread=thread, future=future)
+      self._active_workers[name].append(worker)
+      if self._stop_event.is_set():
+        # Runtime is terminating, so notify the worker.
+        self._send_exception(worker)
 
   def process_worker(self, name, command, env=None, **kwargs):
     """Adds process worker to the runtime.
@@ -159,9 +164,10 @@ class WorkerManager:
       env: Environment variables to set for the worker.
       **kwargs: Other parameters to be passed to `subprocess.Popen`.
     """
-    process = subprocess.Popen(command, env=env or {}, **kwargs)  
-    self._workers_count[name] += 1
-    self._active_workers[name].append(process)
+    with self._mutex:
+      process = subprocess.Popen(command, env=env or {}, **kwargs)  
+      self._workers_count[name] += 1
+      self._active_workers[name].append(process)
 
   def register_existing_process(self, name: str, pid: int):
     """Registers already started worker process.
@@ -170,8 +176,9 @@ class WorkerManager:
       name: Name of the workers' group.
       pid: Pid of the process to monitor.
     """
-    self._workers_count[name] += 1
-    self._active_workers[name].append(psutil.Process(pid))
+    with self._mutex:
+      self._workers_count[name] += 1
+      self._active_workers[name].append(psutil.Process(pid))
 
   def _stop_by_user(self):
     """Handles stopping of the runtime by a user."""
@@ -207,6 +214,12 @@ class WorkerManager:
     if kill_self:
       self._kill_process_tree(os.getpid())
 
+  def _send_exception(self, worker):
+    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+        ctypes.c_long(worker.thread.ident),
+        ctypes.py_object(SystemExit))
+    assert res < 2, 'Exception raise failure'
+
   def _stop_or_kill(self):
     """Stops all workers; kills them if they don't stop on time."""
     pending_secs = self._termination_notice_secs - self._stop_counter
@@ -232,10 +245,7 @@ class WorkerManager:
       for worker in workers:
         if isinstance(worker, ThreadWorker):
           if self._stop_counter == 1:
-            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
-                ctypes.c_long(worker.thread.ident),
-                ctypes.py_object(SystemExit))
-            assert res < 2, 'Exception raise failure'
+            self._send_exception(worker)
         elif isinstance(worker, subprocess.Popen):
           worker.send_signal(signal.SIGTERM)
         else:
@@ -270,7 +280,7 @@ class WorkerManager:
       # Only main thread can register SIGALARM, so perform stopping there.
       psutil.Process(os.getpid()).send_signal(signal.SIGTERM)
       return
-    if self._stop_counter == 0:
+    if not self._stop_event.is_set():
       self._stop_event.set()
       if self._termination_notice_secs > 0:
         self._alarm_enabled = True
@@ -286,7 +296,8 @@ class WorkerManager:
 
   def stop_and_wait(self):
     """Requests stopping all workers and wait for termination."""
-    self._stop()
+    with self._mutex:
+      self._stop()
     self.wait(raise_error=False)
 
   def join(self):
@@ -316,18 +327,19 @@ class WorkerManager:
       try:
         active_workers = True
         while active_workers:
-          self._check_workers()
-          active_workers = False
-          if self._first_failure and raise_error:
-            failure = self._first_failure
-            self._first_failure = None
-            raise failure
-          for label in labels_to_wait_for or self._active_workers.keys():
-            if self._active_workers[label]:
-              active_workers = True
-            if (return_on_first_completed and
-                len(self._active_workers[label]) < self._workers_count[label]):
-              return
+          with self._mutex:
+            self._check_workers()
+            active_workers = False
+            if self._first_failure and raise_error:
+              failure = self._first_failure
+              self._first_failure = None
+              raise failure
+            for label in labels_to_wait_for or self._active_workers.keys():
+              if self._active_workers[label]:
+                active_workers = True
+              if (return_on_first_completed and len(self._active_workers[label])
+                  < self._workers_count[label]):
+                return
           time.sleep(0.1)
         return
       except SystemExit:
@@ -336,10 +348,12 @@ class WorkerManager:
 
   def cleanup_after_test(self, test_case: absltest.TestCase):
     """Cleanups runtime after a test."""
-    self._check_workers()
-    self._stop()
+    with self._mutex:
+      self._check_workers()
+      self._stop()
     self.wait(raise_error=False)
-    test_case.assertIsNone(self._first_failure)
+    with self._mutex:
+      test_case.assertIsNone(self._first_failure)
 
   def _check_workers(self):
     """Checks status of running workers, terminate runtime in case of errors."""
