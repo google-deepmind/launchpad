@@ -80,12 +80,18 @@ class MultiThreadingColocation(python.PyNode):
         daemon_workers=True)
     group_name = f'coloc_{id(self)}'
 
-    for n in self._nodes:
-      n._launch_context = self._launch_context  
-      manager.thread_worker(group_name, n.function)
-    manager.wait(
-        [group_name],
-        return_on_first_completed=self._return_on_first_completed,
-        raise_error=True,  # Any error from the inner threads will surface.
-        propagate_system_exit=True  # `lp.stop()` propagetes to inner threads.
-    )
+    try:
+      for n in self._nodes:
+        n._launch_context = self._launch_context  
+        manager.thread_worker(group_name, n.function)
+      manager.wait(
+          [group_name],
+          return_on_first_completed=self._return_on_first_completed,
+          raise_error=True,  # Any error from the inner threads will surface.
+          propagate_system_exit=True  # `lp.stop()` propagetes to inner threads.
+      )
+    except SystemExit:
+      # It's necessary to catch SystemExit, because it could happen before
+      # manager.wait(), resulting in SystemExit not propagating to inner
+      # threads.
+      manager._stop()  
