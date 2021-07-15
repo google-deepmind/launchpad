@@ -18,7 +18,6 @@
 import threading
 import time
 
-from absl import logging
 from absl.testing import absltest
 import courier
 import launchpad as lp
@@ -56,17 +55,19 @@ class NodeTest(absltest.TestCase):
 
   def test_preemption(self):
     program = lp.Program('test')
+    ready_to_preempt = threading.Event()
     preemption_ok = threading.Event()
 
     def node():
       try:
+        ready_to_preempt.set()
         while True:
           time.sleep(0.1)
       except SystemExit:
         preemption_ok.set()
 
     def stopper():
-      logging.info('Stop program')
+      ready_to_preempt.wait()
       lp.stop()
 
     program.add_node(
