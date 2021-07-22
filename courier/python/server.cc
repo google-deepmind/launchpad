@@ -31,7 +31,9 @@ PYBIND11_MODULE(server, m) {
 
   py::class_<Server>(m, "Server")
       .def("Join", &Server::Join, py::call_guard<py::gil_scoped_release>())
-      .def("Stop", &Server::Stop, py::call_guard<py::gil_scoped_release>());
+      .def("Stop", &Server::Stop, py::call_guard<py::gil_scoped_release>())
+      .def("SetIsHealthy", &Server::SetIsHealthy,
+           py::call_guard<py::gil_scoped_release>());
 }
 
 }  // namespace

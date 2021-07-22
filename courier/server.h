@@ -62,6 +62,13 @@ class Server {
   // Join is thread-safe and may be called repeatedly.
   virtual absl::Status Join() = 0;
 
+  // Updates the RPC server's health status. An unhealthy server still accepts
+  // requests but prefers not to serve. This is particularly useful when
+  // load-balancing requests over several servers. See
+  // https://github.com/grpc/grpc/blob/master/doc/health-checking.md for more
+  // information.
+  virtual void SetIsHealthy(bool is_healthy) = 0;
+
   // Constructs Courier server.
   static absl::StatusOr<std::unique_ptr<Server>> BuildAndStart(
       Router* router, int port, int thread_pool_size = 16);

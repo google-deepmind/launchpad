@@ -97,6 +97,27 @@ class Server:
   def Unbind(self, method_name):
     self._router.Unbind(method_name)
 
+  def SetIsHealthy(self, is_healthy):
+    """Changes the health status of the server.
+
+    A server, which reports as unhealthy still accepts and serves incoming
+    requests, but it prefers not to receive any. This is useful in the following
+    scenarios:
+     - Before the server is terminated, it starts reporting as unhealthy. This
+       lets clients know not to send any further requests to this server.
+     - When load-balancing requests over several servers and this server is
+       experiencing problems (e.g. high disk latency). This lets the
+       load-balancer know not to send any traffic until the problems have been
+       resolved.
+
+    Args:
+      is_healthy: A boolean that indicates whether or not the server reports as
+        healthy.
+    """
+    if not self._server:
+      raise ValueError('Cannot set health status; server not started.')
+    self._server.SetIsHealthy(is_healthy)
+
   @property
   def has_started(self):
     """Returns True if the method `Start` has already been called.

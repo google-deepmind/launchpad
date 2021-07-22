@@ -55,7 +55,7 @@ class ServerImpl : public Server {
     return absl::OkStatus();
   }
 
-  absl::Status Stop() {
+  absl::Status Stop() override {
     if (grpc_server_) {
       grpc_server_->Shutdown();
       LOG(INFO) << "Courier server on port " << port_ << " shutting down.";
@@ -63,10 +63,15 @@ class ServerImpl : public Server {
     return absl::OkStatus();
   }
 
-  absl::Status Join() {
+  absl::Status Join() override {
     COURIER_CHECK(grpc_server_ != nullptr);
     grpc_server_->Wait();
     return absl::OkStatus();
+  }
+
+  void SetIsHealthy(bool is_healthy) override {
+    COURIER_CHECK(grpc_server_ != nullptr);
+    grpc_server_->GetHealthCheckService()->SetServingStatus(is_healthy);
   }
 
  private:
