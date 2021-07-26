@@ -46,7 +46,7 @@ def launch(program, test_case: Optional[absltest.TestCase] = None):
 
 
 
-  manager = worker_manager.WorkerManager(daemon_workers=not test_case)
+  manager = worker_manager.WorkerManager()
   if test_case is not None:
     test_case.addCleanup(manager.cleanup_after_test, test_case)
 

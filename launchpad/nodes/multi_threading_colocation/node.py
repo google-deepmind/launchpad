@@ -76,8 +76,7 @@ class MultiThreadingColocation(python.PyNode):
     manager = worker_manager.WorkerManager(
         termination_notice_secs=-1,  # Make sure this doesn't send SIGKILL.
         handle_user_stop=False,
-        register_signals=False,
-        daemon_workers=True)
+        register_signals=False)
     group_name = f'coloc_{id(self)}'
 
     try:

@@ -62,7 +62,6 @@ class WorkerManager:
       kill_main_thread=True,
       register_in_thread=False,
       handle_user_stop=True,
-      daemon_workers=False,
       register_signals=None):
     """Initializes a WorkerManager.
 
@@ -76,7 +75,6 @@ class WorkerManager:
         same process.
       register_in_thread: TODO
       handle_user_stop: TODO
-      daemon_workers: Start thread worker processes as daemons.
       register_signals: Whether or not to register signal handlers.
     """
     self._mutex = threading.Lock()
@@ -89,7 +87,6 @@ class WorkerManager:
     self._kill_main_thread = kill_main_thread
     self._stop_event = threading.Event()
     self._handle_user_stop = handle_user_stop
-    self._daemon_workers = daemon_workers
     self._main_thread = threading.current_thread().ident
     if register_signals is None:
       register_signals = True
@@ -144,8 +141,7 @@ class WorkerManager:
 
       builder = lambda t, n: threading.Thread(target=t, name=n)
       thread = builder(run_inner, name)
-      if self._daemon_workers:
-        thread.setDaemon(True)
+      thread.setDaemon(True)
 
       thread.start()
       self._workers_count[name] += 1

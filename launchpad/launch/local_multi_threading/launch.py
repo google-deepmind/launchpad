@@ -53,7 +53,6 @@ def thread_handler(program):
   """Runs the threads and wraps them in Worker Manager."""
 
   manager = worker_manager.WorkerManager(
-      daemon_workers=True,
   )
   for label, nodes in program.groups.items():
     # to_executables() is a static method, so we can call it from any of the
