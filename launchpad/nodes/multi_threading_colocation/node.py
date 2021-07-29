@@ -87,7 +87,6 @@ class MultiThreadingColocation(python.PyNode):
           [group_name],
           return_on_first_completed=self._return_on_first_completed,
           raise_error=True,  # Any error from the inner threads will surface.
-          propagate_system_exit=True  # `lp.stop()` propagetes to inner threads.
       )
     except SystemExit:
       # It's necessary to catch SystemExit, because it could happen before

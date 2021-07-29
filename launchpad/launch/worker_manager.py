@@ -62,7 +62,7 @@ class WorkerManager:
       kill_main_thread=True,
       register_in_thread=False,
       handle_user_stop=True,
-      register_signals=None):
+      register_signals=True):
     """Initializes a WorkerManager.
 
     Args:
@@ -88,8 +88,6 @@ class WorkerManager:
     self._stop_event = threading.Event()
     self._handle_user_stop = handle_user_stop
     self._main_thread = threading.current_thread().ident
-    if register_signals is None:
-      register_signals = True
     self._old_sigterm = None
     self._old_sigquit = None
     if register_signals:
@@ -302,7 +300,6 @@ class WorkerManager:
   def wait(self,
            labels_to_wait_for: Optional[Sequence[Text]] = None,
            raise_error=True,
-           propagate_system_exit=False,
            return_on_first_completed=False):
     """Waits for workers to finish.
 
@@ -310,9 +307,6 @@ class WorkerManager:
       labels_to_wait_for: If supplied, only wait for these groups' workers to
         finish. Wait for all workers otherwise.
       raise_error: Raise an exception upon any worker failure.
-      propagate_system_exit: Propagate SystemExit by stopping all the workers.
-        Used only if this WorkerManager is to be chained to the WorkerManager
-        created in the main thread.
       return_on_first_completed: Whether to return upon the first completed (or
         failed) worker.
 
@@ -339,8 +333,7 @@ class WorkerManager:
           time.sleep(0.1)
         return
       except SystemExit:
-        if propagate_system_exit:
-          self._stop()
+        self._stop()
 
   def cleanup_after_test(self, test_case: absltest.TestCase):
     """Cleanups runtime after a test."""
