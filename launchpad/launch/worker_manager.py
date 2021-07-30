@@ -63,12 +63,16 @@ class WorkerManager:
   def __init__(
       self,
       stop_main_thread=False,
+      kill_main_thread=True,
       register_in_thread=False,
       register_signals=True):
     """Initializes a WorkerManager.
 
     Args:
       stop_main_thread: Should main thread be notified about termination.
+      kill_main_thread: When set to false try not to kill the launcher while
+        killing workers. This is not possible when thread workers run in the
+        same process.
       register_in_thread: TODO
       register_signals: Whether or not to register signal handlers.
     """
@@ -87,6 +91,7 @@ class WorkerManager:
     self._first_failure = None
     self._stop_counter = 0
     self._alarm_enabled = False
+    self._kill_main_thread = kill_main_thread
     self._stop_event = threading.Event()
     self._main_thread = threading.current_thread().ident
     self._old_sigterm = None
@@ -196,13 +201,18 @@ class WorkerManager:
     parent.send_signal(signal.SIGKILL)
 
   def _kill(self):
-    """Kills all workers and main thread/process."""
+    """Kills all workers (and main thread/process if needed)."""
     print(termcolor.colored('\nKilling entire runtime.', 'blue'))
+    kill_self = self._kill_main_thread
     for workers in self._active_workers.values():
       for worker in workers:
-        if not isinstance(worker, ThreadWorker):
+        if isinstance(worker, ThreadWorker):
+          # Not possible to kill a thread without killing the process.
+          kill_self = True
+        else:
           self._kill_process_tree(worker.pid)
-    self._kill_process_tree(os.getpid())
+    if kill_self:
+      self._kill_process_tree(os.getpid())
 
   def _send_exception(self, worker):
     res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
