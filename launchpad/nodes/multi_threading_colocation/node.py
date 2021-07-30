@@ -74,7 +74,6 @@ class MultiThreadingColocation(python.PyNode):
     if not self._nodes:
       raise ValueError('MultiThreadingColocation requires at least one node.')
     manager = worker_manager.WorkerManager(
-        termination_notice_secs=-1,  # Make sure this doesn't send SIGKILL.
         register_signals=False)
     group_name = f'coloc_{id(self)}'
 

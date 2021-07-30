@@ -25,9 +25,13 @@ import threading
 import time
 from typing import Optional, Sequence, Text
 
+from absl import flags
 from absl.testing import absltest
+from launchpad import flags as lp_flags  
 import psutil
 import termcolor
+
+FLAGS = flags.FLAGS
 
 ThreadWorker = collections.namedtuple('ThreadWorker', ['thread', 'future'])
 
@@ -58,26 +62,24 @@ class WorkerManager:
 
   def __init__(
       self,
-      termination_notice_secs=10,
       stop_main_thread=False,
       register_in_thread=False,
       register_signals=True):
     """Initializes a WorkerManager.
 
     Args:
-      termination_notice_secs: Send termination notice that many seconds before
-        hard termination. Set to 0 to trigger hard termination righ away (skip
-        termination notice), set to negative value to disable hard termination.
       stop_main_thread: Should main thread be notified about termination.
       register_in_thread: TODO
       register_signals: Whether or not to register signal handlers.
     """
     self._mutex = threading.Lock()
+    self._termination_notice_secs = -1
     handle_user_stop = False
     global _HAS_MAIN_MANAGER
     # Make the first created worker manager the main manager, which handles
     # signals.
     if not _HAS_MAIN_MANAGER:
+      self._termination_notice_secs = FLAGS.lp_termination_notice_secs
       handle_user_stop = True
       _HAS_MAIN_MANAGER = True
     self._active_workers = collections.defaultdict(list)
@@ -85,7 +87,6 @@ class WorkerManager:
     self._first_failure = None
     self._stop_counter = 0
     self._alarm_enabled = False
-    self._termination_notice_secs = termination_notice_secs
     self._stop_event = threading.Event()
     self._main_thread = threading.current_thread().ident
     self._old_sigterm = None

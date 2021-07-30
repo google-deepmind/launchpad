@@ -33,6 +33,11 @@ flags.DEFINE_enum(
     _DEFAULT_LAUNCH_TYPE, [t.value for t in context.LaunchType],
     'How to launch a Launchpad program when launch() is called',
     allow_override=True)
+flags.DEFINE_integer(
+    'lp_termination_notice_secs', 10,
+    'Send termination notice to all nodes that many seconds before hard '
+    'termination. Set to 0 to trigger hard termination righ away (skip '
+    'termination notice), set to negative value to disable hard termination.')
 flags.DEFINE_string('tmux_open_window', None,
                     'Window in new Tmux session to switch to.')
 flags.DEFINE_string('tmux_session_name', 'launchpad',
