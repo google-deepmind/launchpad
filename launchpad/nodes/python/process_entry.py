@@ -81,8 +81,7 @@ def main(_):
   # preemption support.
   worker_manager.WorkerManager(
       register_in_thread=True,
-      stop_main_thread=True,
-      handle_user_stop=False)
+      stop_main_thread=True)
 
   with contextlib.suppress():  # no-op context manager
     functions[task_id]()

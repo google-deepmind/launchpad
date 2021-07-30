@@ -32,6 +32,7 @@ import termcolor
 ThreadWorker = collections.namedtuple('ThreadWorker', ['thread', 'future'])
 
 _WORKER_MANAGERS = threading.local()
+_HAS_MAIN_MANAGER = False
 
 
 def get_worker_manager():
@@ -61,7 +62,6 @@ class WorkerManager:
       stop_main_thread=False,
       kill_main_thread=True,
       register_in_thread=False,
-      handle_user_stop=True,
       register_signals=True):
     """Initializes a WorkerManager.
 
@@ -74,10 +74,16 @@ class WorkerManager:
         killing workers. This is not possible when thread workers run in the
         same process.
       register_in_thread: TODO
-      handle_user_stop: TODO
       register_signals: Whether or not to register signal handlers.
     """
     self._mutex = threading.Lock()
+    handle_user_stop = False
+    global _HAS_MAIN_MANAGER
+    # Make the first created worker manager the main manager, which handles
+    # signals.
+    if not _HAS_MAIN_MANAGER:
+      handle_user_stop = True
+      _HAS_MAIN_MANAGER = True
     self._active_workers = collections.defaultdict(list)
     self._workers_count = collections.defaultdict(lambda: 0)
     self._first_failure = None
@@ -86,7 +92,6 @@ class WorkerManager:
     self._termination_notice_secs = termination_notice_secs
     self._kill_main_thread = kill_main_thread
     self._stop_event = threading.Event()
-    self._handle_user_stop = handle_user_stop
     self._main_thread = threading.current_thread().ident
     self._old_sigterm = None
     self._old_sigquit = None
