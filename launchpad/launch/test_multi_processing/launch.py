@@ -81,7 +81,7 @@ def launch(program: lp_program.Program,
       # Not to create to actual processes, in case of failures in this loop.
       process_handles[label] = []
 
-  manager = worker_manager.WorkerManager(kill_main_thread=False)
+  manager = worker_manager.WorkerManager()
   for label, commands in label_to_commands.items():
     for command in commands:
       env = {}
