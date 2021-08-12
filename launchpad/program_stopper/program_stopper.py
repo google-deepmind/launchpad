@@ -15,6 +15,7 @@
 
 """Stops a Launchpad program."""
 
+import functools
 import os
 import signal
 from typing import Union
@@ -22,6 +23,13 @@ from typing import Union
 from absl import logging
 
 from launchpad import context
+
+
+
+
+def _ask_launcher_for_termination(launcher_process_id, mark_as_completed=False):
+  del mark_as_completed
+  os.kill(launcher_process_id, signal.SIGTERM)
 
 
 def make_program_stopper(launch_type: Union[str, context.LaunchType]):
@@ -41,12 +49,6 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
       context.LaunchType.TEST_MULTI_PROCESSING,
       context.LaunchType.TEST_MULTI_THREADING
   ]:
-    launcher_process_id = os.getpid()
-
-    def ask_launcher_for_termination(mark_as_completed=False):
-      del mark_as_completed
-      os.kill(launcher_process_id, signal.SIGTERM)
-
-    return ask_launcher_for_termination
+    return functools.partial(_ask_launcher_for_termination, os.getpid())
 
   raise NotImplementedError(f'{launch_type} is not yet supported.')
