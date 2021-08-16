@@ -363,8 +363,8 @@ absl::StatusOr<PyArrayObject*> DeserializeByteArray(PyArrayObject* array) {
     auto in_item = PyArray_ToScalar(in_iter->dataptr, in_iter->ao);
     COURIER_RET_CHECK(in_item != nullptr);
 
-    auto out_item = MakeSafePyPtr(
-        PyUnicode_FromEncodedObject(in_item, nullptr, nullptr));
+    auto out_item =
+        MakeSafePyPtr(PyUnicode_FromEncodedObject(in_item, nullptr, nullptr));
     COURIER_RET_CHECK(out_item != nullptr)
         << "Failed to convert bytes object to unicode.";
 
@@ -442,6 +442,15 @@ absl::Status SerializePyObject(PyObject* object, SerializedObject* buffer) {
       COURIER_RETURN_IF_ERROR(SerializePyObject(key, dict->add_keys()));
       COURIER_RETURN_IF_ERROR(SerializePyObject(value, dict->add_values()));
     }
+  } else if (PyDictKeys_Check(object)) {
+    return absl::InvalidArgumentError(
+        "Serializing Python dict keys is not supported.");
+  } else if (PyDictItems_Check(object)) {
+    return absl::InvalidArgumentError(
+        "Serializing Python dict items is not supported.");
+  } else if (PyDictValues_Check(object)) {
+    return absl::InvalidArgumentError(
+        "Serializing Python dict values is not supported.");
   } else if (PyType_Check(object) || PyFunction_Check(object) ||
              PyCFunction_Check(object)) {
     COURIER_RETURN_IF_ERROR(PyClassModuleAndName(
