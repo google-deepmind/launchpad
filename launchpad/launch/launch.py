@@ -64,6 +64,12 @@ def launch(
   Returns:
     Anything returns from the specific launcher.
   """
+
+  # Make sure that flags are parsed before launching the program. Not all users
+  # parse the flags.
+  if not FLAGS.is_parsed():
+    FLAGS(sys.argv, known_only=True)
+
   launch_type = launch_type or FLAGS.lp_launch_type
   if isinstance(launch_type, str):
     launch_type = context.LaunchType(launch_type)
