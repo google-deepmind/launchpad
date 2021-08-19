@@ -53,7 +53,7 @@ lp_cc_library(
     deps = [
         ":router",
         ":tf_serialize",
-        "//courier/platform/default:server",
+        "//courier/platform/default:server",  # buildcleaner: keep
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
     ],
