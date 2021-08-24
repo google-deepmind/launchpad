@@ -116,17 +116,6 @@ lp_cc_library(
 )
 
 lp_cc_library(
-    name = "testutil",
-    testonly = 1,
-    srcs = ["testutil.cc"],
-    hdrs = ["testutil.h"],
-    deps = [
-        ":address_interceptor",
-        "//courier/platform:logging",
-    ],
-)
-
-lp_cc_library(
     name = "address_interceptor",
     srcs = ["address_interceptor.cc"],
     hdrs = ["address_interceptor.h"],

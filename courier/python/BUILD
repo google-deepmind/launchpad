@@ -16,18 +16,6 @@ lp_pybind_extension(
 )
 
 lp_pybind_extension(
-    name = "testutil",
-    testonly = 1,
-    srcs = ["testutil.cc"],
-    deps = [
-        "//courier:testutil",
-        "@pybind11",
-        "@pybind11_abseil//pybind11_abseil:absl_casters",
-        "@pybind11_abseil//pybind11_abseil:status_casters",
-    ],
-)
-
-lp_pybind_extension(
     name = "server",
     srcs = ["server.cc"],
     deps = [
