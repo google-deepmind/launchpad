@@ -140,7 +140,7 @@ class WorkerManager:
         _WORKER_MANAGERS.manager = manager
         try:
           future.set_result(f())
-        except Exception as e:  
+        except BaseException as e:  
           future.set_exception(e)
 
       builder = lambda t, n: threading.Thread(target=t, name=n)
@@ -363,7 +363,7 @@ class WorkerManager:
             if not self._stop_counter:
               try:
                 worker.future.result()
-              except Exception as e:  
+              except BaseException as e:  
                 if not self._first_failure and not self._stop_counter:
                   self._first_failure = e
             active = False
