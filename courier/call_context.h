@@ -15,9 +15,9 @@
 #ifndef COURIER_CALL_CONTEXT_H_
 #define COURIER_CALL_CONTEXT_H_
 
-#include "grpcpp/grpcpp.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
+#include "grpcpp/grpcpp.h"
 
 namespace courier {
 

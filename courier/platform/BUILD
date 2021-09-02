@@ -34,9 +34,7 @@ lp_cc_library(
 lp_cc_library(
     name = "client_monitor_hdr",
     hdrs = ["client_monitor.h"],
-    deps = [
-        "@com_github_grpc_grpc//:grpc++",
-    ],
+    deps = ["@com_github_grpc_grpc//:grpc++"],
 )
 
 lp_cc_library(

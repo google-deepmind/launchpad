@@ -23,7 +23,6 @@
 #include <utility>
 #include <vector>
 
-#include "grpcpp/grpcpp.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
@@ -31,6 +30,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
+#include "grpcpp/grpcpp.h"
 #include "courier/call_context.h"
 #include "courier/courier_service.grpc.pb.h"
 #include "courier/courier_service.pb.h"

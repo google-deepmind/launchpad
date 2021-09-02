@@ -18,9 +18,9 @@
 #include <memory>
 #include <vector>
 
-#include "grpcpp/server_context.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/synchronization/mutex.h"
+#include "grpcpp/server_context.h"
 #include "courier/courier_service.grpc.pb.h"
 #include "courier/courier_service.pb.h"
 #include "courier/router.h"
