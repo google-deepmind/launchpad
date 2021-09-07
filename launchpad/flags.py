@@ -38,6 +38,10 @@ flags.DEFINE_integer(
     'Send termination notice to all nodes that many seconds before hard '
     'termination. Set to 0 to trigger hard termination righ away (skip '
     'termination notice), set to negative value to disable hard termination.')
+flags.DEFINE_bool(
+    'lp_worker_manager_registers_signals', True,
+    'Whether or not WorkerManager should register signals. This overrides the '
+    'register_signals argument in WorkerManager constructor.')
 flags.DEFINE_string('tmux_open_window', None,
                     'Window in new Tmux session to switch to.')
 flags.DEFINE_string('tmux_session_name', 'launchpad',

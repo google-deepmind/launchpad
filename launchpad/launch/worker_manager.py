@@ -26,10 +26,12 @@ import time
 from typing import Optional, Sequence, Text
 
 from absl import flags
+from absl import logging
 from absl.testing import absltest
 from launchpad import flags as lp_flags  
 import psutil
 import termcolor
+
 
 FLAGS = flags.FLAGS
 
@@ -96,9 +98,12 @@ class WorkerManager:
     self._main_thread = threading.current_thread().ident
     self._old_sigterm = None
     self._old_sigquit = None
-    if register_signals:
+
+    if register_signals and FLAGS.lp_worker_manager_registers_signals:
       self._old_sigterm = signal.signal(signal.SIGTERM, self._sigterm)
       self._old_sigquit = signal.signal(signal.SIGQUIT, self._sigquit)
+    else:
+      logging.info('NOT registering signal handlers in WorkerManager.')
     if handle_user_stop:
       signal.signal(signal.SIGINT, lambda sig, frame: self._stop_by_user())
     self._stop_main_thread = stop_main_thread
