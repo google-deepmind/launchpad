@@ -15,8 +15,6 @@
 
 """Launchpad integration test for the consumer_producers example."""
 
-import sys
-
 from absl.testing import absltest
 import launchpad as lp
 from launchpad.examples.consumer_producers import launch
@@ -46,8 +44,6 @@ class LaunchTest(absltest.TestCase):
     # able to take 10 steps.
     for _ in range(10):
       consumer.step()
-    # Make sure executing lp.launch doesn't import excesive number of modules.
-    self.assertLess(len(sys.modules), 2500)
 
 
 if __name__ == '__main__':
