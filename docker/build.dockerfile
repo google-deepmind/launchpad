@@ -1,4 +1,4 @@
-ARG cpu_base_image="tensorflow/tensorflow:2.2.0-custom-op-ubuntu16"
+ARG cpu_base_image="tensorflow/tensorflow:2.5.0-custom-op-ubuntu16"
 ARG base_image=$cpu_base_image
 FROM $base_image
 
@@ -62,9 +62,9 @@ RUN for version in ${python_version}; do \
 RUN rm get-pip.py
 
 # Needed until this is included in the base TF image.
-RUN ln -s "/usr/include/x86_64-linux-gnu/python3.8" "/dt7/usr/include/x86_64-linux-gnu/python3.8"
-RUN ln -s "/usr/include/x86_64-linux-gnu/python3.8" "/dt8/usr/include/x86_64-linux-gnu/ppython3.8"
-RUN ln -s "/usr/include/x86_64-linux-gnu/python3.9" "/dt7/usr/include/x86_64-linux-gnu/python3.9"
-RUN ln -s "/usr/include/x86_64-linux-gnu/python3.9" "/dt8/usr/include/x86_64-linux-gnu/ppython3.9"
+RUN ln -s -f "/usr/include/x86_64-linux-gnu/python3.8" "/dt7/usr/include/x86_64-linux-gnu/python3.8"
+RUN ln -s -f "/usr/include/x86_64-linux-gnu/python3.8" "/dt8/usr/include/x86_64-linux-gnu/ppython3.8"
+RUN ln -s -f "/usr/include/x86_64-linux-gnu/python3.9" "/dt7/usr/include/x86_64-linux-gnu/python3.9"
+RUN ln -s -f "/usr/include/x86_64-linux-gnu/python3.9" "/dt8/usr/include/x86_64-linux-gnu/ppython3.9"
 
 CMD ["/bin/bash"]
