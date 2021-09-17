@@ -1,4 +1,4 @@
-ARG cpu_base_image="tensorflow/tensorflow:2.5.0-custom-op-ubuntu16"
+ARG cpu_base_image="tensorflow/tensorflow:custom-op-ubuntu16"
 ARG base_image=$cpu_base_image
 FROM $base_image
 
@@ -22,8 +22,6 @@ RUN ${APT_COMMAND} update && ${APT_COMMAND} install -y --no-install-recommends \
         libzmq3-dev \
         lsof \
         pkg-config \
-        python3-dev \
-        python3.6-dev \
         python3.7-dev \
         python3.8-dev \
         python3.9-dev \
@@ -53,12 +51,10 @@ ARG pip_dependencies=' \
       pandas \
       portpicker'
 
-RUN for version in ${python_version}; do \
-    python$version get-pip.py && \
-    python$version -mpip uninstall -y tensorflow tensorflow-gpu tf-nightly tf-nightly-gpu && \
-    python$version -mpip --no-cache-dir install ${tensorflow_pip} --upgrade && \
-    python$version -mpip --no-cache-dir install $pip_dependencies; \
-  done
+RUN python$python_version get-pip.py
+RUN python$python_version -mpip --no-cache-dir install ${tensorflow_pip} --upgrade
+RUN python$python_version -mpip --no-cache-dir install $pip_dependencies
+
 RUN rm get-pip.py
 
 # Needed until this is included in the base TF image.
