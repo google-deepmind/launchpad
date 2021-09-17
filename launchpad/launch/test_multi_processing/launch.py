@@ -75,7 +75,7 @@ def launch(program: lp_program.Program,
     # pytype: disable=wrong-arg-count
     commands = nodes[0].to_executables(nodes, label, nodes[0]._launch_context)
     
-    # pytype: disable=wrong-arg-count
+    # pytype: enable=wrong-arg-count
     if commands:
       label_to_commands[label] = commands
       # Not to create to actual processes, in case of failures in this loop.
