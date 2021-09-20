@@ -15,15 +15,18 @@
 
 """Tests for launchpad.launch.test_multi_threading.launch."""
 
+import signal
 import threading
 import time
 
 from absl.testing import absltest
+
 from launchpad import context
 from launchpad import program as lp_program
 from launchpad.launch.test_multi_threading import launch
 from launchpad.nodes.python import node as python
 from launchpad.program_stopper import program_stopper
+import mock
 
 
 def _block():
@@ -36,6 +39,16 @@ def _stop(stopper):
 
 
 class LaunchTest(absltest.TestCase):
+
+  def setUp(self):
+    super().setUp()
+    self._sigterm_patcher = mock.patch.object(
+        signal, 'SIGTERM', new=signal.SIGUSR1)
+    self._sigterm_patcher.start()
+
+  def tearDown(self):
+    self._sigterm_patcher.stop()
+    super().tearDown()
 
   def test_one_py_node_program(self):
     has_run = threading.Event()

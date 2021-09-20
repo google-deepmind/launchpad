@@ -32,7 +32,6 @@ from launchpad import flags as lp_flags
 import psutil
 import termcolor
 
-
 FLAGS = flags.FLAGS
 
 ThreadWorker = collections.namedtuple('ThreadWorker', ['thread', 'future'])
@@ -45,6 +44,16 @@ def get_worker_manager():
   manager = getattr(_WORKER_MANAGERS, 'manager', None)
   assert manager, 'Worker manager is not available in the current thread'
   return manager
+
+
+def register_signal_handler(sig, handler):
+  """Registers a signal handler."""
+  return signal.signal(sig, handler)
+
+
+def remove_signal_handler(sig, handler):
+
+  return signal.signal(sig, handler)
 
 
 def wait_for_stop():
@@ -96,35 +105,39 @@ class WorkerManager:
     self._kill_main_thread = kill_main_thread
     self._stop_event = threading.Event()
     self._main_thread = threading.current_thread().ident
-    self._old_sigterm = None
-    self._old_sigquit = None
-
-    if register_signals and FLAGS.lp_worker_manager_registers_signals:
-      self._old_sigterm = signal.signal(signal.SIGTERM, self._sigterm)
-      self._old_sigquit = signal.signal(signal.SIGQUIT, self._sigquit)
-    else:
-      logging.info('NOT registering signal handlers in WorkerManager.')
+    self._sigterm_handler = None
+    self._sigquit_handler = None
+    self._sigalrm_handler = None
+    if register_signals:
+      self._sigterm_handler = register_signal_handler(signal.SIGTERM,
+                                                      self._sigterm)
+      self._sigquit_handler = register_signal_handler(signal.SIGQUIT,
+                                                      self._sigquit)
     if handle_user_stop:
-      signal.signal(signal.SIGINT, lambda sig, frame: self._stop_by_user())
+      register_signal_handler(
+          signal.SIGINT, lambda sig=None, frame=None: self._stop_by_user())
     self._stop_main_thread = stop_main_thread
     if register_in_thread:
       _WORKER_MANAGERS.manager = self
 
   def _disable_signals(self):
     self._disable_alarm()
-    if self._old_sigterm is not None:
-      signal.signal(signal.SIGTERM, self._old_sigterm)
-    if self._old_sigquit is not None:
-      signal.signal(signal.SIGQUIT, self._old_sigquit)
+    if self._sigterm_handler is not None:
+      remove_signal_handler(signal.SIGTERM, self._sigterm_handler)
+      self._sigterm_handler = None
+    if self._sigquit_handler is not None:
+      remove_signal_handler(signal.SIGQUIT, self._sigquit_handler)
+      self._sigquit_handler = None
 
-  def _sigterm(self, sig, frame):
-    if callable(self._old_sigterm):
-      self._old_sigterm(sig, frame)
+  def _sigterm(self, sig=None, frame=None):
+    """Handles SIGTERM by stopping the workers."""
+    if callable(self._sigterm_handler):
+      self._sigterm_handler(sig, frame)
     self._stop()
 
-  def _sigquit(self, sig, frame):
-    if callable(self._old_sigquit):
-      self._old_sigquit(sig, frame)
+  def _sigquit(self, sig=None, frame=None):
+    if callable(self._sigquit_handler):
+      self._sigquit_handler(sig, frame)
     self._kill()
 
   def wait_for_stop(self):
@@ -281,23 +294,28 @@ class WorkerManager:
 
   def _stop(self):
     """Requests all workers to stop and schedule delayed termination."""
-    if threading.current_thread().ident != self._main_thread:
-      # Only main thread can register SIGALARM, so perform stopping there.
-      psutil.Process(os.getpid()).send_signal(signal.SIGTERM)
-      return
     if not self._stop_event.is_set():
       self._stop_event.set()
+
+
+    try:
       if self._termination_notice_secs > 0:
         self._alarm_enabled = True
-        signal.signal(signal.SIGALRM, lambda s, f: self._stop_or_kill())
-        # assert old_sig == signal.SIG_DFL
-      self._stop_or_kill()
+        self._sigalrm_handler = register_signal_handler(
+            signal.SIGALRM, lambda sig=None, frame=None: self._stop_or_kill())
+    except ValueError:
+      # This happens when we attempt to register a signal handler but not in the
+      # main thread. Send a SIGTERM to redirect to the main thread.
+      psutil.Process(os.getpid()).send_signal(signal.SIGTERM)
+      return
+
+    self._stop_or_kill()
 
   def _disable_alarm(self):
     if self._alarm_enabled:
       self._alarm_enabled = False
       signal.alarm(0)
-      signal.signal(signal.SIGALRM, signal.SIG_DFL)
+      remove_signal_handler(signal.SIGALRM, self._sigalrm_handler)
 
   def stop_and_wait(self):
     """Requests stopping all workers and wait for termination."""
@@ -351,6 +369,7 @@ class WorkerManager:
     with self._mutex:
       self._check_workers()
       self._stop()
+      self._disable_signals()
     self.wait(raise_error=False)
     with self._mutex:
       test_case.assertIsNone(self._first_failure)
@@ -396,3 +415,6 @@ class WorkerManager:
       self._stop()
     elif not has_workers:
       self._disable_alarm()
+
+  def __del__(self):
+    self._disable_signals()

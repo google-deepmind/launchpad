@@ -16,18 +16,33 @@
 
 import os
 import signal
+import threading
 import time
 
 from absl.testing import absltest
+
 from launchpad.launch import worker_manager
+import mock
+
 
 
 class WorkerManagerTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
+    self._sigterm_patcher = mock.patch.object(
+        signal, 'SIGTERM', new=signal.SIGUSR1)
+    self._sigterm_patcher.start()
+    self._sigint_patcher = mock.patch.object(
+        signal, 'SIGINT', new=signal.SIGUSR2)
+    self._sigint_patcher.start()
     self._manager = worker_manager.WorkerManager()
     self.addCleanup(self._manager.cleanup_after_test, self)
+
+  def tearDown(self):
+    self._sigterm_patcher.stop()
+    self._sigint_patcher.stop()
+    super().tearDown()
 
   def test_wait_for_stop(self):
 
@@ -56,6 +71,7 @@ class WorkerManagerTest(absltest.TestCase):
     self._manager.thread_worker('worker', waiter)
     os.kill(os.getpid(), signal.SIGTERM)
 
+
   def test_stop_and_wait(self):
     def waiter():
       self._manager.wait_for_stop()
@@ -64,7 +80,6 @@ class WorkerManagerTest(absltest.TestCase):
     self._manager.thread_worker('worker2', waiter)
     self._manager.thread_worker('worker3', waiter)
     self._manager.stop_and_wait()
-    self._manager.cleanup_after_test(self)
 
   def test_failure_wait(self):
     def waiter():
