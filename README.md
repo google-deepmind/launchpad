@@ -108,11 +108,11 @@ Build the Docker container to be used for compiling and testing Launchpad.
 You can specify `tensorflow_pip` parameter to set the version
 of Tensorflow to build against. You can also specify which version(s) of Python
 container should support. The command below enables support for Python
-3.6, 3.7, 3.8 and 3.9.
+3.7, 3.8 and 3.9.
 ```
 $ docker build --tag launchpad:devel \
   --build-arg tensorflow_pip=tensorflow==2.3.0 \
-  --build-arg python_version="3.6 3.7 3.8 3.9" - < docker/build.dockerfile
+  --build-arg python_version="3.7 3.8 3.9" - < docker/build.dockerfile
 ```
 
 The next step is to enter the built Docker image, binding checked out
@@ -131,14 +131,14 @@ $ /tmp/launchpad/oss_build.sh
 By default it builds Python 3.8 version, you can change that with `--python`
 flag.
 ```
-$ /tmp/launchpad/oss_build.sh --python 3.6
+$ /tmp/launchpad/oss_build.sh --python 3.8
 ```
 
 To make sure installation was successful and Launchpad works as expected, you
 can run some examples provided:
 ```
-$ python3.6 -m launchpad.examples.hello_world.launch
-$ python3.6 -m launchpad.examples.consumer_producers.launch --lp_launch_type=local_mp
+$ python3.8 -m launchpad.examples.hello_world.launch
+$ python3.8 -m launchpad.examples.consumer_producers.launch --lp_launch_type=local_mp
 ```
 
 To make changes to Launchpad codebase, edit sources checked out from GitHub

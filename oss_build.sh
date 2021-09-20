@@ -21,7 +21,7 @@ set -o pipefail
 cd "$(dirname "$0")"
 
 # Flags
-PYTHON_VERSIONS=3.8 # Options 3.6, 3.7, 3.8, 3.9 (default)
+PYTHON_VERSIONS=3.8 # Options 3.7, 3.8, 3.9 (default)
 CLEAN=false # Set to true to run bazel clean.
 OUTPUT_DIR=/tmp/launchpad/dist/
 INSTALL=true # Should the built package be installed.
@@ -64,7 +64,7 @@ while [[ $# -gt -0 ]]; do
       echo "Unknown flag: $key"
       echo "Usage:"
       echo "--release [Indicates this is a release build. Otherwise nightly.]"
-      echo "--python  [3.6|3.7|3.8(default)|3.9]"
+      echo "--python  [3.7|3.8(default)|3.9]"
       echo "--clean   [true to run bazel clean]"
       echo "--install [true to install built package]"
       echo "--tf_package  [Required tensorflow version to pass to setup.py."
@@ -85,10 +85,7 @@ for python_version in $PYTHON_VERSIONS; do
     bazel clean
   fi
 
-  if [ "$python_version" = "3.6" ]; then
-    export PYTHON_BIN_PATH=/usr/bin/python3.6 && export PYTHON_LIB_PATH=/usr/local/lib/python3.6/dist-packages
-    ABI=cp36
-  elif [ "$python_version" = "3.7" ]; then
+  if [ "$python_version" = "3.7" ]; then
     export PYTHON_BIN_PATH=/usr/local/bin/python3.7 && export PYTHON_LIB_PATH=/usr/local/lib/python3.7/dist-packages
     ABI=cp37
   elif [ "$python_version" = "3.8" ]; then
@@ -98,7 +95,7 @@ for python_version in $PYTHON_VERSIONS; do
     export PYTHON_BIN_PATH=/usr/bin/python3.9 && export PYTHON_LIB_PATH=/usr/local/lib/python3.9/dist-packages
     ABI=cp39
   else
-    echo "Error unknown --python. Only [3.6|3.7|3.8|3.9]"
+    echo "Error unknown --python. Only [3.7|3.8|3.9]"
     exit 1
   fi
 

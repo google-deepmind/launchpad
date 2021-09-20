@@ -54,7 +54,7 @@ while [[ $# -gt -0 ]]; do
       echo "Unknown flag: $key"
       echo "Usage:"
       echo "--debug_docker [Enter the Docker image upon failure for debugging.]"
-      echo "--python  [3.6|3.7|3.8(default)]"
+      echo "--python  [3.7|3.8|3.9(default)]"
       echo "--clean   [true to run bazel clean]"
       echo "--release [true to build a release binary]"
       exit 1

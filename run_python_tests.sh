@@ -30,7 +30,7 @@ while [[ $# -gt -0 ]]; do
     *)
       echo "Unknown flag: $key"
       echo "Usage:"
-      echo "--python  [3.6|3.7|3.8(default)]"
+      echo "--python  [3.7|3.8|3.9(default)]"
       exit 1
       ;;
   esac
