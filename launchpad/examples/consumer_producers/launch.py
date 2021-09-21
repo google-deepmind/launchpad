@@ -101,7 +101,10 @@ def make_program(num_producers: int) -> lp.Program:
   return program
 
 
-def main(_):
+def main(argv):
+  if len(argv) > 1:
+    raise app.UsageError('Too many command-line arguments.')
+
   # Define a program which describes the topology of communicating nodes and
   # edges. In more involved examples, several programs can be defined and
   # launched at once.

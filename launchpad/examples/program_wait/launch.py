@@ -63,7 +63,9 @@ def make_program() -> lp.Program:
   return program
 
 
-def main(_):
+def main(argv):
+  if len(argv) > 1:
+    raise app.UsageError('Too many command-line arguments.')
   for _ in range(3):
     program = make_program()
     controller = lp.launch(program)
