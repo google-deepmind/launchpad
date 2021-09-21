@@ -24,8 +24,8 @@ from absl import logging
 import launchpad as lp
 
 
-FLAGS = flags.FLAGS
-flags.DEFINE_integer('num_producers', 2, 'The number of concurrent producers.')
+_NUM_PRODUCERS = flags.DEFINE_integer('num_producers', 2,
+                                      'The number of concurrent producers.')
 
 
 class Consumer:
@@ -108,7 +108,7 @@ def main(argv):
   # Define a program which describes the topology of communicating nodes and
   # edges. In more involved examples, several programs can be defined and
   # launched at once.
-  program = make_program(num_producers=FLAGS.num_producers)
+  program = make_program(num_producers=_NUM_PRODUCERS.value)
 
   # Note that at launch time, none of the producers has been instantiated.
   # Producers are instantiated only at runtime.
