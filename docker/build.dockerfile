@@ -51,9 +51,13 @@ ARG pip_dependencies=' \
       pandas \
       portpicker'
 
-RUN python$python_version get-pip.py
-RUN python$python_version -mpip --no-cache-dir install ${tensorflow_pip} --upgrade
-RUN python$python_version -mpip --no-cache-dir install $pip_dependencies
+RUN for version in ${python_version}; do \
+    python$version get-pip.py && \
+    # Replace TF version installed in the image by default with ${tensorflow_pip}
+    python$version -mpip uninstall -y tensorflow tensorflow-gpu tf-nightly tf-nightly-gpu && \
+    python$version -mpip --no-cache-dir install ${tensorflow_pip} --upgrade && \
+    python$version -mpip --no-cache-dir install $pip_dependencies; \
+  done
 
 RUN rm get-pip.py
 
