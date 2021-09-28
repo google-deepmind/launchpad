@@ -372,7 +372,8 @@ class WorkerManager:
       self._disable_signals()
     self.wait(raise_error=False)
     with self._mutex:
-      test_case.assertIsNone(self._first_failure)
+      if self._first_failure:
+        raise self._first_failure
 
   def _check_workers(self):
     """Checks status of running workers, terminate runtime in case of errors."""
