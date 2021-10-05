@@ -297,7 +297,6 @@ class WorkerManager:
     if not self._stop_event.is_set():
       self._stop_event.set()
 
-
     try:
       if self._termination_notice_secs > 0:
         self._alarm_enabled = True
