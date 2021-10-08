@@ -18,7 +18,6 @@
 from absl import flags
 
 from launchpad import context
-from launchpad.launch import worker_manager
 
 FLAGS = flags.FLAGS
 
@@ -26,8 +25,3 @@ FLAGS = flags.FLAGS
 def stop():
   """Terminates the entire experiment."""
   context.get_context().program_stopper()
-
-
-def wait_for_stop():
-  """Waits for program's termination/preemption signal."""
-  worker_manager.get_worker_manager().wait_for_stop()
