@@ -25,8 +25,8 @@ import launchpad as lp
 
 def _sleep():
   try:
-    while True:
-      time.sleep(1)
+    while not lp.wait_for_stop(1):
+      logging.info('Sleeping again...')
   except SystemExit:
     logging.info('Clean termination of _sleep node')
     time.sleep(2)
@@ -49,7 +49,7 @@ def _infinite_sleep():
 
 
 def _stop_program():
-  time.sleep(2)
+  time.sleep(4)
   lp.stop()
 
 

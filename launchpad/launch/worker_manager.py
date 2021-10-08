@@ -56,16 +56,32 @@ def remove_signal_handler(sig, handler):
   return signal.signal(sig, handler)
 
 
-def wait_for_stop():
-  """Blocks until termination of the node's program is requested.
+def wait_for_stop(timeout: Optional[float] = None):
+  """Blocks until termination of the node's program starts or timeout passes.
 
-    Can be used to perform cleanup at the end of the run, for example:
-      start_server()
-      lp.wait_for_stop()
-      stop_server()
-      checkpoint()
+  Args:
+    timeout: Floating point number specifying a timeout for the operation,
+        in seconds. If not provided, timeout is infinite.
+
+  Returns:
+    True if program is being terminated, False if timeout was reached.
+
+  Usage examples:
+  - Perform cleanup at the end of the run:
+    start_server()
+    lp.wait_for_stop()
+    stop_server()
+    checkpoint()
+
+  - Perform some work until program is terminated:
+    while not lp.wait_for_stop(0): # Return immediately.
+      ... do some work ...
+
+  - Perform some task every 5 seconds:
+    while not lp.wait_for_stop(5.0):
+      ... perform periodic task ...
   """
-  get_worker_manager().wait_for_stop()
+  get_worker_manager().wait_for_stop(timeout)
 
 
 class WorkerManager:
@@ -140,9 +156,9 @@ class WorkerManager:
       self._sigquit_handler(sig, frame)
     self._kill()
 
-  def wait_for_stop(self):
-    """Blocks until managed runtime is being terminated."""
-    self._stop_event.wait()
+  def wait_for_stop(self, timeout: Optional[float] = None):
+    """Blocks until managed runtime is terminating or timeout is reached."""
+    return self._stop_event.wait(timeout)
 
   def thread_worker(self, name, function):
     """Registers and start a new thread worker.

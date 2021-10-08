@@ -47,14 +47,27 @@ class WorkerManagerTest(absltest.TestCase):
   def test_wait_for_stop(self):
 
     def waiter():
-      self._manager.wait_for_stop()
+      self.assertTrue(self._manager.wait_for_stop())
 
     self._manager.thread_worker('worker', waiter)
     os.kill(os.getpid(), signal.SIGTERM)
 
+  def test_wait_for_stop_timeout(self):
+    checks_done = threading.Event()
+
+    def waiter():
+      self.assertFalse(self._manager.wait_for_stop(0))
+      self.assertFalse(self._manager.wait_for_stop(0.1))
+      checks_done.set()
+      self.assertTrue(self._manager.wait_for_stop(10))
+
+    self._manager.thread_worker('worker', waiter)
+    checks_done.wait()
+    os.kill(os.getpid(), signal.SIGTERM)
+
   def test_slow_termination(self):
     def waiter():
-      self._manager.wait_for_stop()
+      self.assertTrue(self._manager.wait_for_stop())
       time.sleep(1)
 
     self._manager.thread_worker('worker', waiter)
@@ -74,7 +87,7 @@ class WorkerManagerTest(absltest.TestCase):
 
   def test_stop_and_wait(self):
     def waiter():
-      self._manager.wait_for_stop()
+      self.assertTrue(self._manager.wait_for_stop())
 
     self._manager.thread_worker('worker1', waiter)
     self._manager.thread_worker('worker2', waiter)
@@ -83,7 +96,7 @@ class WorkerManagerTest(absltest.TestCase):
 
   def test_failure_wait(self):
     def waiter():
-      self._manager.wait_for_stop()
+      self.assertTrue(self._manager.wait_for_stop())
 
     def failure():
       raise Exception('Error')
@@ -97,7 +110,7 @@ class WorkerManagerTest(absltest.TestCase):
 
   def test_return_on_first_completed(self):
     def waiter():
-      self._manager.wait_for_stop()
+      self.assertTrue(self._manager.wait_for_stop())
 
     def worker():
       pass
