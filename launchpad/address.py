@@ -88,7 +88,7 @@ class Address(object):
     return self._address_builder.build()
 
 
-def get_port_from_address(address: str):
+def get_port_from_address(address: str) -> int:
   """Utility function to extract a port from a given address.
 
   Note that Launchpad uses a convention where named ports are passed as
