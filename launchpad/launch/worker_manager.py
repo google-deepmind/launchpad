@@ -345,7 +345,7 @@ class WorkerManager:
            labels_to_wait_for: Optional[Sequence[Text]] = None,
            raise_error=True,
            return_on_first_completed=False):
-    """Waits for workers to finish.
+    """Waits for workers to finish. Also stops the program upon worker failures.
 
     Args:
       labels_to_wait_for: If supplied, only wait for these groups' workers to
@@ -390,8 +390,21 @@ class WorkerManager:
       if self._first_failure:
         raise self._first_failure
 
+
+  def check_for_thread_worker_exception(self):
+    with self._mutex:
+      for label in self._active_workers:
+        for worker in self._active_workers[label]:
+          if not worker.thread.is_alive():
+            worker.thread.join()
+            # This will raise the exception, if any.
+            worker.future.result()
+
   def _check_workers(self):
-    """Checks status of running workers, terminate runtime in case of errors."""
+    """Checks status of running workers, terminate runtime in case of errors.
+
+    This REQUIRES holding self._mutex.
+    """
     has_workers = False
     for label in self._active_workers:
       still_active = []

@@ -18,10 +18,14 @@
 This is very similar to local_multi_threading/launch.py but terminates the
 process upon exception (instead of entering pdb).
 """
-
+import os
+import signal
+import threading
+import time
 from typing import Optional
-from absl.testing import absltest
 
+from absl import logging
+from absl.testing import absltest
 from launchpad import context
 from launchpad.launch import worker_manager
 
@@ -47,8 +51,36 @@ def launch(program, test_case: Optional[absltest.TestCase] = None):
 
 
   manager = worker_manager.WorkerManager()
+
+  # Run a background thread to detect and handle node failures.
+  stop_node_monitor = threading.Event()
+  def _node_monitor():
+    while not stop_node_monitor.is_set():
+      time.sleep(.5)
+      try:
+        manager.check_for_thread_worker_exception()
+      except Exception:  
+        logging.exception('One of the workers has FAILED!')
+        # Wait for 3s, in case the exception is caught timely.
+        time.sleep(3)
+        if not stop_node_monitor.is_set():
+          # The exception isn't caught in time and we have to kill the test to
+          # avoid a timeout. This happens when, for example, a client running in
+          # the main thread trying (forever) to talk to a failed server.
+          logging.info('Killing the test due to an uncaught exception. See the '
+                       'above for stack traces.')
+          os.kill(os.getpid(), signal.SIGQUIT)
+          return
+  node_monitor_thread = threading.Thread(target=_node_monitor, daemon=True)
+  node_monitor_thread.start()
+
+  def _cleanup():
+    stop_node_monitor.set()
+    node_monitor_thread.join()
+    manager.cleanup_after_test(test_case)
+
   if test_case is not None:
-    test_case.addCleanup(manager.cleanup_after_test, test_case)
+    test_case.addCleanup(_cleanup)
 
   for label, nodes in program.groups.items():
     # to_executables() is a static method, so we can call it from any of the
