@@ -42,7 +42,9 @@ _HAS_MAIN_MANAGER = False
 
 def get_worker_manager():
   manager = getattr(_WORKER_MANAGERS, 'manager', None)
-  assert manager, 'Worker manager is not available in the current thread'
+  if not manager:
+    raise RuntimeError('Worker manager is only available from the Launchpad''s '
+                       'program node thread.')
   return manager
 
 
@@ -56,11 +58,11 @@ def remove_signal_handler(sig, handler):
   return signal.signal(sig, handler)
 
 
-def wait_for_stop(timeout: Optional[float] = None):
+def wait_for_stop(timeout_secs: Optional[float] = None):
   """Blocks until termination of the node's program starts or timeout passes.
 
   Args:
-    timeout: Floating point number specifying a timeout for the operation,
+    timeout_secs: Floating point number specifying a timeout for the operation,
         in seconds. If not provided, timeout is infinite.
 
   Returns:
@@ -81,7 +83,7 @@ def wait_for_stop(timeout: Optional[float] = None):
     while not lp.wait_for_stop(5.0):
       ... perform periodic task ...
   """
-  get_worker_manager().wait_for_stop(timeout)
+  get_worker_manager().wait_for_stop(timeout_secs)
 
 
 class WorkerManager:
@@ -156,9 +158,9 @@ class WorkerManager:
       self._sigquit_handler(sig, frame)
     self._kill()
 
-  def wait_for_stop(self, timeout: Optional[float] = None):
+  def wait_for_stop(self, timeout_secs: Optional[float] = None):
     """Blocks until managed runtime is terminating or timeout is reached."""
-    return self._stop_event.wait(timeout)
+    return self._stop_event.wait(timeout_secs)
 
   def thread_worker(self, name, function):
     """Registers and start a new thread worker.
