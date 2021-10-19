@@ -74,7 +74,15 @@ class Node(Generic[HandleType], metaclass=abc.ABCMeta):
     # Handles created by this node
     # Note: `type: List[HandleType]` is not supported yet.
     self._created_handles = []  # type: List[Handle]
-    # Addresses owned by this node (i.e., addresses used to run servers).
+    # Addresses known to the node. This exists so that launchpad can, from
+    # the program (which contains the nodes), list all the addresses that need
+    # to be bind before launch.
+    # `addresses` usually contains the address(es) owned by the node. However,
+    # in case of nodes containing other nodes (e.g. multi-threading nodes), it
+    # will also contain addresses owned by sub-nodes.
+    # Thus, use `address.assign` to give ownership of an address to a node,
+    # and `addresses.append` to only expose the address to launchpad launch
+    # mechanism.
     self.addresses = []  # type: List[lp_address.Address]
 
   def _initialize_context(self, launch_type: lp_context.LaunchType,
@@ -127,12 +135,14 @@ class Node(Generic[HandleType], metaclass=abc.ABCMeta):
   def allocate_address(self, address: lp_address.Address) -> None:
     """Low-level API to add an address to listen to.
 
+    Prefer `address.assign(node)`.
+
     This is a low level API and users shouldn't need to use it most of the time.
 
     Args:
       address: Address to listen to (i.e., to create a server).
     """
-    self.addresses.append(address)
+    address.assign(self)
 
   @classmethod
   def default_launch_config(cls, launch_type: lp_context.LaunchType):

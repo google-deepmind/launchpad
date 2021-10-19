@@ -75,9 +75,10 @@ class MultiProcessingColocation(python.PyNode):
     if not isinstance(node, python.PyNode):
       raise ValueError('MultiProcessingColocation only works with PyNodes.')
     self._nodes.append(node)
-    # Take over the addresses of the node.
+    # Reference all the children addresses (not owned by this node, but only
+    # referenced).
     for address in node.addresses:
-      self.allocate_address(address)
+      self.addresses.append(address)
       # Ensure unique address names (avoid name clash when creating named ports)
       address.name = address.name or 'lp'  # Name might not be specified
       unique_id = str(next(self._name_uniquifier[address.name]))
