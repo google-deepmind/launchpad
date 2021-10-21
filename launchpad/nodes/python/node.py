@@ -145,6 +145,7 @@ class PyClassNode(PyNode[HandleType, type(None)],
     self._kwargs = kwargs
     self._should_run = True
     self._collect_input_handles()
+    self._instance = None
 
   def _collect_input_handles(self):
     self._input_handles.clear()
@@ -160,9 +161,11 @@ class PyClassNode(PyNode[HandleType, type(None)],
           f'- args: {self._args}\n- kwargs: {self._kwargs}') from e
 
   def _construct_instance(self) -> WorkerType:
-    args, kwargs = tree.map_structure(dereference.maybe_dereference,
-                                      (self._args, self._kwargs))
-    return self._constructor(*args, **kwargs)
+    if self._instance is None:
+      args, kwargs = tree.map_structure(dereference.maybe_dereference,
+                                        (self._args, self._kwargs))
+      self._instance = self._constructor(*args, **kwargs)
+    return self._instance
 
   def disable_run(self) -> None:
     """Prevents the node from calling `run` on the Python object.
