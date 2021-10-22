@@ -289,12 +289,13 @@ class WorkerManager:
           children = worker.children(recursive=True)
           worker_found = False
           for process in children:
-            if process.name() != 'bash' and 'envelope_' not in process.name():
-              try:
+            try:
+              process_name = process.name()
+              if process_name != 'bash' and 'envelope_' not in process_name:
                 worker_found = True
                 process.send_signal(signal.SIGTERM)
-              except psutil.NoSuchProcess:
-                pass
+            except psutil.NoSuchProcess:
+              pass
           if not worker_found:
             # No more workers running, so we can kill the proxy itself.
             try:
