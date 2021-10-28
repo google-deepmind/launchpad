@@ -28,10 +28,13 @@ http_archive(
 )
 
 http_archive(
-  name = "com_google_absl",
-  strip_prefix = "abseil-cpp-20200923.3",
-  sha256 = "6622893ab117501fc23268a2936e0d46ee6cb0319dcf2275e33a708cd9634ea6",
-  urls = ["https://github.com/abseil/abseil-cpp/archive/20200923.3.zip"],
+    name = "com_google_absl",
+    sha256 = "35f22ef5cb286f09954b7cc4c85b5a3f6221c9d4df6b8c4a1e9d399555b366ee",  # SHARED_ABSL_SHA
+    strip_prefix = "abseil-cpp-997aaf3a28308eba1b9156aa35ab7bca9688e9f6",
+    urls = [
+        "https://storage.googleapis.com/mirror.tensorflow.org/github.com/abseil/abseil-cpp/archive/997aaf3a28308eba1b9156aa35ab7bca9688e9f6.tar.gz",
+        "https://github.com/abseil/abseil-cpp/archive/997aaf3a28308eba1b9156aa35ab7bca9688e9f6.tar.gz",
+    ],
 )
 
 http_archive(
