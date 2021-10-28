@@ -17,14 +17,14 @@
 
 from absl.testing import absltest
 import launchpad as lp
-from launchpad.examples.consumer_producers import launch
+from launchpad.examples.consumer_producers.program import make_program
 
 
 class LaunchTest(absltest.TestCase):
 
   def test_consumer_steps(self):
     """Runs the program and makes sure the consumer can run 10 steps."""
-    program = launch.make_program(num_producers=2)
+    program = make_program(num_producers=2)
 
     # Retrieve the consumer node from the program. Nodes are organized as a
     # mapping of label->nodes, stored as a dict in `program.groups`
