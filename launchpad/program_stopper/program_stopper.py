@@ -18,6 +18,7 @@
 import functools
 import os
 import signal
+import sys
 from typing import Union
 
 from absl import logging
@@ -25,6 +26,11 @@ from absl import logging
 from launchpad import context
 
 
+
+
+def _kill_self(mark_as_completed=False):
+  del mark_as_completed
+  sys.exit(1)
 
 
 def _ask_launcher_for_termination(launcher_process_id, mark_as_completed=False):
@@ -50,5 +56,8 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
       context.LaunchType.TEST_MULTI_THREADING
   ]:
     return functools.partial(_ask_launcher_for_termination, os.getpid())
+  if launch_type in [context.LaunchType.LOCAL_DOCKER, context.LaunchType.CAIP]:
+
+    return _kill_self
 
   raise NotImplementedError(f'{launch_type} is not yet supported.')

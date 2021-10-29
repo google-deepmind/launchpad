@@ -1,0 +1,8 @@
+absl-py
+numpy
+cloudpickle
+six
+dm-launchpad-nightly
+dm-reverb-nightly
+libpython
+tf-nightly

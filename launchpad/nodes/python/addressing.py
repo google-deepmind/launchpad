@@ -16,6 +16,7 @@
 """Addressing for PyNodes."""
 
 import getpass
+import json
 import os
 import typing
 from typing import Any, List, Optional
@@ -39,3 +40,27 @@ def bind_addresses_local(addresses: List[lp_address.Address]):
 
   for address in addresses:
     address.bind(lp_address.SimpleLocalAddressBuilder())
+
+
+class CAIPAddressBuilder(lp_address.AbstractAddressBuilder):
+  """Builds an address for CAIP."""
+
+  def __init__(self, cluster: str, instance: int):
+    self._cluster = cluster
+    self._instance = instance
+
+  def build(self) -> str:
+    tf_config = os.environ.get('TF_CONFIG', None)
+    return json.loads(tf_config).get('cluster').get(
+        self._cluster)[self._instance]
+
+
+def bind_addresses_caip(addresses: List[lp_address.Address]):
+  """Binds addresses for the execution using CAIP."""
+  cluster_names = ['chief', 'worker', 'ps', 'master']
+  if len(cluster_names) < len(addresses):
+    raise RuntimeError((
+        f'Too many nodes specified. CAIP supports up to {len(cluster_names)}.'
+    ))
+  for i, address in enumerate(addresses):
+    address.bind(CAIPAddressBuilder(cluster_names[i], 0))

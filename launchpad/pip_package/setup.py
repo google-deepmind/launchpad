@@ -93,6 +93,7 @@ class SetupToolsHelper(object):
         'portpicker',
         'protobuf',
         'psutil',
+        'xmanager',
     ]
     return required_packages
 

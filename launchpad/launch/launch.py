@@ -90,6 +90,14 @@ def launch(
   elif launch_type is context.LaunchType.LOCAL_MULTI_PROCESSING:
     return launch_local_multiprocessed.launch(program, local_resources,
                                               terminal)
+  elif launch_type is context.LaunchType.LOCAL_DOCKER:
+    from launchpad.launch.local_docker import launch as launch_local_docker  
+    return launch_local_docker.launch(program, context.LaunchType.LOCAL_DOCKER,
+                                      local_resources)
+  elif launch_type is context.LaunchType.CAIP:
+    from launchpad.launch.local_docker import launch as launch_local_docker  
+    return launch_local_docker.launch(program, context.LaunchType.CAIP,
+                                      local_resources)
   elif launch_type is context.LaunchType.TEST_MULTI_THREADING:
     return launch_test_multithreaded.launch(program, test_case=test_case)
   elif launch_type is context.LaunchType.TEST_MULTI_PROCESSING:

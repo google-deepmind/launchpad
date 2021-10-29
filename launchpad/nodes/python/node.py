@@ -95,6 +95,12 @@ class PyNode(base.Node[HandleType], Generic[HandleType, ReturnType]):
         launch_context.launch_type is context.LaunchType.TEST_MULTI_PROCESSING):
       return local_multi_processing.to_multiprocessing_executables(
           nodes, label, launch_context.launch_config, pdb_post_mortem=False)
+    elif launch_context.launch_type in [
+        context.LaunchType.LOCAL_DOCKER, context.LaunchType.CAIP
+    ]:
+      from launchpad.nodes.python import local_docker  
+      return local_docker.to_docker_executables(nodes,
+                                                launch_context.launch_config)
     raise NotImplementedError('Unsupported launch type: {}'.format(
         launch_context.launch_type))
 
@@ -104,9 +110,13 @@ class PyNode(base.Node[HandleType], Generic[HandleType, ReturnType]):
         context.LaunchType.LOCAL_MULTI_THREADING,
         context.LaunchType.LOCAL_MULTI_PROCESSING,
         context.LaunchType.TEST_MULTI_PROCESSING,
-        context.LaunchType.TEST_MULTI_THREADING
+        context.LaunchType.TEST_MULTI_THREADING,
     ]:
       addressing.bind_addresses_local(self.addresses)
+    elif self._launch_context.launch_type in [
+        context.LaunchType.LOCAL_DOCKER, context.LaunchType.CAIP
+    ]:
+      addressing.bind_addresses_caip(self.addresses)
     else:
       raise NotImplementedError('Unsupported launch type: {}'.format(
           self._launch_context.launch_type))

@@ -22,6 +22,12 @@ from typing import Any, Callable, Optional
 
 class LaunchType(enum.Enum):
   """The different launch types supported by Launchpad."""
+  # Launch locally using docker containers, similar to local multi processing.
+  # NOTE: Experimental, do not use.
+  LOCAL_DOCKER = 'local_docker'
+  # Launch on GCP using Google Cloud AI Platform (throught xmanager).
+  # NOTE: Experimental, do not use.
+  CAIP = 'caip'
   LOCAL_MULTI_THREADING = 'local_mt'
   # Launch locally using multiple processes. Can display logs from different
   # nodes in separate windows. The behavior can be controlled using the
