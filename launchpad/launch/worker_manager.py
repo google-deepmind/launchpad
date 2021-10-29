@@ -21,6 +21,7 @@ import ctypes
 import os
 import signal
 import subprocess
+import sys
 import threading
 import time
 from typing import Optional, Sequence, Text
@@ -54,6 +55,10 @@ def register_signal_handler(sig, handler):
 
 
 def remove_signal_handler(sig, handler):
+  """Unregisters a signal handler."""
+  if sys.is_finalizing():
+    # See https://bugs.python.org/issue26133.
+    return
 
   return signal.signal(sig, handler)
 
