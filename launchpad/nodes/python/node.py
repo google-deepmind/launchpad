@@ -116,7 +116,7 @@ class PyNode(base.Node[HandleType], Generic[HandleType, ReturnType]):
     elif self._launch_context.launch_type in [
         context.LaunchType.LOCAL_DOCKER, context.LaunchType.CAIP
     ]:
-      addressing.bind_addresses_caip(self.addresses)
+      addressing.bind_addresses_caip(self.addresses, **kwargs)
     else:
       raise NotImplementedError('Unsupported launch type: {}'.format(
           self._launch_context.launch_type))

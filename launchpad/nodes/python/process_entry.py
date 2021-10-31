@@ -67,6 +67,11 @@ def _populate_flags():
 
 def _get_task_id():
   """Returns current task's id."""
+  if FLAGS.lp_task_id is None:
+    # Running under CAIP...
+    tf_config = os.environ.get('TF_CONFIG', None)
+    return json.loads(tf_config).get('task').get('index')
+
   return FLAGS.lp_task_id
 
 

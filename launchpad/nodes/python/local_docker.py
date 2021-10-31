@@ -84,25 +84,19 @@ def to_docker_executables(
                             'package requirements through'
                             'docker_config.docker_requirements.')
 
-  docker_executables = []
-  for i in range(len(nodes)):
-    docker_executables.append(
-        xm.PythonContainer(
-            path=tmp_dir,
-            base_image=base_image,
-            entrypoint=xm.CommandList([
-                f'python -m process_entry --data_file={_DATA_FILE_NAME} --lp_task_id={i}'
-            ]),
-            docker_instructions=[
-                'RUN apt-get update && apt-get install -y git',
-                'RUN python -m pip install --upgrade pip',
-                'RUN apt-get -y install libpython3.9',
-                f'COPY {workdir_path}/requirements.txt requirements.txt',
-                'RUN python -m pip install xmanager',
+  return [xm.PythonContainer(
+      path=tmp_dir,
+      base_image=base_image,
+      entrypoint=xm.CommandList(
+          [f'python -m process_entry --data_file={_DATA_FILE_NAME}']),
+      docker_instructions=[
+          'RUN apt-get update && apt-get install -y git',
+          'RUN python -m pip install --upgrade pip',
+          'RUN apt-get -y install libpython3.9',
+          f'COPY {workdir_path}/requirements.txt requirements.txt',
+          'RUN python -m pip install xmanager',
 
-                'RUN python -m pip install -r requirements.txt',
-                f'COPY {workdir_path}/ {workdir_path}',
-                f'WORKDIR {workdir_path}',
-            ]))
-
-  return docker_executables
+          'RUN python -m pip install -r requirements.txt',
+          f'COPY {workdir_path}/ {workdir_path}',
+          f'WORKDIR {workdir_path}',
+      ])]

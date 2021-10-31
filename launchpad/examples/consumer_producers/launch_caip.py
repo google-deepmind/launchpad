@@ -18,9 +18,13 @@
 import os
 
 from absl import app
+from absl import flags
 import launchpad as lp
 from launchpad.examples.consumer_producers.program import make_program
 from launchpad.nodes.python import local_docker
+
+_NUM_PRODUCERS = flags.DEFINE_integer('num_producers', 2,
+                                      'The number of concurrent producers.')
 
 
 def main(argv):
@@ -34,7 +38,7 @@ def main(argv):
                                             docker_requirements)
   resources = {'producer': docker_config, 'consumer': docker_config}
 
-  program = make_program(num_producers=1)
+  program = make_program(num_producers=_NUM_PRODUCERS.value)
   lp.launch(
       program,
       launch_type=lp.LaunchType.CAIP,

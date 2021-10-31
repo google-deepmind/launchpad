@@ -42,8 +42,8 @@ def bind_addresses_local(addresses: List[lp_address.Address]):
     address.bind(lp_address.SimpleLocalAddressBuilder())
 
 
-class CAIPAddressBuilder(lp_address.AbstractAddressBuilder):
-  """Builds an address for CAIP."""
+class CaipAddressBuilder(lp_address.AbstractAddressBuilder):
+  """Builds an address for Caip."""
 
   def __init__(self, cluster: str, instance: int):
     self._cluster = cluster
@@ -55,12 +55,12 @@ class CAIPAddressBuilder(lp_address.AbstractAddressBuilder):
         self._cluster)[self._instance]
 
 
-def bind_addresses_caip(addresses: List[lp_address.Address]):
-  """Binds addresses for the execution using CAIP."""
-  cluster_names = ['chief', 'worker', 'ps', 'master']
-  if len(cluster_names) < len(addresses):
-    raise RuntimeError((
-        f'Too many nodes specified. CAIP supports up to {len(cluster_names)}.'
-    ))
-  for i, address in enumerate(addresses):
-    address.bind(CAIPAddressBuilder(cluster_names[i], 0))
+def bind_addresses_caip(addresses: List[lp_address.Address], cluster: str,
+                        instance: int):
+  """Binds addresses for the execution using Caip."""
+  if len(addresses) > 1:
+    raise RuntimeError(
+        f'Caip supports only one port per node. {len(addresses)} requested.')
+
+  if len(addresses) == 1:
+    addresses[0].bind(CaipAddressBuilder(cluster, instance))
