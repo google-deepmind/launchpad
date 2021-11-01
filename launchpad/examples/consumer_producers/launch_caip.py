@@ -21,7 +21,7 @@ from absl import app
 from absl import flags
 import launchpad as lp
 from launchpad.examples.consumer_producers.program import make_program
-from launchpad.nodes.python import local_docker
+from launchpad.nodes.python import xm_docker
 
 _NUM_PRODUCERS = flags.DEFINE_integer('num_producers', 2,
                                       'The number of concurrent producers.')
@@ -34,8 +34,8 @@ def main(argv):
   docker_code_directory = os.getcwd()
   dir_path = os.path.dirname(os.path.realpath(__file__))
   docker_requirements = os.path.join(dir_path, 'requirements.txt')
-  docker_config = local_docker.DockerConfig(docker_code_directory,
-                                            docker_requirements)
+  docker_config = xm_docker.DockerConfig(docker_code_directory,
+                                         docker_requirements)
   resources = {'producer': docker_config, 'consumer': docker_config}
 
   program = make_program(num_producers=_NUM_PRODUCERS.value)

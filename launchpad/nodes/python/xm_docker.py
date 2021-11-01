@@ -57,8 +57,7 @@ def to_docker_executables(
   if docker_config.code_directory is None or docker_config.docker_requirements is None:
     raise ValueError(
         'code_directory and docker_requirements must be specified through'
-        'DockerConfig via local_resources when using "local_docker" launch'
-        'type.')
+        'DockerConfig via local_resources when using "xm_docker" launch type.')
 
   # Generate tmp dir without '_' in the name, CAIP fails otherwise.
   tmp_dir = '_'

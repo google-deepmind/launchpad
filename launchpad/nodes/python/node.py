@@ -98,9 +98,9 @@ class PyNode(base.Node[HandleType], Generic[HandleType, ReturnType]):
     elif launch_context.launch_type in [
         context.LaunchType.LOCAL_DOCKER, context.LaunchType.CAIP
     ]:
-      from launchpad.nodes.python import local_docker  
-      return local_docker.to_docker_executables(nodes,
-                                                launch_context.launch_config)
+      from launchpad.nodes.python import xm_docker  
+      return xm_docker.to_docker_executables(nodes,
+                                             launch_context.launch_config)
     raise NotImplementedError('Unsupported launch type: {}'.format(
         launch_context.launch_type))
 
