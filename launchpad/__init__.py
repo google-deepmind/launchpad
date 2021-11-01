@@ -42,6 +42,7 @@ from launchpad.address import get_port_from_address
 from launchpad.address import SimpleLocalAddressBuilder
 
 # Stopping a program
+from launchpad.launch.worker_manager import stop_event
 from launchpad.launch.worker_manager import wait_for_stop
 from launchpad.stop_program.stop import stop
 from launchpad.program_stopper.program_stopper import make_program_stopper

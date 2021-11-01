@@ -38,6 +38,12 @@ def _wait_for_stop():
   time.sleep(2)
 
 
+def _stop_event():
+  lp.stop_event().wait()
+  logging.info('Clean termination of _stop_event node')
+  time.sleep(2)
+
+
 def _infinite_sleep():
   # Sleep call can't be interrupted outside of the main thread, so in local_mt
   # mode for instance this node will be hard-killed.
@@ -58,6 +64,7 @@ def make_program() -> lp.Program:
   program = lp.Program('program_wait')
   program.add_node(lp.CourierNode(_sleep), label='sleep')
   program.add_node(lp.CourierNode(_wait_for_stop), label='_wait_for_stop')
+  program.add_node(lp.CourierNode(_stop_event), label='_stop_event')
   program.add_node(lp.CourierNode(_infinite_sleep), label='_infinite_sleep')
   program.add_node(lp.CourierNode(_stop_program), label='_stop_program')
   return program

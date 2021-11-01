@@ -88,7 +88,20 @@ def wait_for_stop(timeout_secs: Optional[float] = None):
     while not lp.wait_for_stop(5.0):
       ... perform periodic task ...
   """
-  get_worker_manager().wait_for_stop(timeout_secs)
+  return get_worker_manager().wait_for_stop(timeout_secs)
+
+
+def stop_event():
+  """Returns a threading.Event used to wait for termination signal on a Program.
+
+  Usage examples:
+  - Perform cleanup at the end of the run:
+    start_server()
+    lp.stop_event().wait()
+    stop_server()
+    checkpoint()
+  """
+  return get_worker_manager().stop_event()
 
 
 class WorkerManager:
@@ -166,6 +179,10 @@ class WorkerManager:
   def wait_for_stop(self, timeout_secs: Optional[float] = None):
     """Blocks until managed runtime is terminating or timeout is reached."""
     return self._stop_event.wait(timeout_secs)
+
+  def stop_event(self):
+    """Returns an event used to wait for termination signal on a Program."""
+    return self._stop_event
 
   def thread_worker(self, name, function):
     """Registers and start a new thread worker.
