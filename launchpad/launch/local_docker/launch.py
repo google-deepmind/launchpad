@@ -144,10 +144,9 @@ def launch(program: lp_program.Program,
   ]
   for cluster_index, nodes in enumerate(nodes_for_jobs):
     node_count = 0
-    for i in range(len(nodes)):
+    for i, (node, label) in enumerate(nodes):
       node_count += 1
-      if i == len(nodes) - 1 or nodes[i][1] != nodes[i+1][i]:
-        label = nodes[i][1]
+      if i == len(nodes) - 1 or label != nodes[i+1][1]:
         start_idx = node_index[label]
         label_range = _name_range(label, start_idx, node_count)
         worker_range = _name_range(cluster_names[cluster_index],
