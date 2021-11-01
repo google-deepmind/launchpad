@@ -30,6 +30,7 @@ from launchpad.program import Program
 from launchpad.launch.launch import launch
 
 # Nodes
+from launchpad.nodes.courier.node import CourierHandle
 from launchpad.nodes.courier.node import CourierNode
 from launchpad.nodes.courier.node import CourierClient
 from launchpad.nodes.multi_threading_colocation.node import MultiThreadingColocation
