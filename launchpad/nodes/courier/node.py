@@ -118,13 +118,15 @@ class CourierNode(python.PyClassNode[CourierHandle, WorkerType],
     else:
       # Start the server after instantiation and serve forever
       self._server.Start()
-      if hasattr(instance, 'run') and self._should_run:
-        # If a run() method is provided, stop the server at the end of run().
-        instance.run()
-      else:
-        worker_manager.wait_for_stop()
-      self._server.Stop()
-      self._server.Join()
+      try:
+        if hasattr(instance, 'run') and self._should_run:
+          # If a run() method is provided, stop the server at the end of run().
+          instance.run()
+        else:
+          worker_manager.wait_for_stop()
+      finally:
+        self._server.Stop()
+        self._server.Join()
 
   @property
   def courier_address(self) -> lp_address.Address:
