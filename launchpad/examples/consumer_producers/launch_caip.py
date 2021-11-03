@@ -31,11 +31,10 @@ def main(argv):
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
 
-  docker_code_directory = os.getcwd()
-  dir_path = os.path.dirname(os.path.realpath(__file__))
-  docker_requirements = os.path.join(dir_path, 'requirements.txt')
-  docker_config = xm_docker.DockerConfig(docker_code_directory,
-                                         docker_requirements)
+  script_dir = os.path.dirname(os.path.realpath(__file__))
+  launchpad_dir = os.path.dirname(os.path.dirname(script_dir))
+  docker_requirements = os.path.join(script_dir, 'requirements.txt')
+  docker_config = xm_docker.DockerConfig(launchpad_dir, docker_requirements)
   resources = {'producer': docker_config, 'consumer': docker_config}
 
   program = make_program(num_producers=_NUM_PRODUCERS.value)
