@@ -96,7 +96,7 @@ class PyNode(base.Node[HandleType], Generic[HandleType, ReturnType]):
       return local_multi_processing.to_multiprocessing_executables(
           nodes, label, launch_context.launch_config, pdb_post_mortem=False)
     elif launch_context.launch_type in [
-        context.LaunchType.LOCAL_DOCKER, context.LaunchType.CAIP
+        context.LaunchType.LOCAL_DOCKER, context.LaunchType.VERTEX_AI
     ]:
       from launchpad.nodes.python import xm_docker  
       return xm_docker.to_docker_executables(nodes,
@@ -114,9 +114,9 @@ class PyNode(base.Node[HandleType], Generic[HandleType, ReturnType]):
     ]:
       addressing.bind_addresses_local(self.addresses)
     elif self._launch_context.launch_type in [
-        context.LaunchType.LOCAL_DOCKER, context.LaunchType.CAIP
+        context.LaunchType.LOCAL_DOCKER, context.LaunchType.VERTEX_AI
     ]:
-      addressing.bind_addresses_caip(self.addresses, **kwargs)
+      addressing.bind_addresses_vertex_ai(self.addresses, **kwargs)
     else:
       raise NotImplementedError('Unsupported launch type: {}'.format(
           self._launch_context.launch_type))

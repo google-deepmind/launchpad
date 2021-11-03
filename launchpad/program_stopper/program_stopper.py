@@ -33,7 +33,7 @@ def _kill_self(mark_as_completed=False):
   sys.exit(1)
 
 
-def _stop_caip(mark_as_completed=False):
+def _stop_vertex_ai(mark_as_completed=False):
   del mark_as_completed
   from google.cloud import aiplatform  
   from google.api_core import exceptions  
@@ -71,7 +71,7 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
   if launch_type in [context.LaunchType.LOCAL_DOCKER]:
     return _kill_self
 
-  if launch_type in [context.LaunchType.CAIP]:
-    return _stop_caip
+  if launch_type in [context.LaunchType.VERTEX_AI]:
+    return _stop_vertex_ai
 
   raise NotImplementedError(f'{launch_type} is not yet supported.')

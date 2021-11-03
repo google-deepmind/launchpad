@@ -25,9 +25,10 @@ class LaunchType(enum.Enum):
   # Launch locally using docker containers, similar to local multi processing.
   # NOTE: Experimental, do not use.
   LOCAL_DOCKER = 'local_docker'
-  # Launch on GCP using Google Cloud AI Platform (throught xmanager).
+  # Launch on Google Cloud using Vertex AI (https://cloud.google.com/vertex-ai)
+  # throught xmanager.
   # NOTE: Experimental, do not use.
-  CAIP = 'caip'
+  VERTEX_AI = 'vertex_ai'
   LOCAL_MULTI_THREADING = 'local_mt'
   # Launch locally using multiple processes. Can display logs from different
   # nodes in separate windows. The behavior can be controlled using the

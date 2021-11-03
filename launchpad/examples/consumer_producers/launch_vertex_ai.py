@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Launches consumer-producer example on GCP."""
+"""Launches consumer-producer example on Google Cloud using Vertex AI."""
 
 
 import os
@@ -40,7 +40,7 @@ def main(argv):
   program = make_program(num_producers=_NUM_PRODUCERS.value)
   lp.launch(
       program,
-      launch_type=lp.LaunchType.CAIP,
+      launch_type=lp.LaunchType.VERTEX_AI,
       local_resources=resources)
 
 

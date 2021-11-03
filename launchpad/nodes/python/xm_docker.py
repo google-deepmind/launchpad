@@ -67,7 +67,7 @@ def to_docker_executables(
         'code_directory and docker_requirements must be specified through'
         'DockerConfig via local_resources when using "xm_docker" launch type.')
 
-  # Generate tmp dir without '_' in the name, CAIP fails otherwise.
+  # Generate tmp dir without '_' in the name, Vertex AI fails otherwise.
   tmp_dir = '_'
   while '_' in tmp_dir:
     tmp_dir = tempfile.mkdtemp()

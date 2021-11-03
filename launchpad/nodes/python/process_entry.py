@@ -68,7 +68,7 @@ def _populate_flags():
 def _get_task_id():
   """Returns current task's id."""
   if FLAGS.lp_task_id is None:
-    # Running under CAIP...
+    # Running under Vertex AI...
     cluster_spec = os.environ.get('CLUSTER_SPEC', None)
     return json.loads(cluster_spec).get('task').get('index')
 

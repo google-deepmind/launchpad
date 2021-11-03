@@ -42,8 +42,8 @@ def bind_addresses_local(addresses: List[lp_address.Address]):
     address.bind(lp_address.SimpleLocalAddressBuilder())
 
 
-class CaipAddressBuilder(lp_address.AbstractAddressBuilder):
-  """Builds an address for Caip."""
+class VertextAiAddressBuilder(lp_address.AbstractAddressBuilder):
+  """Builds an address for Vertex AI."""
 
   def __init__(self, cluster: str, instance: int):
     self._cluster = cluster
@@ -55,12 +55,13 @@ class CaipAddressBuilder(lp_address.AbstractAddressBuilder):
         self._cluster)[self._instance]
 
 
-def bind_addresses_caip(addresses: List[lp_address.Address], cluster: str,
-                        instance: int):
-  """Binds addresses for the execution using Caip."""
+def bind_addresses_vertex_ai(addresses: List[lp_address.Address], cluster: str,
+                             instance: int):
+  """Binds addresses for the execution using Vertex AI."""
   if len(addresses) > 1:
     raise RuntimeError(
-        f'Caip supports only one port per node. {len(addresses)} requested.')
+        f'Vertex AI supports only one port per node. {len(addresses)} requested.'
+    )
 
   if len(addresses) == 1:
-    addresses[0].bind(CaipAddressBuilder(cluster, instance))
+    addresses[0].bind(VertextAiAddressBuilder(cluster, instance))

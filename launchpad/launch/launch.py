@@ -108,9 +108,9 @@ def launch(
     from launchpad.launch.xm_docker import launch as launch_xm_docker  
     return launch_xm_docker.launch(program, context.LaunchType.LOCAL_DOCKER,
                                    xm_resources)
-  elif launch_type is context.LaunchType.CAIP:
+  elif launch_type is context.LaunchType.VERTEX_AI:
     from launchpad.launch.xm_docker import launch as launch_xm_docker  
-    return launch_xm_docker.launch(program, context.LaunchType.CAIP,
+    return launch_xm_docker.launch(program, context.LaunchType.VERTEX_AI,
                                    xm_resources)
   elif launch_type is context.LaunchType.TEST_MULTI_THREADING:
     return launch_test_multithreaded.launch(program, test_case=test_case)

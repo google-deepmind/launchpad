@@ -51,7 +51,7 @@ def launch(program: lp_program.Program,
       for handle in node._input_handles:  
         handle.connect(node, label)
 
-  # Caip supports only 4 worker pools, so we group nodes with the same
+  # Vertex AI supports only 4 worker pools, so we group nodes with the same
   # requirements.
   nodes_by_container = collections.defaultdict(list)
   for label, nodes in program.groups.items():
@@ -64,7 +64,7 @@ def launch(program: lp_program.Program,
         (node, label) for node in nodes
     ])
 
-  # Caip requires the first worker pool to have exactly 1 replica...
+  # Vertex AI requires the first worker pool to have exactly 1 replica...
   nodes_for_jobs = list(nodes_by_container.values())
   for index, nodes in enumerate(nodes_for_jobs):
     if len(nodes) == 1:
@@ -75,12 +75,12 @@ def launch(program: lp_program.Program,
     nodes_for_jobs.append(nodes_for_jobs[0][1:])
     nodes_for_jobs[0] = [nodes_for_jobs[0][0]]
 
-  # Make sure there are at most 4 worker pools (required by Caip).
+  # Make sure there are at most 4 worker pools (required by Vertex AI).
   cluster_names = ['workerpool0', 'workerpool1', 'workerpool2', 'workerpool3']
   if len(nodes_for_jobs) > len(cluster_names):
     raise RuntimeError((
         'Too many nodes with different requirements specified.'
-        f'CAIP supports up to {len(cluster_names)} types.'
+        f'Vertex AI supports up to {len(cluster_names)} types.'
     ))
 
   # Bind addresses
@@ -116,7 +116,7 @@ def launch(program: lp_program.Program,
       if launch_type == context.LaunchType.LOCAL_DOCKER:
         executor = xm_local.Local()
         executor_spec = xm_local.Local.Spec()
-      elif launch_type == context.LaunchType.CAIP:
+      elif launch_type == context.LaunchType.VERTEX_AI:
         executor = xm_local.Caip(requirements=requirements)
         executor_spec = xm_local.Caip.Spec()
       else:
@@ -134,7 +134,9 @@ def launch(program: lp_program.Program,
     experiment.add(xm.JobGroup(**jobs))
 
   print(termcolor.colored('Program launched successfully.', 'blue'))
-  print(termcolor.colored('Node names mapping used in Caip runtime:', 'blue'))
+  print(
+      termcolor.colored('Node names mapping used in Vertex AI runtime:',
+                        'blue'))
   # Print nodes' labels mapping to the worker pool names.
   def _name_range(name: str, start_idx: int, count: int):
     if count == 1:
