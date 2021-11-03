@@ -33,6 +33,18 @@ def _kill_self(mark_as_completed=False):
   sys.exit(1)
 
 
+def _stop_caip(mark_as_completed=False):
+  del mark_as_completed
+  from google.cloud import aiplatform  
+  from google.api_core import exceptions  
+  aiplatform.init(project=os.environ['CLOUD_ML_PROJECT_ID'])
+  try:
+    aiplatform.CustomJob.get(os.environ['CLOUD_ML_JOB_ID']).cancel()
+  except exceptions.FailedPrecondition:
+    # Experiment could have been already cancelled.
+    pass
+
+
 def _ask_launcher_for_termination(launcher_process_id, mark_as_completed=False):
   del mark_as_completed
   os.kill(launcher_process_id, signal.SIGTERM)
@@ -56,8 +68,10 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
       context.LaunchType.TEST_MULTI_THREADING
   ]:
     return functools.partial(_ask_launcher_for_termination, os.getpid())
-  if launch_type in [context.LaunchType.LOCAL_DOCKER, context.LaunchType.CAIP]:
-
+  if launch_type in [context.LaunchType.LOCAL_DOCKER]:
     return _kill_self
+
+  if launch_type in [context.LaunchType.CAIP]:
+    return _stop_caip
 
   raise NotImplementedError(f'{launch_type} is not yet supported.')
