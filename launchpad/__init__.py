@@ -50,3 +50,4 @@ from launchpad.program_stopper.program_stopper import make_program_stopper
 
 with lazy_loader.LazyModule(__name__):
   from launchpad.nodes.reverb.node import ReverbNode
+  from launchpad.nodes.python.xm_docker import DockerConfig
