@@ -40,6 +40,8 @@ def launch(
     programs: Union[lp_program.Program, Sequence[lp_program.Program],
                    ],
     launch_type: Optional[Union[context.LaunchType, str]] = None,
+    xm_resources: Optional[Union[Dict[str, Any], Sequence[Dict[str,
+                                                               Any]]]] = None,
     local_resources: Optional[Dict[str, Any]] = None,
     test_case: Optional[absltest.TestCase] = None,
     terminal: Optional[str] = None,
@@ -53,6 +55,18 @@ def launch(
       FLAGS.lp_launch_type. See the definition of context.LaunchType for the
       valid choices. The benefit of setting it to None is you can control the
       launch type from command line (by just passing --lp_launch_type=...).
+    xm_resources: (for XManager launch) A dictionary to specify per-node launch
+      configuration.
+    # END GOOGLE-INTERNAL
+    xm_description: (for XManager launch) A xm.ExperimentDescription object to
+      use for the resulting XManager experiment.
+    xm_execution_settings: (for XManager launch) Experiment's execution
+      settings.
+    max_parallel_work_units: (for XManager launch) maximum work units to run in
+      parallel.
+    xm_aux_executables: (for XManager launch) Auxiliary executables to add to
+      the XManager experiment.
+    # END GOOGLE-INTERNAL
     local_resources: (for local/test multiprocessing launch) A dictionary to
       specify per-node launch configuration.
     test_case: (for test multiprocessing launch) test case in which the program
@@ -93,11 +107,11 @@ def launch(
   elif launch_type is context.LaunchType.LOCAL_DOCKER:
     from launchpad.launch.xm_docker import launch as launch_xm_docker  
     return launch_xm_docker.launch(program, context.LaunchType.LOCAL_DOCKER,
-                                   local_resources)
+                                   xm_resources)
   elif launch_type is context.LaunchType.CAIP:
     from launchpad.launch.xm_docker import launch as launch_xm_docker  
     return launch_xm_docker.launch(program, context.LaunchType.CAIP,
-                                   local_resources)
+                                   xm_resources)
   elif launch_type is context.LaunchType.TEST_MULTI_THREADING:
     return launch_test_multithreaded.launch(program, test_case=test_case)
   elif launch_type is context.LaunchType.TEST_MULTI_PROCESSING:

@@ -30,18 +30,18 @@ from xmanager import xm_local
 
 def launch(program: lp_program.Program,
            launch_type: context.LaunchType,
-           local_resources: Optional[Mapping[str, Any]] = None):
+           xm_resources: Optional[Mapping[str, Any]] = None):
   """Launches a program using local docker containers via XManager."""
   # Set up the launch context (launch type & launch config) for all nodes
-  local_resources = local_resources or {}
+  xm_resources = xm_resources or {}
   for label, nodes in program.groups.items():
     for node in nodes:
-      if label in local_resources:
-        launch_config = local_resources[label]
+      if label in xm_resources:
+        launch_config = xm_resources[label]
       else:
         # If launch config not specified, try to use a default.
         launch_config = node.default_launch_config(launch_type)
-        local_resources[label] = launch_config
+        xm_resources[label] = launch_config
       node._initialize_context(  
           launch_type, launch_config=launch_config)
 
