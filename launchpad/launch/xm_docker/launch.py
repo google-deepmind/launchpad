@@ -35,8 +35,13 @@ def launch(program: lp_program.Program,
   # Set up the launch context (launch type & launch config) for all nodes
   local_resources = local_resources or {}
   for label, nodes in program.groups.items():
-    launch_config = local_resources.get(label, None)
     for node in nodes:
+      if label in local_resources:
+        launch_config = local_resources[label]
+      else:
+        # If launch config not specified, try to use a default.
+        launch_config = node.default_launch_config(launch_type)
+        local_resources[label] = launch_config
       node._initialize_context(  
           launch_type, launch_config=launch_config)
 
@@ -54,6 +59,7 @@ def launch(program: lp_program.Program,
     hash_value = hashlib.md5()
     hash_value.update((launch_config.code_directory).encode())
     hash_value.update((launch_config.docker_requirements).encode())
+    hash_value.update(str(launch_config.hw_requirements).encode())
     nodes_by_container[hash_value.hexdigest()].extend([
         (node, label) for node in nodes
     ])
@@ -62,8 +68,8 @@ def launch(program: lp_program.Program,
   nodes_for_jobs = list(nodes_by_container.values())
   for index, nodes in enumerate(nodes_for_jobs):
     if len(nodes) == 1:
-      nodes_for_jobs = nodes_for_jobs[
-          index] + nodes_for_jobs[:index] + nodes_for_jobs[index + 1:]
+      nodes_for_jobs = [nodes_for_jobs[
+          index]] + nodes_for_jobs[:index] + nodes_for_jobs[index + 1:]
       break
   if len(nodes_for_jobs[0]) != 1:
     nodes_for_jobs.append(nodes_for_jobs[0][1:])
@@ -96,7 +102,7 @@ def launch(program: lp_program.Program,
     docker_executables = nodes[0].to_executables(nodes, cluster_names[index],
                                                  nodes[0]._launch_context)
     assert len(docker_executables) == 1
-    containers.append((docker_executables[0], len(nodes)))
+    containers.append(docker_executables[0])
     
     # pytype: enable=wrong-arg-count
 
@@ -106,13 +112,12 @@ def launch(program: lp_program.Program,
   with xm_local.create_experiment(experiment_title=program.name) as experiment:
     jobs = {}
     job_id = 0
-    for executable_spec, replicas in containers:
+    for executable_spec, requirements in containers:
       if launch_type == context.LaunchType.LOCAL_DOCKER:
         executor = xm_local.Local()
         executor_spec = xm_local.Local.Spec()
       elif launch_type == context.LaunchType.CAIP:
-        executor = xm_local.Caip(
-            requirements=xm.JobRequirements(cpu=1, replicas=replicas))
+        executor = xm_local.Caip(requirements=requirements)
         executor_spec = xm_local.Caip.Spec()
       else:
         logging.fatal('Unknown launch type: %s', launch_type)

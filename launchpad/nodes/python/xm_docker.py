@@ -16,13 +16,15 @@
 """Utilities to run PyNodes in Docker containers using XManager."""
 
 import atexit
+import copy
 import dataclasses
 from distutils import dir_util
 import os
 import pathlib
 import shutil
+import sys
 import tempfile
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Optional, Sequence, Tuple
 
 import cloudpickle
 from xmanager import xm
@@ -42,16 +44,18 @@ class DockerConfig:
       xm.PythonContainer construction below if user code needs installation.
     docker_requirements: Path to requirements.txt specifying Python packages to
       install inside the Docker image.
+    hw_requirements: Hardware requirements.
   """
   code_directory: Optional[str] = None
   docker_requirements: Optional[str] = None
+  hw_requirements: Optional[xm.JobRequirements] = None
 
 
 def to_docker_executables(
     nodes: Sequence[Any],
     docker_config: DockerConfig,
-    base_image: str = 'python:3.9'
-) -> List[xm.PythonContainer]:
+) -> List[Tuple[xm.PythonContainer, xm.JobRequirements]]:
+
   """Returns a list of `PythonContainer`s objects for the given `PyNode`s."""
 
   if docker_config.code_directory is None or docker_config.docker_requirements is None:
@@ -82,8 +86,22 @@ def to_docker_executables(
     raise FileNotFoundError('Please specify a path to a file with Python'
                             'package requirements through'
                             'docker_config.docker_requirements.')
+  job_requirements = docker_config.hw_requirements
+  if not job_requirements:
+    job_requirements = xm.JobRequirements()
 
-  return [xm.PythonContainer(
+  # Make a copy of requirements since they are being mutated below.
+  job_requirements = copy.deepcopy(job_requirements)
+
+  if job_requirements.replicas != 1:
+    raise ValueError(
+        'Number of replicas is computed by the runtime. '
+        'Please do not set it explicitly in the requirements.'
+    )
+
+  job_requirements.replicas = len(nodes)
+  base_image = f'python:{sys.version_info.major}.{sys.version_info.minor}'
+  return [(xm.PythonContainer(
       path=tmp_dir,
       base_image=base_image,
       entrypoint=xm.CommandList(
@@ -98,4 +116,5 @@ def to_docker_executables(
           'RUN python -m pip install -r requirements.txt',
           f'COPY {workdir_path}/ {workdir_path}',
           f'WORKDIR {workdir_path}',
-      ])]
+      ]), job_requirements)]
+
