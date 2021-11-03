@@ -27,7 +27,11 @@ import tempfile
 from typing import Any, List, Optional, Sequence, Tuple
 
 import cloudpickle
-from xmanager import xm
+try:
+  from xmanager import xm  
+except ModuleNotFoundError:
+  raise Exception('Launchpad requires `xmanager` for XM-based runtimes.'
+                  'Please run `pip install dm-launchpad[xmanager]`.')
 
 _DATA_FILE_NAME = 'job.pkl'
 

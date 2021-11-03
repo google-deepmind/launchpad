@@ -17,6 +17,6 @@ RUN python${python_version} -mpip install --upgrade setuptools wheel attrs==20.3
 
 COPY dist /tmp/launchpad
 
-RUN WHL=`ls /tmp/launchpad/*${abi}*.whl` && python${python_version} -mpip install $WHL[tensorflow,reverb]
+RUN WHL=`ls /tmp/launchpad/*${abi}*.whl` && python${python_version} -mpip install $WHL[tensorflow,reverb,xmanager]
 
 WORKDIR /

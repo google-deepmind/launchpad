@@ -94,7 +94,6 @@ class SetupToolsHelper(object):
         'protobuf',
         'psutil',
         'termcolor',
-        'xmanager',
     ]
     return required_packages
 
@@ -133,6 +132,7 @@ class SetupToolsHelper(object):
         extras_require={
             'tensorflow': self._get_tensorflow_packages(),
             'reverb': self._get_reverb_packages(),
+            'xmanager': ['xmanager'],
         },
         distclass=BinaryDistribution,
         cmdclass={
