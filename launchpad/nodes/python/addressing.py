@@ -50,8 +50,8 @@ class CaipAddressBuilder(lp_address.AbstractAddressBuilder):
     self._instance = instance
 
   def build(self) -> str:
-    tf_config = os.environ.get('TF_CONFIG', None)
-    return json.loads(tf_config).get('cluster').get(
+    cluster_spec = os.environ.get('CLUSTER_SPEC', None)
+    return json.loads(cluster_spec).get('cluster').get(
         self._cluster)[self._instance]
 
 

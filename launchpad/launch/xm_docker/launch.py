@@ -76,7 +76,7 @@ def launch(program: lp_program.Program,
     nodes_for_jobs[0] = [nodes_for_jobs[0][0]]
 
   # Make sure there are at most 4 worker pools (required by Caip).
-  cluster_names = ['chief', 'worker', 'ps', 'master']
+  cluster_names = ['workerpool0', 'workerpool1', 'workerpool2', 'workerpool3']
   if len(nodes_for_jobs) > len(cluster_names):
     raise RuntimeError((
         'Too many nodes with different requirements specified.'
@@ -142,11 +142,6 @@ def launch(program: lp_program.Program,
     return f'{name}-[{start_idx}:{start_idx+count}]'
 
   node_index = collections.defaultdict(int)
-  # Caip uses inconsistent naming of worker pools, so we provide both names...
-  cluster_names = [
-      'chief/workerpool0', 'worker/workerpool1', 'ps/workerpool2',
-      'master/workerpool3'
-  ]
   for cluster_index, nodes in enumerate(nodes_for_jobs):
     node_count = 0
     for i, (node, label) in enumerate(nodes):
