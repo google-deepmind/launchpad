@@ -79,6 +79,11 @@ def main(_):
   # Allow for importing modules from the current directory.
   sys.path.append(os.getcwd())
   data_file = FLAGS.data_file
+
+  if os.environ.get('TF_CONFIG', None):
+    # For GCP runtime log to STDOUT so that logs are not reported as errors.
+    logging.get_absl_handler().python_handler.stream = sys.stdout
+
   functions = cloudpickle.load(open(data_file, 'rb'))
   task_id = _get_task_id()
 
