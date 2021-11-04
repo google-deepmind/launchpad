@@ -20,6 +20,7 @@ import hashlib
 from typing import Any, Mapping, Optional
 
 from absl import logging
+from google.auth import exceptions as google_auth_exceptions
 from launchpad import context
 from launchpad import program as lp_program
 from launchpad.launch import signal_handling
@@ -122,12 +123,18 @@ def launch(program: lp_program.Program,
       else:
         logging.fatal('Unknown launch type: %s', launch_type)
 
-      [executable] = experiment.package([
-          xm.Packageable(
-              executable_spec=executable_spec,
-              executor_spec=executor_spec
-          ),
-      ])
+      try:
+        [executable] = experiment.package([
+            xm.Packageable(
+                executable_spec=executable_spec,
+                executor_spec=executor_spec
+            ),
+        ])
+      except google_auth_exceptions.DefaultCredentialsError:
+        raise google_auth_exceptions.DefaultCredentialsError(
+            'GCP project seems not to be configured correctly. Please follow'
+            ' instructions at '
+            'https://github.com/deepmind/xmanager#create-a-gcp-project.')
 
       job_id += 1
       jobs[str(job_id)] = xm.Job(executable=executable, executor=executor)

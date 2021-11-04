@@ -27,7 +27,9 @@ class LaunchType(enum.Enum):
   LOCAL_DOCKER = 'local_docker'
   # Launch on Google Cloud using Vertex AI (https://cloud.google.com/vertex-ai)
   # throught xmanager.
-  # NOTE: Experimental, do not use.
+  # NOTE: Using this runtime involves prior GCP configuration. Please follow
+  # the steps described at
+  # https://github.com/deepmind/xmanager#create-a-gcp-project.
   VERTEX_AI = 'vertex_ai'
   # Launch locally using multiple threads. Upon crash it drops into PDB for the
   # thread that crashed, and locks output from all other threads.

@@ -41,7 +41,7 @@ def main(argv):
   lp.launch(
       program,
       launch_type=lp.LaunchType.VERTEX_AI,
-      local_resources=resources)
+      xm_resources=resources)
 
 
 if __name__ == '__main__':
