@@ -29,6 +29,8 @@ class LaunchType(enum.Enum):
   # throught xmanager.
   # NOTE: Experimental, do not use.
   VERTEX_AI = 'vertex_ai'
+  # Launch locally using multiple threads. Upon crash it drops into PDB for the
+  # thread that crashed, and locks output from all other threads.
   LOCAL_MULTI_THREADING = 'local_mt'
   # Launch locally using multiple processes. Can display logs from different
   # nodes in separate windows. The behavior can be controlled using the
