@@ -35,7 +35,11 @@ flags.DEFINE_integer(
     'lp_task_id', None, 'a list index deciding which '
     'worker to run. given a list of workers (obtained from the'
     ' data_file)')
-flags.DEFINE_string('data_file', '', 'Pickle file location')
+flags.DEFINE_string(
+    'data_file', '', 'Pickle file location with entry points for all nodes')
+flags.DEFINE_string(
+    'init_file', '', 'Pickle file location containing initialization module '
+    'executed for each node prior to an entry point')
 flags.DEFINE_string('flags_to_populate', '{}', '')
 
 _FLAG_TYPE_MAPPING = {
@@ -79,11 +83,15 @@ def main(_):
   # Allow for importing modules from the current directory.
   sys.path.append(os.getcwd())
   data_file = FLAGS.data_file
+  init_file = FLAGS.init_file
 
   if os.environ.get('TF_CONFIG', None):
     # For GCP runtime log to STDOUT so that logs are not reported as errors.
     logging.get_absl_handler().python_handler.stream = sys.stdout
 
+  if init_file:
+    init_function = cloudpickle.load(open(init_file, 'rb'))
+    init_function()
   functions = cloudpickle.load(open(data_file, 'rb'))
   task_id = _get_task_id()
 

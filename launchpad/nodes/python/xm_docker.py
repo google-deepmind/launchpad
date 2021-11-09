@@ -19,6 +19,7 @@ import atexit
 import copy
 import dataclasses
 from distutils import dir_util
+import functools
 import os
 import pathlib
 import shutil
@@ -34,6 +35,7 @@ except ModuleNotFoundError:
                   'Please run `pip install dm-launchpad[xmanager]`.')
 
 _DATA_FILE_NAME = 'job.pkl'
+_INIT_FILE_NAME = 'init.pkl'
 
 
 @dataclasses.dataclass
@@ -49,10 +51,17 @@ class DockerConfig:
     docker_requirements: Path to requirements.txt specifying Python packages to
       install inside the Docker image.
     hw_requirements: Hardware requirements.
+    python_path: Additional paths to be added to PYTHONPATH prior to executing
+      an entry point.
   """
   code_directory: Optional[str] = None
   docker_requirements: Optional[str] = None
   hw_requirements: Optional[xm.JobRequirements] = None
+  python_path: Optional[List[str]] = None
+
+
+def initializer(python_path):
+  sys.path = python_path + sys.path
 
 
 def to_docker_executables(
@@ -72,6 +81,20 @@ def to_docker_executables(
   while '_' in tmp_dir:
     tmp_dir = tempfile.mkdtemp()
   atexit.register(shutil.rmtree, tmp_dir, ignore_errors=True)
+
+  command_line = f'python -m process_entry --data_file={_DATA_FILE_NAME}'
+
+  # Add common initialization function for all nodes which sets up PYTHONPATH.
+  if docker_config.python_path:
+    command_line += f' --init_file={_INIT_FILE_NAME}'
+    # Local 'path' is copied under 'tmp_dir' (no /tmp prefix) inside Docker.
+    python_path = [
+        '/' + os.path.basename(tmp_dir) + os.path.abspath(path)
+        for path in docker_config.python_path
+    ]
+    initializer_file_path = pathlib.Path(tmp_dir, _INIT_FILE_NAME)
+    with open(initializer_file_path, 'wb') as f:
+      cloudpickle.dump(functools.partial(initializer, python_path), f)
 
   data_file_path = pathlib.Path(tmp_dir, _DATA_FILE_NAME)
   with open(data_file_path, 'wb') as f:
@@ -104,21 +127,19 @@ def to_docker_executables(
     )
 
   job_requirements.replicas = len(nodes)
-  base_image = f'python:{sys.version_info.major}.{sys.version_info.minor}'
+  python_version = f'{sys.version_info.major}.{sys.version_info.minor}'
+  base_image = f'python:{python_version}'
   return [(xm.PythonContainer(
       path=tmp_dir,
       base_image=base_image,
-      entrypoint=xm.CommandList(
-          [f'python -m process_entry --data_file={_DATA_FILE_NAME}']),
+      entrypoint=xm.CommandList([command_line]),
       docker_instructions=[
           'RUN apt-get update && apt-get install -y git',
           'RUN python -m pip install --upgrade pip',
-          'RUN apt-get -y install libpython3.9',
+          f'RUN apt-get -y install libpython{python_version}',
           f'COPY {workdir_path}/requirements.txt requirements.txt',
           'RUN python -m pip install xmanager',
-
           'RUN python -m pip install -r requirements.txt',
           f'COPY {workdir_path}/ {workdir_path}',
           f'WORKDIR {workdir_path}',
       ]), job_requirements)]
-
