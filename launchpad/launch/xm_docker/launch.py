@@ -114,10 +114,7 @@ def launch(program: lp_program.Program,
     jobs = {}
     job_id = 0
     for executable_spec, requirements in containers:
-      if launch_type == context.LaunchType.LOCAL_DOCKER:
-        executor = xm_local.Local()
-        executor_spec = xm_local.Local.Spec()
-      elif launch_type == context.LaunchType.VERTEX_AI:
+      if launch_type == context.LaunchType.VERTEX_AI:
         executor = xm_local.Caip(requirements=requirements)
         executor_spec = xm_local.Caip.Spec()
       else:

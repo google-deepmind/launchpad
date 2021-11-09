@@ -104,10 +104,6 @@ def launch(
   elif launch_type is context.LaunchType.LOCAL_MULTI_PROCESSING:
     return launch_local_multiprocessed.launch(program, local_resources,
                                               terminal)
-  elif launch_type is context.LaunchType.LOCAL_DOCKER:
-    from launchpad.launch.xm_docker import launch as launch_xm_docker  
-    return launch_xm_docker.launch(program, context.LaunchType.LOCAL_DOCKER,
-                                   xm_resources)
   elif launch_type is context.LaunchType.VERTEX_AI:
     from launchpad.launch.xm_docker import launch as launch_xm_docker  
     return launch_xm_docker.launch(program, context.LaunchType.VERTEX_AI,

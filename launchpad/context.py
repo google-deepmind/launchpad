@@ -22,9 +22,6 @@ from typing import Any, Callable, Optional
 
 class LaunchType(enum.Enum):
   """The different launch types supported by Launchpad."""
-  # Launch locally using docker containers, similar to local multi processing.
-  # NOTE: Experimental, do not use.
-  LOCAL_DOCKER = 'local_docker'
   # Launch on Google Cloud using Vertex AI (https://cloud.google.com/vertex-ai)
   # throught xmanager.
   # NOTE: Using this runtime involves prior GCP configuration. Please follow
