@@ -47,17 +47,13 @@ Launchpad supports a number of launch types, both for running programs on
 a single machine, in a distributed manner, or in a form of a test. Launch type
 can be controlled by the `launch_type` argument passed to `lp.launch` method,
 or specified through the `--lp_launch_type` command line flag.
-Please refer to the documentation of the [LaunchType](https://github.com/deepmind/launchpad/search?q=%22class+LaunchType%22)
+Please refer to the documentation of the [LaunchType](https://github.com/deepmind/launchpad/search?q=%22class LaunchType%22)
 for details.
 
 ## Table of Contents
 
 -   [Installation](#installation)
--   [Quick Start](#quick-start)
-    -   [Implement example nodes](#implement-example-nodes)
-    -   [Define the topology](#define-the-topology)
-    -   [Launch the program](#launch-the-program)
-    -   [Add a test](#add-a-test)
+-   [Quick Start](docs/get_started.md)
 -   [Citing Launchpad](#citing-Launchpad)
 -   [Acknowledgements](#acknowledgements)
 -   [Other resources](#other-resources)

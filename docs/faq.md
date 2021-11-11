@@ -76,9 +76,3 @@ def backgroun_task():
   # Stop background task.
   ...
 ```
-
-### Running distributed programs in open source setup
-
-Running Launchpad's distributed programs in the open source setup is now
-possible through integration with [Xmanager](https://github.com/deepmind/xmanager).
-See [VERTEX_AI launch type](http://cs/f:py/launchpad symbol:LaunchType.VERTEX_AI) for details.

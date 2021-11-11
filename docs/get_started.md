@@ -1,13 +1,13 @@
 # Getting started with Launchpad
 
-## Implement nodes {#implement-nodes}
+## Implement nodes
 
 The setup in this example is as follows.
 LaunchPad program launches one consumer and a number of producers to perform
 some time consuming task. Consumer sends requests to producers and waits for
 work completion. Afterwards it summarizes the work.
 
-![consumer-producer-topology](https://github.com/deepmind/launchpad/tree/master/launchpad/docs/images/consumer_producers.png)
+![consumer-producer-topology](https://github.com/deepmind/launchpad/raw/master/docs/images/consumer_producers.png)
 
 The standard imports and flag setup are as follows.
 The `num_producers` flag defined here can be used to control the number of
@@ -80,7 +80,7 @@ class Consumer:
     lp.stop()
 ```
 
-## Define the topology {#define-topology}
+## Define topology
 
 The next step is to instantiate nodes for the consumer and producers and then
 connect them so that the consumer can call methods on the producers. The
@@ -120,7 +120,7 @@ if __name__ == '__main__':
   app.run(main)
 ```
 
-## Launch the program {#launch}
+## Launch
 
 To launch the program (assuming it is called `launch.py`), simply run:
 
@@ -131,9 +131,9 @@ python3 -m launch --lp_launch_type=local_mp
 The `--lp_launch_type` controls how the program is launched. In the above case
 it is launched locally with each node executed in a separate process.
 List of supported execution modes can be found
-[here](https://github.com/deepmind/launchpad/raw/master/context.py).
+[here](https://github.com/deepmind/launchpad/search?q=%22class LaunchType%22).
 
-## Add a test {#test}
+## Add a test
 
 Here are some points to keep in mind when creating a test for a Launchpad
 program.
@@ -152,7 +152,7 @@ program.
 
 
 Below is an incomplete example illustrating the above concepts. A complete
-example can be found [here](https://github.com/deepmind/launchpad/raw/master/examples/consumer_producers/launch_test.py).
+example can be found [here](https://github.com/deepmind/launchpad/raw/master/launchpad/examples/consumer_producers/launch_test.py).
 
 ```python
 import launchpad as lp
