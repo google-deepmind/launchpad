@@ -32,7 +32,7 @@ try:
   from xmanager import xm  
 except ModuleNotFoundError:
   raise Exception('Launchpad requires `xmanager` for XM-based runtimes.'
-                  'Please run `pip install dm-launchpad[xmanager]`.')
+                  'Please run `pip install xmanager`.')
 
 _DATA_FILE_NAME = 'job.pkl'
 _INIT_FILE_NAME = 'init.pkl'
