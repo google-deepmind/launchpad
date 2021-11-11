@@ -26,17 +26,8 @@ class LaunchType(enum.Enum):
   Launch type can be specified through `lp_launch_type` command line flag or
   by passing `launch_type` parameter to lp.launch() call.
   """
-  # Launch on Google Cloud using Vertex AI (https://cloud.google.com/vertex-ai)
-  # throught xmanager. For an example on how to use VERTEX_AI launch, please
-  # refer to Launchpad's example:
-  # https://github.com/deepmind/launchpad/tree/master/launchpad/examples/consumer_producers/launch_vertex_ai.py
-  # It is also worth looking at RL agents examples from Acme, for instance:
-  # https://github.com/deepmind/acme/tree/master/examples/gym/lp_local_d4pg.py
-  # NOTE: Using this runtime involves prior GCP project configuration.
-  # Please follow the steps described at
-  # https://github.com/deepmind/xmanager#create-a-gcp-project.
-  VERTEX_AI = 'vertex_ai'
-  # Launch locally using multiple threads. Upon crash it drops into PDB for the
+  # Launch locally using multiple threads logging on the same terminal with
+  # different colors. Upon crash it drops into PDB for the
   # thread that crashed, and locks output from all other threads.
   LOCAL_MULTI_THREADING = 'local_mt'
   # Launch locally using multiple processes. Can display logs from different
@@ -48,6 +39,19 @@ class LaunchType(enum.Enum):
   # Launch as a test using multiple threads (same as LOCAL_MULTI_THREADING but
   # terminates the process instead of dropping into PDB).
   TEST_MULTI_THREADING = 'test_mt'
+  # Launch locally using docker containers, similar to local multi processing.
+  # NOTE: Experimental, do not use.
+  LOCAL_DOCKER = 'local_docker'
+  # Launch on Google Cloud using Vertex AI (https://cloud.google.com/vertex-ai)
+  # throught xmanager. For an example on how to use VERTEX_AI launch, please
+  # refer to Launchpad's example:
+  # https://github.com/deepmind/launchpad/tree/master/launchpad/examples/consumer_producers/launch_vertex_ai.py
+  # It is also worth looking at RL agents examples from Acme, for instance:
+  # https://github.com/deepmind/acme/tree/master/examples/gym/lp_local_d4pg.py
+  # NOTE: Using this runtime involves prior GCP project configuration.
+  # Please follow the steps described at
+  # https://github.com/deepmind/xmanager#create-a-gcp-project.
+  VERTEX_AI = 'vertex_ai'
 
 
 class LaunchContext(object):
