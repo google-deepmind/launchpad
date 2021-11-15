@@ -30,7 +30,7 @@ while [[ $# -gt -0 ]]; do
     *)
       echo "Unknown flag: $key"
       echo "Usage:"
-      echo "--python  [3.7|3.8|3.9(default)]"
+      echo "--python  [3.7|3.8(default)|3.9]"
       exit 1
       ;;
   esac
@@ -57,9 +57,13 @@ test_terminal () {
 N_CPU=$(grep -c ^processor /proc/cpuinfo)
 
 # Run static type-checking.
-pytype -k -x /tmp/launchpad/launchpad/pip_package/ \
+# TODO(b/205923232): enable PyType once they address the typed_ast problem.
+if [[ ${PYTHON} != "3.9" ]]
+then
+  pytype -k -x /tmp/launchpad/launchpad/pip_package/ \
 /tmp/launchpad/launchpad/examples/consumer_producers/launch_test.py \
 /tmp/launchpad/configure.py -j "${N_CPU}" /tmp/launchpad/
+fi
 
 # Run all tests.
 py_test
