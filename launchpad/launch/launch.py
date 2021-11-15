@@ -45,6 +45,8 @@ def launch(
     local_resources: Optional[Dict[str, Any]] = None,
     test_case: Optional[absltest.TestCase] = None,
     terminal: Optional[str] = None,
+    *,
+    serialize_py_nodes: bool = False,
 ) -> Any:
   """Launches a Launchpad program.
 
@@ -74,6 +76,9 @@ def launch(
     terminal: (for local multiprocessing launch) Terminal to use to run the
       commands. Valid choices are gnome-terminal, gnome-terminal-tabs, xterm,
       tmux_session, current_terminal, and output_to_files.
+    serialize_py_nodes: If `True`, `local_mt` & `test_mt` will fail if the nodes
+      are not serializable. This can be useful to debug xmanager experiments
+      in tests or locally.
 
   Returns:
     Anything returns from the specific launcher.
@@ -100,7 +105,8 @@ def launch(
   program = programs[0]
 
   if launch_type is context.LaunchType.LOCAL_MULTI_THREADING:
-    return launch_local_multithreaded.launch(program)
+    return launch_local_multithreaded.launch(
+        program, serialize_py_nodes=serialize_py_nodes)
   elif launch_type is context.LaunchType.LOCAL_MULTI_PROCESSING:
     return launch_local_multiprocessed.launch(program, local_resources,
                                               terminal)
@@ -109,7 +115,8 @@ def launch(
     return launch_xm_docker.launch(program, context.LaunchType.VERTEX_AI,
                                    xm_resources)
   elif launch_type is context.LaunchType.TEST_MULTI_THREADING:
-    return launch_test_multithreaded.launch(program, test_case=test_case)
+    return launch_test_multithreaded.launch(
+        program, test_case=test_case, serialize_py_nodes=serialize_py_nodes)
   elif launch_type is context.LaunchType.TEST_MULTI_PROCESSING:
     assert test_case is not None
     return launch_test_multiprocessed.launch(

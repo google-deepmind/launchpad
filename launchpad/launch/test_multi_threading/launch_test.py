@@ -20,9 +20,9 @@ import threading
 import time
 
 from absl.testing import absltest
-
 from launchpad import context
 from launchpad import program as lp_program
+from launchpad.launch import serialization_test
 from launchpad.launch.test_multi_threading import launch
 from launchpad.nodes.python import node as python
 from launchpad.program_stopper import program_stopper
@@ -94,6 +94,13 @@ class LaunchTest(absltest.TestCase):
       p.add_node(python.PyNode(_block))
 
     launch.launch(p, test_case=self)
+
+
+class SerializationTest(serialization_test.ErrorOnSerializationMixin):
+
+  @property
+  def _launch(self):
+    return launch.launch
 
 
 if __name__ == '__main__':

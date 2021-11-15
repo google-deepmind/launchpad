@@ -18,6 +18,7 @@
 This is very similar to local_multi_threading/launch.py but terminates the
 process upon exception (instead of entering pdb).
 """
+
 import os
 import signal
 import threading
@@ -27,11 +28,15 @@ from typing import Optional
 from absl import logging
 from absl.testing import absltest
 from launchpad import context
+from launchpad.launch import serialization
 from launchpad.launch import worker_manager
 
 
 
-def launch(program, test_case: Optional[absltest.TestCase] = None):
+def launch(program,
+           test_case: Optional[absltest.TestCase] = None,
+           *,
+           serialize_py_nodes: bool = False):
   """Launches the program as a multi-threaded integration test."""
   for node in program.get_all_nodes():
     node._initialize_context(  
@@ -40,6 +45,9 @@ def launch(program, test_case: Optional[absltest.TestCase] = None):
 
   # Notify the input handles
   for label, nodes in program.groups.items():
+    if serialize_py_nodes:
+      serialization.check_nodes_are_serializable(label, nodes)
+
     for node in nodes:
       for handle in node._input_handles:  
         handle.connect(node, label)

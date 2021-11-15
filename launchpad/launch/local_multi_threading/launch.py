@@ -22,15 +22,21 @@ from absl import flags
 from launchpad import context
 from launchpad import flags as lp_flags  
 from launchpad import program as lp_program
+from launchpad.launch import serialization
 from launchpad.launch import worker_manager
 
 FLAGS = flags.FLAGS
 
 
-def launch(program: lp_program.Program):
+def launch(program: lp_program.Program,
+           *,
+           serialize_py_nodes: bool = False):
   """Launches a program using multiple threads."""
   # Set up the launch context (launch type & launch config) for all nodes
   for label, nodes in program.groups.items():
+    if serialize_py_nodes:
+      serialization.check_nodes_are_serializable(label, nodes)
+
     for node in nodes:
       node._initialize_context(  
           context.LaunchType.LOCAL_MULTI_THREADING,
