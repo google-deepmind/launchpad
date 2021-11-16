@@ -36,11 +36,46 @@ FLAGS = flags.FLAGS
 
 
 def check_nodes_are_serializable(label, nodes):
+  """Raises an exception if some `PyNode` objects are not serializable."""
+  # We don't check explicitly for the `PyNode` type to prevent a circular
+  # dependency.
+  for node in nodes:
+    if not hasattr(node, 'function'):
+      raise NotImplementedError(
+          'Only PyNodes are currently supported in this launch type.')
+
+  functions = [node.function for node in nodes]
   try:
-    cloudpickle.dumps([node.function for node in nodes])
+    cloudpickle.dumps(functions)
   except Exception as e:
     raise RuntimeError(
         f"The nodes associated to the label '{label}' were not serializable "
         "using cloudpickle. Make them pickable, or `serialize_py_nodes=False` "
         "to `lp.launch` if you want to disable this check. "
     ) from e
+
+
+def serialize_nodes(data_file_path: str, label: str, nodes):
+  """Serializes into a file at path `data_file_path` nodes functions.
+
+  Args:
+    data_file_path: The path of the (local) file to write to.
+    label: The name of the worker group. This is propagated to enrich the error
+      message.
+    nodes: The list of PyNodes.
+  """
+  for node in nodes:
+    if not hasattr(node, 'function'):
+      raise NotImplementedError(
+          'Only PyNodes are currently supported in this launch type.')
+
+  functions = [node.function for node in nodes]
+  with open(data_file_path, 'wb') as f:
+    try:
+      cloudpickle.dump(functions, f)
+    except Exception as e:
+      raise RuntimeError(
+          f"The nodes associated to the label '{label}' were not serializable "
+          "using cloudpickle. Make them pickable, or use a launch type which "
+          "does not need serialization. "
+      ) from e

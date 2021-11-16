@@ -98,6 +98,7 @@ class PyNode(base.Node[HandleType], Generic[HandleType, ReturnType]):
     elif launch_context.launch_type == context.LaunchType.VERTEX_AI:
       from launchpad.nodes.python import xm_docker  
       return xm_docker.to_docker_executables(nodes,
+                                             label,
                                              launch_context.launch_config)
     raise NotImplementedError('Unsupported launch type: {}'.format(
         launch_context.launch_type))

@@ -28,11 +28,14 @@ import tempfile
 from typing import Any, List, Optional, Sequence, Tuple
 
 import cloudpickle
+from launchpad.launch import serialization
+
 try:
   from xmanager import xm  
 except ModuleNotFoundError:
   raise Exception('Launchpad requires `xmanager` for XM-based runtimes.'
                   'Please run `pip install xmanager`.')
+
 
 _DATA_FILE_NAME = 'job.pkl'
 _INIT_FILE_NAME = 'init.pkl'
@@ -66,6 +69,7 @@ def initializer(python_path):
 
 def to_docker_executables(
     nodes: Sequence[Any],
+    label: str,
     docker_config: DockerConfig,
 ) -> List[Tuple[xm.PythonContainer, xm.JobRequirements]]:
 
@@ -96,9 +100,8 @@ def to_docker_executables(
     with open(initializer_file_path, 'wb') as f:
       cloudpickle.dump(functools.partial(initializer, python_path), f)
 
-  data_file_path = pathlib.Path(tmp_dir, _DATA_FILE_NAME)
-  with open(data_file_path, 'wb') as f:
-    cloudpickle.dump([node.function for node in nodes], f)
+  data_file_path = str(pathlib.Path(tmp_dir, _DATA_FILE_NAME))
+  serialization.serialize_nodes(data_file_path, label, nodes)
 
   file_path = pathlib.Path(__file__).absolute()
 

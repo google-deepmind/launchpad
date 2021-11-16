@@ -16,20 +16,18 @@
 """Utilities to run PyNodes as multiple processes."""
 
 import atexit
+import dataclasses
 import json
 import os
 import shutil
 import sys
 import tempfile
-from typing import Any, List, Mapping, Optional, Union, Sequence, Tuple
+from typing import Any, List, Mapping, Optional, Sequence, Tuple, Union
 
 from absl import flags
 from absl import logging
-
-import cloudpickle
-import dataclasses
-
 from launchpad import flags as lp_flags  
+from launchpad.launch import serialization
 from launchpad.launch.local_multi_processing import commands as mp_commands
 from launchpad.nodes.python import flags_utils
 
@@ -92,8 +90,7 @@ def to_multiprocessing_executables(
   tmp_dir = tempfile.mkdtemp()
   atexit.register(shutil.rmtree, tmp_dir, ignore_errors=True)
   data_file_path = os.path.join(tmp_dir, _DATA_FILE_NAME)
-  with open(data_file_path, 'wb') as f:
-    cloudpickle.dump([node.function for node in nodes], f)
+  serialization.serialize_nodes(data_file_path, label, nodes)
 
 
   commands = []
