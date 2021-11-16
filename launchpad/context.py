@@ -45,9 +45,9 @@ class LaunchType(enum.Enum):
   # Launch on Google Cloud using Vertex AI (https://cloud.google.com/vertex-ai)
   # throught xmanager. For an example on how to use VERTEX_AI launch, please
   # refer to Launchpad's example:
-  # https://github.com/deepmind/launchpad/tree/master/launchpad/examples/consumer_producers/launch_vertex_ai.py
+  # cs/third_party/py/launchpad/examples/consumer_producers/launch_vertex_ai.py
   # It is also worth looking at RL agents examples from Acme, for instance:
-  # https://github.com/deepmind/acme/tree/master/examples/gym/lp_local_d4pg.py
+  # cs/third_party/py/acme/examples/gym/lp_local_d4pg.py
   # NOTE: Using this runtime involves prior GCP project configuration.
   # Please follow the steps described at
   # https://github.com/deepmind/xmanager#create-a-gcp-project.
