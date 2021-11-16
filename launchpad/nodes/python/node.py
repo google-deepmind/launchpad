@@ -23,6 +23,7 @@ import functools
 import itertools
 from typing import Any, Callable, Generic, TypeVar
 
+from absl import flags
 from absl import logging
 from launchpad import context
 from launchpad import lazy_loader
@@ -33,6 +34,7 @@ from launchpad.nodes.python import addressing
 from launchpad.nodes.python import local_multi_processing
 import tree
 
+FLAGS = flags.FLAGS
 
 T = TypeVar('T')
 HandleType = TypeVar('HandleType', bound=base.Handle)
