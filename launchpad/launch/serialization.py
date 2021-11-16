@@ -51,7 +51,8 @@ def check_nodes_are_serializable(label, nodes):
     raise RuntimeError(
         f"The nodes associated to the label '{label}' were not serializable "
         "using cloudpickle. Make them pickable, or `serialize_py_nodes=False` "
-        "to `lp.launch` if you want to disable this check. "
+        "to `lp.launch` if you want to disable this check, for example when you"
+        " want to use FLAGS, mocks, threading.Event etc in your test."
     ) from e
 
 
