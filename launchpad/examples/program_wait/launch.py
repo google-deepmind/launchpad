@@ -24,12 +24,10 @@ import launchpad as lp
 
 
 def _sleep():
-  try:
-    while not lp.wait_for_stop(1):
-      logging.info('Sleeping again...')
-  except SystemExit:
-    logging.info('Clean termination of _sleep node')
-    time.sleep(2)
+  while not lp.wait_for_stop(1):
+    logging.info('Sleeping again...')
+  logging.info('Clean termination of _sleep node')
+  time.sleep(2)
 
 
 def _wait_for_stop():
@@ -47,11 +45,7 @@ def _stop_event():
 def _infinite_sleep():
   # Sleep call can't be interrupted outside of the main thread, so in local_mt
   # mode for instance this node will be hard-killed.
-  try:
-    time.sleep(1000000)
-  except SystemExit:
-    logging.info('Clean termination of _infinite_sleep node')
-    time.sleep(2)
+  time.sleep(1000000)
 
 
 def _stop_program():

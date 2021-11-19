@@ -87,11 +87,7 @@ class WorkerManagerTest(absltest.TestCase):
 
   def test_system_exit(self):
     def waiter():
-      try:
-        while True:
-          time.sleep(0.1)
-      except SystemExit:
-        pass
+      self.assertTrue(self._manager.wait_for_stop(100.0))
 
     self._manager.thread_worker('worker', waiter)
     os.kill(os.getpid(), signal.SIGTERM)

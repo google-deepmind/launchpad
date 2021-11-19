@@ -16,7 +16,6 @@
 """Tests for launchpad.nodes.multi_threading_colocation.node."""
 
 import threading
-import time
 
 from absl.testing import absltest
 import courier
@@ -59,12 +58,9 @@ class NodeTest(absltest.TestCase):
     preemption_ok = threading.Event()
 
     def node():
-      try:
-        ready_to_preempt.set()
-        while True:
-          time.sleep(0.1)
-      except SystemExit:
-        preemption_ok.set()
+      ready_to_preempt.set()
+      lp.wait_for_stop()
+      preemption_ok.set()
 
     def stopper():
       ready_to_preempt.wait()
@@ -77,19 +73,20 @@ class NodeTest(absltest.TestCase):
     preemption_ok.wait()
 
   def test_exception_propagation(self):
-    manager = worker_manager.WorkerManager(register_in_thread=True)
-    self.addCleanup(manager.cleanup_after_test, self)
 
     def raise_error():
       raise RuntimeError('Foo')
+
     def wait_test_end():
-      manager.wait_for_stop()
+      lp.wait_for_stop()
 
     error_node = lp.PyNode(raise_error)
     waiter_node = lp.PyNode(wait_test_end)
     colo_node = lp.MultiThreadingColocation([error_node, waiter_node])
+    parent_manager = worker_manager.WorkerManager(register_in_thread=True)
     with self.assertRaisesRegex(RuntimeError, 'Foo'):
-      colo_node.run()
+      manager = colo_node.run()
+      self.addCleanup(manager.cleanup_after_test, self)
 
   def test_first_completed(self):
     manager = worker_manager.WorkerManager(register_in_thread=True)
@@ -131,8 +128,7 @@ class NodeTest(absltest.TestCase):
 
   def test_stop(self):
     def _sleep():
-      while True:
-        time.sleep(0.1)
+      lp.wait_for_stop()
 
     def _stop():
       lp.stop()
@@ -146,8 +142,7 @@ class NodeTest(absltest.TestCase):
 
   def test_nested_stop(self):
     def _sleep():
-      while True:
-        time.sleep(0.1)
+      lp.wait_for_stop()
 
     def _stop():
       lp.stop()

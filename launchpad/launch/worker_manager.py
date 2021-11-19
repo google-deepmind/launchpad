@@ -17,7 +17,6 @@
 import atexit
 import collections
 from concurrent import futures
-import ctypes
 import os
 import signal
 import subprocess
@@ -109,14 +108,12 @@ class WorkerManager:
 
   def __init__(
       self,
-      stop_main_thread=False,
       kill_main_thread=True,
       register_in_thread=False,
       register_signals=True):
     """Initializes a WorkerManager.
 
     Args:
-      stop_main_thread: Should main thread be notified about termination.
       kill_main_thread: When set to false try not to kill the launcher while
         killing workers. This is not possible when thread workers run in the
         same process.
@@ -152,7 +149,6 @@ class WorkerManager:
     if handle_user_stop:
       register_signal_handler(
           signal.SIGINT, lambda sig=None, frame=None: self._stop_by_user())
-    self._stop_main_thread = stop_main_thread
     if register_in_thread:
       _WORKER_MANAGERS.manager = self
 
@@ -185,7 +181,7 @@ class WorkerManager:
     return self._stop_event
 
   def thread_worker(self, name, function):
-    """Registers and start a new thread worker.
+    """Registers and starts a new thread worker.
 
     Args:
       name: Name of the worker group.
@@ -209,9 +205,6 @@ class WorkerManager:
       self._workers_count[name] += 1
       worker = ThreadWorker(thread=thread, future=future)
       self._active_workers[name].append(worker)
-      if self._stop_event.is_set():
-        # Runtime is terminating, so notify the worker.
-        self._send_exception(worker)
 
   def process_worker(self, name, command, env=None, **kwargs):
     """Adds process worker to the runtime.
@@ -272,12 +265,6 @@ class WorkerManager:
     if kill_self:
       self._kill_process_tree(os.getpid())
 
-  def _send_exception(self, worker):
-    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
-        ctypes.c_long(worker.thread.ident),
-        ctypes.py_object(SystemExit))
-    assert res < 2, 'Exception raise failure'
-
   def _stop_or_kill(self):
     """Stops all workers; kills them if they don't stop on time."""
     pending_secs = self._termination_notice_secs - self._stop_counter
@@ -302,8 +289,8 @@ class WorkerManager:
     for workers in self._active_workers.values():
       for worker in workers:
         if isinstance(worker, ThreadWorker):
-          if self._stop_counter == 1:
-            self._send_exception(worker)
+          # Thread workers should use wait_for_stop.
+          pass
         elif isinstance(worker, subprocess.Popen):
           worker.send_signal(signal.SIGTERM)
         else:
@@ -324,20 +311,13 @@ class WorkerManager:
               worker.send_signal(signal.SIGKILL)
             except psutil.NoSuchProcess:
               pass
-    if self._stop_main_thread:
-      res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
-          ctypes.c_long(threading.main_thread().ident),
-          ctypes.py_object(SystemExit))
-      assert res < 2, 'Exception raise failure'
 
     if pending_secs >= 0:
       signal.alarm(1)
 
   def _stop(self):
     """Requests all workers to stop and schedule delayed termination."""
-    if not self._stop_event.is_set():
-      self._stop_event.set()
-
+    self._stop_event.set()
     try:
       if self._termination_notice_secs > 0:
         self._alarm_enabled = True
@@ -382,27 +362,22 @@ class WorkerManager:
     Raises:
       RuntimeError: if any worker raises an exception.
     """
-    while True:
-      try:
-        active_workers = True
-        while active_workers:
-          with self._mutex:
-            self._check_workers()
-            active_workers = False
-            if self._first_failure and raise_error:
-              failure = self._first_failure
-              self._first_failure = None
-              raise failure
-            for label in labels_to_wait_for or self._active_workers.keys():
-              if self._active_workers[label]:
-                active_workers = True
-              if (return_on_first_completed and len(self._active_workers[label])
-                  < self._workers_count[label]):
-                return
-          time.sleep(0.1)
-        return
-      except SystemExit:
-        self._stop()
+    active_workers = True
+    while active_workers:
+      with self._mutex:
+        self._check_workers()
+        active_workers = False
+        if self._first_failure and raise_error:
+          failure = self._first_failure
+          self._first_failure = None
+          raise failure
+        for label in labels_to_wait_for or self._active_workers.keys():
+          if self._active_workers[label]:
+            active_workers = True
+          if (return_on_first_completed and len(self._active_workers[label])
+              < self._workers_count[label]):
+            return
+      time.sleep(0.1)
 
   def cleanup_after_test(self, test_case: absltest.TestCase):
     """Cleanups runtime after a test."""

@@ -17,7 +17,6 @@
 
 import signal
 import threading
-import time
 
 from absl.testing import absltest
 from launchpad import context
@@ -30,8 +29,7 @@ import mock
 
 
 def _block():
-  while True:
-    time.sleep(1)
+  launch.worker_manager.wait_for_stop()
 
 
 def _stop(stopper):

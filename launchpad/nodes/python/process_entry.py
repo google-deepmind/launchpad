@@ -98,8 +98,7 @@ def main(_):
   # Worker manager is used here to handle termination signals and provide
   # preemption support.
   worker_manager.WorkerManager(
-      register_in_thread=True,
-      stop_main_thread=True)
+      register_in_thread=True)
 
   with contextlib.suppress():  # no-op context manager
     functions[task_id]()
