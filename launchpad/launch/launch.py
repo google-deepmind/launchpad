@@ -46,7 +46,7 @@ def launch(
     test_case: Optional[absltest.TestCase] = None,
     terminal: Optional[str] = None,
     *,
-    serialize_py_nodes: bool = False,
+    serialize_py_nodes: Optional[bool] = None,
 ) -> Any:
   """Launches a Launchpad program.
 
@@ -77,8 +77,10 @@ def launch(
       commands. Valid choices are gnome-terminal, gnome-terminal-tabs, xterm,
       tmux_session, current_terminal, and output_to_files.
     serialize_py_nodes: If `True`, `local_mt` & `test_mt` will fail if the nodes
-      are not serializable. This can be useful to debug xmanager experiments
-      in tests or locally.
+      are not serializable. This can be useful to debug xmanager experiments in
+      tests or locally. If `False`, the nodes won't be serialized. If `None`
+      (the default), it will default to the implementation default value (
+      `local_mt` is False, `test_mt` is True).
 
   Returns:
     Anything returns from the specific launcher.

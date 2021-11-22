@@ -36,8 +36,11 @@ from launchpad.launch import worker_manager
 def launch(program,
            test_case: Optional[absltest.TestCase] = None,
            *,
-           serialize_py_nodes: bool = False):
+           serialize_py_nodes: Optional[bool] = None):
   """Launches the program as a multi-threaded integration test."""
+  if serialize_py_nodes is None:
+    serialize_py_nodes = True
+
   for node in program.get_all_nodes():
     node._initialize_context(  
         context.LaunchType.TEST_MULTI_THREADING,

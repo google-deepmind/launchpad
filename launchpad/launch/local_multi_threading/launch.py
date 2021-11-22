@@ -17,6 +17,7 @@
 
 
 import atexit
+from typing import Optional
 
 from absl import flags
 from launchpad import context
@@ -30,8 +31,11 @@ FLAGS = flags.FLAGS
 
 def launch(program: lp_program.Program,
            *,
-           serialize_py_nodes: bool = False):
+           serialize_py_nodes: Optional[bool] = None):
   """Launches a program using multiple threads."""
+  if serialize_py_nodes is None:
+    serialize_py_nodes = False
+
   # Set up the launch context (launch type & launch config) for all nodes
   for label, nodes in program.groups.items():
     if serialize_py_nodes:

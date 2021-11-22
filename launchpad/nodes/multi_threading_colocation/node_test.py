@@ -49,7 +49,11 @@ class NodeTest(absltest.TestCase):
     program.add_node(
         lp.MultiThreadingColocation([client_node, server_node]),
         label='client_server')
-    lp.launch(program, launch_type='test_mt', test_case=self)
+    lp.launch(
+        program,
+        launch_type='test_mt',
+        test_case=self,
+        serialize_py_nodes=False)  # Disable serialization due to `Lock` objects
     has_ping.wait()
 
   def test_preemption(self):
@@ -69,7 +73,9 @@ class NodeTest(absltest.TestCase):
     program.add_node(
         lp.MultiThreadingColocation([lp.PyNode(node), lp.PyNode(stopper)]),
         label='coloc')
-    lp.launch(program, launch_type='test_mt', test_case=self)
+     # Disable serialization due to `Lock` objects
+    lp.launch(program, launch_type='test_mt', test_case=self,
+              serialize_py_nodes=False)
     preemption_ok.wait()
 
   def test_exception_propagation(self):

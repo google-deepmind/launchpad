@@ -48,7 +48,7 @@ class ErrorOnSerializationMixin(absltest.TestCase):
     program = self._get_program()
     with self.assertRaisesRegex(  
         RuntimeError,
-        "The nodes associated to the label 'my_node' were not serializable "
+        "The nodes associated to the label 'my_node'"
     ):
       self._launch(program, test_case=self, serialize_py_nodes=True).wait()
 
@@ -64,9 +64,7 @@ class SerializationTest(absltest.TestCase):
 
     with self.assertRaisesRegex(
         RuntimeError,
-        "The nodes associated to the label 'my_node' were not serializable "
-        'using cloudpickle. Make them pickable, or `serialize_py_nodes=False` '
-        'to `lp.launch` if you want to disable this check.'):
+        "The nodes associated to the label 'my_node'"):
       serialization.check_nodes_are_serializable('my_node', nodes)
 
 

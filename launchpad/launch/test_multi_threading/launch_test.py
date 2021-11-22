@@ -56,7 +56,7 @@ class LaunchTest(absltest.TestCase):
 
     program = lp_program.Program('test')
     program.add_node(python.PyNode(run), label='run')
-    launch.launch(program, test_case=self)
+    launch.launch(program, test_case=self, serialize_py_nodes=False)
     has_run.wait()
 
   def test_handle_exception(self):
