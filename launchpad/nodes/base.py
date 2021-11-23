@@ -85,6 +85,10 @@ class Node(Generic[HandleType], metaclass=abc.ABCMeta):
     # mechanism.
     self.addresses = []  # type: List[lp_address.Address]
 
+  @property
+  def launch_context(self):
+    return self._launch_context
+
   def _initialize_context(self, launch_type: lp_context.LaunchType,
                           launch_config: Any):
     self._launch_context.initialize(

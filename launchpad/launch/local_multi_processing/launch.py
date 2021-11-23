@@ -50,10 +50,8 @@ def launch(program: lp_program.Program,
   for label, nodes in program.groups.items():
     # to_executables() is a static method, so we can call it from any of the
     # nodes in this group.
-    
     # pytype: disable=wrong-arg-count
     commands.extend(nodes[0].to_executables(nodes, label,
-                                            nodes[0]._launch_context))
-    
+                                            nodes[0].launch_context))
     # pytype: enable=wrong-arg-count
   return run_locally.run_commands_locally(commands, terminal)

@@ -56,7 +56,7 @@ def launch(program: lp_program.Program,
   # requirements.
   nodes_by_container = collections.defaultdict(list)
   for label, nodes in program.groups.items():
-    launch_config = nodes[0]._launch_context.launch_config  
+    launch_config = nodes[0].launch_context.launch_config
     hash_value = hashlib.md5()
     hash_value.update((launch_config.code_directory).encode())
     hash_value.update((launch_config.docker_requirements).encode())
@@ -96,15 +96,13 @@ def launch(program: lp_program.Program,
 
     # to_executables() is a static method, so we can call it from any of the
     # nodes in this group.
-    
     # pytype: disable=wrong-arg-count
 
     # this is to_docker_executables based on LaunchType
     docker_executables = nodes[0].to_executables(nodes, cluster_names[index],
-                                                 nodes[0]._launch_context)
+                                                 nodes[0].launch_context)
     assert len(docker_executables) == 1
     containers.append(docker_executables[0])
-    
     # pytype: enable=wrong-arg-count
 
   signal_handling.exit_gracefully_on_sigint()

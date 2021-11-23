@@ -68,11 +68,9 @@ def thread_handler(program):
     # to_executables() is a static method, so we can call it from any of the
     # nodes in this group.
     # Somehow pytype thinks to_executables() gets wrong arg count.
-    
     # pytype: disable=wrong-arg-count
     executables = nodes[0].to_executables(nodes, label,
-                                          nodes[0]._launch_context)
-    
+                                          nodes[0].launch_context)
     # pytype: enable=wrong-arg-count
     for executable in executables:
       manager.thread_worker(label, executable)
