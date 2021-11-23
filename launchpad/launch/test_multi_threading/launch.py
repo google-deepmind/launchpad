@@ -52,7 +52,7 @@ def launch(program,
       serialization.check_nodes_are_serializable(label, nodes)
 
     for node in nodes:
-      for handle in node._input_handles:  
+      for handle in node.input_handles:
         handle.connect(node, label)
 
   # Bind addresses

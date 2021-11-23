@@ -49,7 +49,7 @@ def launch(program: lp_program.Program,
   # Notify the input handles
   for label, nodes in program.groups.items():
     for node in nodes:
-      for handle in node._input_handles:  
+      for handle in node.input_handles:
         handle.connect(node, label)
 
   # Vertex AI supports only 4 worker pools, so we group nodes with the same
