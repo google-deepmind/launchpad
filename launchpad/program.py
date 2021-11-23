@@ -16,6 +16,7 @@
 """A Launchpad program."""
 
 import contextlib
+import dataclasses
 import itertools
 
 from typing import Any, Dict, List, Optional
@@ -29,7 +30,26 @@ HandleType = Any
 
 
 class Program(object):
-  """A Launchpad program."""
+  """A Launchpad program, representing a distributed program and its topology.
+
+  A Launchpad program contains nodes, each node could be just a process, or
+  provide a service, etc (please refer to Launchpad documentation for types of
+  nodes). Homogenous nodes are organized as groups. Here's an example of
+  adding nodes to a group:
+
+      with program.group('actor'):
+        program.add_node(lp.CourierNode(MyActor, ...))
+
+  `add_node()` returns a handle, which can be passed to another node for
+  communication purpose, and is the way to set up distributed communication
+  topology. For example:
+
+      with program.group('learner'):
+        learner = program.add_node(lp.CourierNode(MyLearner, ...))
+
+      with program.group('actor'):
+        program.add_node(lp.CourierNode(MyActor, learner=leaner))
+  """
 
   def __init__(self, name: str):
     self._name = name
@@ -40,7 +60,7 @@ class Program(object):
   def add_node(self,
                node: base.Node,
                label: Optional[str] = None) -> HandleType:
-    """Adds node to the program."""
+    """Adds node to the program and returns the node handle."""
 
     if self._current_group:
       if label and label != self._current_group:
