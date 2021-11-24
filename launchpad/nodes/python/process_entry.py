@@ -35,8 +35,12 @@ flags.DEFINE_integer(
     'lp_task_id', None, 'a list index deciding which '
     'worker to run. given a list of workers (obtained from the'
     ' data_file)')
+flags.DEFINE_string('data_file', '',
+                    'Pickle file location with entry points for all nodes')
 flags.DEFINE_string(
-    'data_file', '', 'Pickle file location with entry points for all nodes')
+    'lp_job_name', '',
+    'The name of the job, used to access the correct pickle file resource when '
+    'using the new launch API')
 flags.DEFINE_string(
     'init_file', '', 'Pickle file location containing initialization module '
     'executed for each node prior to an entry point')
