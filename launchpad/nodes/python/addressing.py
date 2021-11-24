@@ -15,7 +15,6 @@
 
 """Addressing for PyNodes."""
 
-import getpass
 import json
 import os
 import typing
