@@ -5,9 +5,9 @@
 As Launchpad aims at supporting different types of runtimes (including
 multi-threaded), it is not possible to specify per-node flags / environment
 variables in all cases. For that reason it is recommended to use nodes'
-parameters whether possible. In cases when this is not doable, you will have
-to specify the overrides per each runtime used. For example, in case of
-a multi-process runtime:
+parameters whether possible. In cases when this is not doable, you will have to
+specify the overrides per each runtime used. For example, in case of a
+multi-process runtime:
 
 ```
 # local_resources is the resource dictionary (mapping nodes' group names to resources) for local multiprocessing launch.
