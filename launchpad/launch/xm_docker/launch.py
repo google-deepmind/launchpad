@@ -17,7 +17,7 @@
 
 import collections
 import hashlib
-from typing import Any, Mapping, Optional
+from typing import Any, Dict, Optional
 
 from absl import logging
 from google.auth import exceptions as google_auth_exceptions
@@ -31,7 +31,7 @@ from xmanager import xm_local
 
 def launch(program: lp_program.Program,
            launch_type: context.LaunchType,
-           xm_resources: Optional[Mapping[str, Any]] = None):
+           xm_resources: Optional[Dict[str, Any]] = None):
   """Launches a program using local docker containers via XManager."""
   # Set up the launch context (launch type & launch config) for all nodes
   xm_resources = xm_resources or {}
