@@ -76,13 +76,13 @@ class Address(object):
     self._address_builder = None  # type: AbstractAddressBuilder
     self._owning_node = None
 
-  def bind(self, address_builder: AbstractAddressBuilder):
+  def bind(self, address_builder: AbstractAddressBuilder) -> None:
     """Sets a function that creates the platform-specific address at runtime."""
     # The address cannot be evaluated before we launch, because we might not
     # have all the necessary info for evaluation
     self._address_builder = address_builder
 
-  def resolve(self):
+  def resolve(self) -> str:
     """Returns the address as a string."""
     if not self._address_builder:
       if self._owning_node is None:
@@ -101,7 +101,7 @@ class Address(object):
 
     return self._address_builder.build()
 
-  def assign(self, node):
+  def assign(self, node) -> None:
     """Assigns the Address to the specified node (must be done exactly once)."""
     if self._owning_node is not None:
       if self._owning_node is node:
