@@ -36,6 +36,7 @@
 namespace courier {
 namespace {
 
+
 absl::StatusCode PythonExceptionErrorCode() {
   if (!PyErr_Occurred()) {
     return absl::StatusCode::kUnknown;
