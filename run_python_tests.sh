@@ -47,10 +47,12 @@ py_test() {
   for test_file in `find $LAUNCHPAD $COURIER -name '*_test.py' -print`
   do
     echo "####=======Testing ${test_file}=======####"
-    python${PYTHON} "${test_file}"
+    date
+    time python${PYTHON} "${test_file}"
   done
 }
 test_terminal () {
+  date
   LAUNCHPAD_LAUNCH_LOCAL_TERMINAL=$@ python${PYTHON} -m launchpad.examples.consumer_producers.launch --lp_launch_type=local_mp
 }
 
@@ -60,9 +62,11 @@ N_CPU=$(grep -c ^processor /proc/cpuinfo)
 # TODO(b/205923232): enable PyType once they address the typed_ast problem.
 if [[ ${PYTHON} != "3.9" ]]
 then
+  date
   pytype -k -x /tmp/launchpad/launchpad/pip_package/ \
 /tmp/launchpad/launchpad/examples/consumer_producers/launch_test.py \
 /tmp/launchpad/configure.py -j "${N_CPU}" /tmp/launchpad/
+  date
 fi
 
 # Run all tests.
@@ -73,4 +77,6 @@ test_terminal tmux_session
 test_terminal byobu_session
 test_terminal current_terminal
 test_terminal output_to_files
+date
 python${PYTHON} -m launchpad.examples.consumer_producers.launch --lp_launch_type=local_mt
+date
