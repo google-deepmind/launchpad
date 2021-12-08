@@ -15,10 +15,9 @@
 
 """Tests for launchpad.launch.test_multi_processing.launch."""
 
-import time
 
 from absl.testing import absltest
-from launchpad import context
+import launchpad as lp
 from launchpad import program
 from launchpad.launch.test_multi_processing import launch
 from launchpad.nodes.python import local_multi_processing
@@ -40,8 +39,8 @@ def _fail():
 
 
 def _block():
-  while True:
-    time.sleep(2)
+  while not lp.wait_for_stop(2):
+    pass
 
 
 def _stop(stopper):
@@ -147,7 +146,7 @@ class LaunchTest(absltest.TestCase):
 
     with p.group('stop'):
       p.add_node(python.PyNode(_stop, program_stopper.make_program_stopper(
-          context.LaunchType.TEST_MULTI_PROCESSING)))
+          lp.context.LaunchType.TEST_MULTI_PROCESSING)))
 
     resources = dict(
         block=_get_default_py_node_config(), stop=_get_default_py_node_config())
