@@ -27,7 +27,6 @@ class SerializationTest(serialization_test.ErrorOnSerializationMixin):
     return launch.launch
 ```
 """
-
 from absl import flags
 import cloudpickle
 from launchpad import flags as lp_flags  
@@ -53,22 +52,21 @@ def check_nodes_are_serializable(label, nodes):
     ) from e
 
 
-def serialize_nodes(data_file_path: str, label: str, py_nodes):
-  """Serializes into a file at path `data_file_path` nodes functions.
+def serialize_functions(data_file_path: str, description: str, functions):
+  """Serializes into a file at path `data_file_path` for PyNode functions.
 
   Args:
     data_file_path: The path of the (local) file to write to.
-    label: The name of the worker group. This is propagated to enrich the error
-      message.
-    py_nodes: The list of PyNodes.
+    description: Describes the functions, e,g., the label of the group they
+      belongs to. This is propagated to enrich the error message.
+    functions: PyNode functions as a list or list-like object.
   """
-  functions = [node.function for node in py_nodes]
   with open(data_file_path, "wb") as f:
     try:
       cloudpickle.dump(functions, f)
     except Exception as e:
       raise RuntimeError(
-          f"The nodes associated to the label '{label}' ({type(py_nodes[0])}) "
-          "were using cloudpickle. Make them pickable, or use a launch type "
-          "which does not need serialization. "
+          f"The nodes associated to '{description}' are not serializable "
+          "by cloudpickle. Please make them serializable, or use a launch type "
+          "that does not require serialization."
       ) from e

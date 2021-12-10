@@ -90,7 +90,8 @@ def to_multiprocessing_executables(
   tmp_dir = tempfile.mkdtemp()
   atexit.register(shutil.rmtree, tmp_dir, ignore_errors=True)
   data_file_path = os.path.join(tmp_dir, _DATA_FILE_NAME)
-  serialization.serialize_nodes(data_file_path, label, nodes)
+  serialization.serialize_functions(data_file_path, label,
+                                    [n.function for n in nodes])
 
 
   commands = []

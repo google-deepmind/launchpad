@@ -101,7 +101,8 @@ def to_docker_executables(
       cloudpickle.dump(functools.partial(initializer, python_path), f)
 
   data_file_path = str(pathlib.Path(tmp_dir, _DATA_FILE_NAME))
-  serialization.serialize_nodes(data_file_path, label, nodes)
+  serialization.serialize_functions(data_file_path, label,
+                                    [n.function for n in nodes])
 
   file_path = pathlib.Path(__file__).absolute()
 
