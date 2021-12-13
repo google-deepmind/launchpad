@@ -94,21 +94,25 @@ def to_multiprocessing_executables(
                                     [n.function for n in nodes])
 
 
+  args = dict(launch_config.args)
+  per_task_args = [{} for _ in nodes]
+
   commands = []
-  for task_id, _ in enumerate(nodes):
+  for task_id, (_, task_args) in enumerate(zip(nodes, per_task_args)):
     command_as_list = [
         launch_config.absolute_interpreter_path, entry_script_path
     ]
 
 
+    all_args = {**args, **task_args}
     # Arguments to pass to the script
-    for key, value in launch_config.args.items():
+    for key, value in all_args.items():
       command_as_list.extend(_to_cmd_arg(key, value))
 
     # Find flags and pre-populate their definitions, as these definitions are
     # not yet ready in the entry script.
     flags_to_populate = flags_utils.get_flags_to_populate(
-        list(launch_config.args.items()))
+        list(all_args.items()))
     if flags_to_populate:
       command_as_list.extend(
           _to_cmd_arg('flags_to_populate', json.dumps(flags_to_populate)))
