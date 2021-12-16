@@ -14,9 +14,12 @@
 
 """Tests & test utils for serialization.py."""
 
+import functools
 import threading
 
 from absl.testing import absltest
+import cloudpickle
+
 from launchpad import program as lp_program
 from launchpad.launch import serialization
 from launchpad.nodes.python import node as python
@@ -66,6 +69,21 @@ class SerializationTest(absltest.TestCase):
         RuntimeError,
         "The nodes associated to the label 'my_node'"):
       serialization.check_nodes_are_serializable('my_node', nodes)
+
+  def test_lru_cache(self):
+    serialization.enable_lru_cache_pickling_once()
+    call_count = [0]
+
+    @functools.lru_cache(maxsize=1)
+    def increase_call_count():
+      call_count[0] += 1
+      return call_count[0]
+
+    f0, f1 = cloudpickle.loads(cloudpickle.dumps([increase_call_count] * 2))
+    f0()
+    f1()
+    self.assertEqual(f0(), 1)
+    self.assertEqual(f1(), 1)
 
 
 if __name__ == '__main__':

@@ -27,15 +27,38 @@ class SerializationTest(serialization_test.ErrorOnSerializationMixin):
     return launch.launch
 ```
 """
+import copyreg
+import functools
+
 from absl import flags
+
 import cloudpickle
+
 from launchpad import flags as lp_flags  
 
 FLAGS = flags.FLAGS
 
 
+@functools.lru_cache(maxsize=1)
+def enable_lru_cache_pickling_once():
+  """Enables pickling for functools.lru_cache."""
+  lru_cache_type = type(functools.lru_cache()(lambda: None))
+
+  def new_lru_cache(func, cache_kwargs):
+    return functools.lru_cache(**cache_kwargs)(func)
+
+  def _pickle_lru_cache(obj):
+    params = {}
+    if hasattr(obj, "cache_parameters"):
+      params = obj.cache_parameters()
+    return new_lru_cache, (obj.__wrapped__, params)
+
+  copyreg.pickle(lru_cache_type, _pickle_lru_cache)
+
+
 def check_nodes_are_serializable(label, nodes):
   """Raises an exception if some `PyNode` objects are not serializable."""
+  enable_lru_cache_pickling_once()
   # We only try to serialize `PyNode` objects (as they are the only nodes for
   # which the default implementation of `to_executables` will do serialization
   # of `node.function`).
@@ -61,6 +84,7 @@ def serialize_functions(data_file_path: str, description: str, functions):
       belongs to. This is propagated to enrich the error message.
     functions: PyNode functions as a list or list-like object.
   """
+  enable_lru_cache_pickling_once()
   with open(data_file_path, "wb") as f:
     try:
       cloudpickle.dump(functions, f)
