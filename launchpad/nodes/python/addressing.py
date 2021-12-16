@@ -15,6 +15,8 @@
 
 """Addressing for PyNodes."""
 
+import collections
+import itertools
 import json
 import os
 import typing
