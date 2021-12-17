@@ -108,8 +108,13 @@ class PyIntegrationTest(absltest.TestCase):
   def testAsyncFutureCancel(self):
     future = self._client.futures.slow_method()
     self.assertTrue(future.cancel())
-    with self.assertRaises(futures.CancelledError):
+    try:
       future.result()
+      self.fail('Expected future to raise cancelled exception')
+    except futures.CancelledError:
+      pass
+    except StatusNotOk as e:
+      self.assertIn('CANCEL', e.message)
 
   def testAsyncFutureException(self):
     future = self._client.futures.exception_method()
