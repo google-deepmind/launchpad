@@ -101,21 +101,6 @@ class LaunchTest(absltest.TestCase):
         RuntimeError, 'One of the workers failed.'):
       processes.wait(['main'])
 
-  def test_no_wait_after_failure(self):
-    p = program.Program('test')
-
-    p.add_node(python.PyNode(_fail), 'failer')
-    p.add_node(python.PyNode(_block), 'blocker')
-    resources = dict(
-        failer=_get_default_py_node_config(),
-        blocker=_get_default_py_node_config())
-    processes = launch.launch(p, test_case=self, local_resources=resources)
-
-    # One process crashes and the other blocks indefinitely. In this case wait()
-    # should return upon the first failure.
-    with self.assertRaisesRegexp(  
-        RuntimeError, 'One of the workers failed.'):
-      processes.wait()
 
   def test_grouping(self):
     # This verifies the process handles are grouped correctly
