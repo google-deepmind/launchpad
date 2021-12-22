@@ -50,13 +50,14 @@ def get_worker_manager():
 
 
 def _signal_dispatcher(sig, frame=None):
-  for dispatcher in _SIGNAL_HANDLERS[sig]:
+  dispatchers = _SIGNAL_HANDLERS[sig].copy()
+  if sig != signal.SIGALRM:
+    _SIGNAL_HANDLERS[sig].clear()
+  for dispatcher in dispatchers:
     try:
       dispatcher(sig, frame)
     except TypeError:
       dispatcher()
-  if sig != signal.SIGALRM:
-    _SIGNAL_HANDLERS[sig].clear()
 
 
 def _register_signal_dispatcher(sig):
@@ -78,6 +79,7 @@ def _register_signal_handler(sig, handler):
     _register_signal_dispatcher(signal.SIGQUIT)
     _register_signal_dispatcher(signal.SIGINT)
     _register_signal_dispatcher(signal.SIGALRM)
+    _SIGNAL_HANDLERS[signal.SIGUSR1] = set()
   assert sig in _SIGNAL_HANDLERS
   _SIGNAL_HANDLERS[sig].add(handler)
 
@@ -100,12 +102,12 @@ def register_stop_handler(handler):
   Args:
     handler: Handler to be called.
   """
-  _register_signal_handler(signal.SIGTERM, handler)
+  _register_signal_handler(signal.SIGUSR1, handler)
 
 
 def unregister_stop_handler(handler):
   """Unregisters a stop handler previously registered with register_stop_handler."""
-  _remove_signal_handler(signal.SIGTERM, handler)
+  _remove_signal_handler(signal.SIGUSR1, handler)
 
 
 def wait_for_stop(timeout_secs: Optional[float] = None):
@@ -318,10 +320,12 @@ class WorkerManager:
                             'blue'),
           end='\r')
     self._stop_counter += 1
+    # Notify ThreadWorkers which registered for notifications.
+    _signal_dispatcher(signal.SIGUSR1)
     for workers in self._active_workers.values():
       for worker in workers:
         if isinstance(worker, ThreadWorker):
-          # Thread workers should use wait_for_stop.
+          # Thread workers should use wait_for_stop or register_stop_handler.
           pass
         elif isinstance(worker, subprocess.Popen):
           worker.send_signal(signal.SIGTERM)
