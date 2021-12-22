@@ -38,6 +38,7 @@ ThreadWorker = collections.namedtuple('ThreadWorker', ['thread', 'future'])
 
 _WORKER_MANAGERS = threading.local()
 _HAS_MAIN_MANAGER = False
+_SIGNAL_HANDLERS = None
 
 
 def get_worker_manager():
@@ -48,18 +49,63 @@ def get_worker_manager():
   return manager
 
 
-def register_signal_handler(sig, handler):
+def _signal_dispatcher(sig, frame=None):
+  for dispatcher in _SIGNAL_HANDLERS[sig]:
+    try:
+      dispatcher(sig, frame)
+    except TypeError:
+      dispatcher()
+  if sig != signal.SIGALRM:
+    _SIGNAL_HANDLERS[sig].clear()
+
+
+def _register_signal_dispatcher(sig):
+  """Registers signal dispatcher for a givne signal type."""
+  global _SIGNAL_HANDLERS
+  assert sig not in _SIGNAL_HANDLERS
+  _SIGNAL_HANDLERS[sig] = set()
+  old_signal = signal.signal(sig, _signal_dispatcher)
+  if callable(old_signal):
+    _SIGNAL_HANDLERS[sig].add(old_signal)
+
+
+def _register_signal_handler(sig, handler):
   """Registers a signal handler."""
-  return signal.signal(sig, handler)
+  global _SIGNAL_HANDLERS
+  if _SIGNAL_HANDLERS is None:
+    _SIGNAL_HANDLERS = dict()
+    _register_signal_dispatcher(signal.SIGTERM)
+    _register_signal_dispatcher(signal.SIGQUIT)
+    _register_signal_dispatcher(signal.SIGINT)
+    _register_signal_dispatcher(signal.SIGALRM)
+  assert sig in _SIGNAL_HANDLERS
+  _SIGNAL_HANDLERS[sig].add(handler)
 
 
-def remove_signal_handler(sig, handler):
+def _remove_signal_handler(sig, handler):
   """Unregisters a signal handler."""
-  if sys.is_finalizing():
-    # See https://bugs.python.org/issue26133.
-    return
+  global _SIGNAL_HANDLERS
+  try:
+    _SIGNAL_HANDLERS[sig].remove(handler)
+  except KeyError:
+    pass
 
-  return signal.signal(sig, handler)
+
+def register_stop_handler(handler):
+  """Registers a stop handler, which is called upon program termination.
+
+    Stop handler can also be registered outside of the program's execution
+    scope. It is guaranted that handler will be called at most once.
+
+  Args:
+    handler: Handler to be called.
+  """
+  _register_signal_handler(signal.SIGTERM, handler)
+
+
+def unregister_stop_handler(handler):
+  """Unregisters a stop handler previously registered with register_stop_handler."""
+  _remove_signal_handler(signal.SIGTERM, handler)
 
 
 def wait_for_stop(timeout_secs: Optional[float] = None):
@@ -134,42 +180,28 @@ class WorkerManager:
     self._workers_count = collections.defaultdict(lambda: 0)
     self._first_failure = None
     self._stop_counter = 0
-    self._alarm_enabled = False
     self._kill_main_thread = kill_main_thread
     self._stop_event = threading.Event()
     self._main_thread = threading.current_thread().ident
-    self._sigterm_handler = None
-    self._sigquit_handler = None
-    self._sigalrm_handler = None
     if register_signals:
-      self._sigterm_handler = register_signal_handler(signal.SIGTERM,
-                                                      self._sigterm)
-      self._sigquit_handler = register_signal_handler(signal.SIGQUIT,
-                                                      self._sigquit)
+      _register_signal_handler(signal.SIGTERM, self._sigterm)
+      _register_signal_handler(signal.SIGQUIT, self._sigquit)
     if handle_user_stop:
-      register_signal_handler(
-          signal.SIGINT, lambda sig=None, frame=None: self._stop_by_user())
+      _register_signal_handler(signal.SIGINT, self._stop_by_user)
     if register_in_thread:
       _WORKER_MANAGERS.manager = self
 
   def _disable_signals(self):
     self._disable_alarm()
-    if self._sigterm_handler is not None:
-      remove_signal_handler(signal.SIGTERM, self._sigterm_handler)
-      self._sigterm_handler = None
-    if self._sigquit_handler is not None:
-      remove_signal_handler(signal.SIGQUIT, self._sigquit_handler)
-      self._sigquit_handler = None
+    _remove_signal_handler(signal.SIGTERM, self._sigterm)
+    _remove_signal_handler(signal.SIGQUIT, self._sigquit)
+    _remove_signal_handler(signal.SIGINT, self._stop_by_user)
 
-  def _sigterm(self, sig=None, frame=None):
+  def _sigterm(self):
     """Handles SIGTERM by stopping the workers."""
-    if callable(self._sigterm_handler):
-      self._sigterm_handler(sig, frame)
     self._stop()
 
-  def _sigquit(self, sig=None, frame=None):
-    if callable(self._sigquit_handler):
-      self._sigquit_handler(sig, frame)
+  def _sigquit(self):
     self._kill()
 
   def wait_for_stop(self, timeout_secs: Optional[float] = None):
@@ -320,9 +352,7 @@ class WorkerManager:
     self._stop_event.set()
     try:
       if self._termination_notice_secs > 0:
-        self._alarm_enabled = True
-        self._sigalrm_handler = register_signal_handler(
-            signal.SIGALRM, lambda sig=None, frame=None: self._stop_or_kill())
+        _register_signal_handler(signal.SIGALRM, self._stop_or_kill)
     except ValueError:
       # This happens when we attempt to register a signal handler but not in the
       # main thread. Send a SIGTERM to redirect to the main thread.
@@ -332,10 +362,11 @@ class WorkerManager:
     self._stop_or_kill()
 
   def _disable_alarm(self):
-    if self._alarm_enabled:
-      self._alarm_enabled = False
-      signal.alarm(0)
-      remove_signal_handler(signal.SIGALRM, self._sigalrm_handler)
+    _remove_signal_handler(signal.SIGALRM, self._stop_or_kill)
+    if sys.is_finalizing():
+      # See https://bugs.python.org/issue26133.
+      return
+    signal.alarm(0)
 
   def stop_and_wait(self):
     """Requests stopping all workers and wait for termination."""
@@ -381,6 +412,7 @@ class WorkerManager:
 
   def cleanup_after_test(self, test_case: absltest.TestCase):
     """Cleanups runtime after a test."""
+    del test_case
     with self._mutex:
       self._check_workers()
       self._stop()
