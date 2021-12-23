@@ -161,9 +161,8 @@ class PyClassNode(PyNode[HandleType, type(None)],
     self._input_handles.clear()
     try:
       # Find input handles and put them in self._input_handles.
-      tree.map_structure(
-          functools.partial(base.extract_handles, handles=self._input_handles),
-          (self._args, self._kwargs))
+      fn = functools.partial(base.extract_handles, handles=self._input_handles)
+      _ = [fn(x) for x in tree.flatten((self._args, self._kwargs))]
     except TypeError as e:
       raise ValueError(
           f'Failed to construct the {self.__class__.__name__} with\n'
