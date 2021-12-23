@@ -57,7 +57,7 @@ def _signal_dispatcher(sig, frame=None):
     try:
       dispatcher(sig, frame)
     except TypeError:
-      dispatcher()
+      dispatcher()  # pytype: disable=wrong-arg-count
 
 
 def _register_signal_dispatcher(sig):
