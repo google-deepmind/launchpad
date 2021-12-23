@@ -366,10 +366,10 @@ class WorkerManager:
     self._stop_or_kill()
 
   def _disable_alarm(self):
-    _remove_signal_handler(signal.SIGALRM, self._stop_or_kill)
     if sys.is_finalizing():
       # See https://bugs.python.org/issue26133.
       return
+    _remove_signal_handler(signal.SIGALRM, self._stop_or_kill)
     signal.alarm(0)
 
   def stop_and_wait(self):
