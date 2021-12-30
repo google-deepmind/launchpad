@@ -51,14 +51,18 @@ def get_worker_manager():
 
 
 def _signal_dispatcher(sig, frame=None):
+  """Dispatches a given signal to all registered handlers."""
   dispatchers = _SIGNAL_HANDLERS[sig].copy()
   if sig != signal.SIGALRM:
     _SIGNAL_HANDLERS[sig].clear()
   for dispatcher in dispatchers:
     try:
-      dispatcher(sig, frame)
-    except TypeError:
-      dispatcher()  # pytype: disable=wrong-arg-count
+      try:
+        dispatcher(sig, frame)
+      except TypeError:
+        dispatcher()  # pytype: disable=wrong-arg-count
+    except KeyboardInterrupt:
+      pass
 
 
 def _register_signal_dispatcher(sig):
