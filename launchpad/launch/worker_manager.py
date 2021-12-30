@@ -23,6 +23,7 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 from typing import Optional, Sequence, Text
 
 from absl import flags
@@ -455,6 +456,8 @@ class WorkerManager:
               except BaseException as e:  
                 if not self._first_failure and not self._stop_counter:
                   self._first_failure = e
+                  print(f'Node {worker} crashed:')
+                  traceback.print_exc()
             active = False
         elif isinstance(worker, subprocess.Popen):
           try:
