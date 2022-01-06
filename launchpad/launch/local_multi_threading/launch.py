@@ -15,8 +15,10 @@
 
 """Local Multithreading Launcher implementation."""
 
-
 import atexit
+from concurrent import futures
+import sys
+import threading
 from typing import Optional
 
 from absl import flags
@@ -74,6 +76,13 @@ def thread_handler(program):
     # pytype: enable=wrong-arg-count
     for executable in executables:
       manager.thread_worker(label, executable)
-  atexit.register(manager.wait)
+
+  if sys.version_info[:2] >= (3, 9):
+    # Make sure `manager.wait` will be called before ThreadPoolExecutor atexit
+    # method. Otherwise running program will not be able to start new threads.
+    futures.ThreadPoolExecutor  
+    threading._register_atexit(manager.wait)  
+  else:
+    atexit.register(manager.wait)
 
   return manager
