@@ -48,31 +48,18 @@ first_node._kwargs["second_node_handle"] = second_node.create_handle()
 
 Launchpad provides a mechanism to communicate experiment termination between
 program's nodes. The node which wants to terminate execution of the program has
-to call `lp.stop()` method. All other nodes should periodically check experiment
-termination condition by calling `lp.wait_for_stop(timeout_in_seconds)`. This
-function blocks execution for a given period of time or until program
-termination was requested, in which case `True` is returned. In case program is
-executed on a local machine, pressing `CTRL+C` also results in program
-termination. Example usage:
+to call `lp.stop()` method. When program executes on a local machine, pressing
+`CTRL+C` in the launcher's console also results in program's termination.
 
-```
-def actor():
-  while not lp.wait_for_stop(0):
-    # Execute actor's step.
-    ...
-  # Do necessary cleanup.
-  ...
+To support clean termination, nodes have following options:
 
-def learner():
-  for learner_step in range(1000):
-    # Perform training step.
-    ...
-  lp.stop()
+-   Periodically call `lp.wait_for_stop(timeout_in_seconds)`. This function
+    blocks execution for a given period of time or until program termination
+    is requested, in which case `True` is returned.
+-   Use threading.Event returned by `lp.stop_event()` which signals program
+    termination.
+-   Register termination callback with `lp.register_stop_handler(callback)`.
 
-def backgroun_task():
-  # Start background task.
-  ...
-  lp.wait_for_stop()
-  # Stop background task.
-  ...
-```
+Nodes which don't terminate in a timely manner will be killed by Launchpad.
+See [this example](https://github.com/deepmind/launchpad/raw/master/launchpad/examples/program_wait/launch.py)
+for details.

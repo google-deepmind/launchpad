@@ -16,6 +16,7 @@
 
 
 
+import threading
 import time
 
 from absl import app
@@ -42,10 +43,18 @@ def _stop_event():
   time.sleep(2)
 
 
-def _infinite_sleep():
-  # Sleep call can't be interrupted outside of the main thread, so in local_mt
-  # mode for instance this node will be hard-killed.
-  time.sleep(1000000)
+def _register_stop_handler():
+  """Showcases the use of lp.register_stop_handler."""
+  stop = threading.Event()
+
+  def _stop_handler():
+    logging.info('_stop_handler called')
+    stop.set()
+
+  lp.register_stop_handler(_stop_handler)
+  stop.wait()
+  logging.info('Clean termination of _register_stop_handler node')
+  time.sleep(2)
 
 
 def _stop_program():
@@ -59,7 +68,8 @@ def make_program() -> lp.Program:
   program.add_node(lp.CourierNode(_sleep), label='sleep')
   program.add_node(lp.CourierNode(_wait_for_stop), label='_wait_for_stop')
   program.add_node(lp.CourierNode(_stop_event), label='_stop_event')
-  program.add_node(lp.CourierNode(_infinite_sleep), label='_infinite_sleep')
+  program.add_node(lp.CourierNode(_register_stop_handler),
+                   label='_register_stop_handler')
   program.add_node(lp.CourierNode(_stop_program), label='_stop_program')
   return program
 
@@ -67,14 +77,13 @@ def make_program() -> lp.Program:
 def main(argv):
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
-  for _ in range(3):
-    program = make_program()
-    controller = lp.launch(program)
-    if not controller:
-      logging.info('Waiting for program termination is not supported.')
-      return
-    controller.wait()
-    logging.info('Program finished.')
+  program = make_program()
+  controller = lp.launch(program)
+  if not controller:
+    logging.info('Waiting for program termination is not supported.')
+    return
+  controller.wait()
+  logging.info('Program finished.')
 
 
 if __name__ == '__main__':
