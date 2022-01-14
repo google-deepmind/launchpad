@@ -22,7 +22,7 @@ import os
 import shutil
 import sys
 import tempfile
-from typing import Any, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, List, Mapping, Optional, Sequence, Union
 
 from absl import flags
 from absl import logging
@@ -30,17 +30,18 @@ from launchpad import flags as lp_flags
 from launchpad.launch import serialization
 from launchpad.launch.local_multi_processing import commands as mp_commands
 from launchpad.nodes.python import flags_utils
+import portpicker
 
 _INTERPRETER = sys.executable
 
 StrOrFloat = Union[str, float]
 
 
-def _to_cmd_arg(key: str, value: Any) -> Union[Tuple[str], Tuple[str, str]]:
+def _to_cmd_arg(key: str, value: Any) -> str:
   """Converts key value pair to "--key=value"."""
   if isinstance(value, bool):
-    return ('--{}'.format(key) if value else '--no{}'.format(key),)
-  return ('--{}'.format(key), str(value))
+    return f'--{key}' if value else f'--no{key}'
+  return f'--{key}={value}'
 
 
 
@@ -96,6 +97,8 @@ def to_multiprocessing_executables(
 
   args = dict(launch_config.args)
   per_task_args = [{} for _ in nodes]
+  per_task_interpreter_args = [{} for _ in nodes]
+  per_task_env = [{} for _ in nodes]
 
   commands = []
   for task_id, (_, task_args) in enumerate(zip(nodes, per_task_args)):
@@ -107,21 +110,23 @@ def to_multiprocessing_executables(
     all_args = {**args, **task_args}
     # Arguments to pass to the script
     for key, value in all_args.items():
-      command_as_list.extend(_to_cmd_arg(key, value))
+      command_as_list.append(_to_cmd_arg(key, value))
 
     # Find flags and pre-populate their definitions, as these definitions are
     # not yet ready in the entry script.
     flags_to_populate = flags_utils.get_flags_to_populate(
         list(all_args.items()))
     if flags_to_populate:
-      command_as_list.extend(
+      command_as_list.append(
           _to_cmd_arg('flags_to_populate', json.dumps(flags_to_populate)))
 
     command_as_list.extend([
         '--data_file', data_file_path,
         '--lp_task_id', str(task_id),
     ])
-    command = mp_commands.Command(command_as_list, launch_config.env,
+    env = {**launch_config.env}
+    env.update(per_task_env[task_id])
+    command = mp_commands.Command(command_as_list, env,
                                   label + '/' + str(task_id))
     commands.append(command)
   return commands
