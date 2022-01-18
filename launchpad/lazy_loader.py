@@ -14,17 +14,86 @@
 
 """LazyLoader providing support for loading symbols upon first reference."""
 
-import collections
 import importlib
 import sys
 import types
 import typing
 
-ImportSymbol = collections.namedtuple('ImportSymbol', 'module member')
-
 # Set to true in your local workspace to work around issues with lazy imports.
 # Please report any cases of usage to stanczyk@, so we can address them.
 _DISABLE_LAZY_IMPORTS = False
+
+
+class LazyImports():
+  """Turns all imports performed in its scope into lazy.
+
+  It is used to avoid pulling in large dependencies.
+  """
+
+  def __init__(self, parent, add_to_globals=True):
+    """Initializes LazyImports.
+
+    Args:
+      parent: Name of the parent module doing the imports.
+      add_to_globals: Whether imported symbols should be added to importing
+          module globals. Rule of thumb is to not add for __init__ modules,
+          as it is important for these modules to resolve Lazy symbol upon its
+          first access (not when accessing members of the Lazy import).
+    """
+    self._org_find_and_load = importlib._bootstrap._find_and_load
+    self._org_handle_fromlist = importlib._bootstrap._handle_fromlist
+    self._parent = sys.modules[parent]
+    self._globals = vars(self._parent)
+    self._add_to_globals = add_to_globals
+    self._symbols = dict()
+
+  def parent(self):
+    return self._parent
+
+  def _find_and_load(self, name, import_):
+    del import_
+    return _ModuleToLoad(name, self)
+
+  def _handle_fromlist(self, module, fromlist, import_):
+    del import_
+    assert len(fromlist) == 1
+    if not isinstance(module, _ModuleToLoad):
+      return _ModuleToLoad(module.__name__, self)
+    return module
+
+  def __enter__(self):
+    if typing.TYPE_CHECKING or _DISABLE_LAZY_IMPORTS:
+      return
+    # Start capturing import statements.
+    importlib._bootstrap._find_and_load = self._find_and_load
+    importlib._bootstrap._handle_fromlist = self._handle_fromlist
+
+  def __exit__(self, type_, value, traceback):
+    if typing.TYPE_CHECKING or _DISABLE_LAZY_IMPORTS:
+      return
+    # Stop capturing import statements.
+    importlib._bootstrap._find_and_load = self._org_find_and_load
+    importlib._bootstrap._handle_fromlist = self._org_handle_fromlist
+
+    # If symbols are not added to globals then __getattr__ has to be patched.
+    if not self._add_to_globals:
+      self._parent.__getattr__ = self.__getattr__
+
+    # Make sure lazy symbols know their local name within the importing module.
+    for name in list(self._globals.keys()):
+      member = self._globals[name]
+      if isinstance(member, _MemberToLoad):
+        member.set_export_name(name)
+        if not self._add_to_globals:
+          del self._globals[name]
+          self._symbols[name] = member
+
+  def __getattr__(self, name):
+    if name in self._symbols:
+      res = self._symbols[name].load()
+      self._parent.__dict__[name] = res
+      return res
+    raise AttributeError(f'module {self._parent!r} has no attribute {name!r}')
 
 
 class _MemberToLoad():
@@ -32,7 +101,26 @@ class _MemberToLoad():
 
   def __init__(self, name, parent):
     self._name = name
+    self._export_name = name
     self._parent = parent
+
+  def __getattr__(self, item):
+    return getattr(self.load(), item)
+
+  def __call__(self, *args, **kwargs):
+    return self.load().__call__(*args, **kwargs)
+
+  def load(self):
+    try:
+      res = importlib.import_module(f'{self._parent.name()}.{self._name}')
+    except ModuleNotFoundError:
+      res = importlib.import_module(self._parent.name()).__dict__[self._name]
+
+    self._parent.parent().parent().__dict__[self._export_name] = res
+    return res
+
+  def set_export_name(self, name):
+    self._export_name = name
 
 
 class _ModuleToLoad():
@@ -42,62 +130,14 @@ class _ModuleToLoad():
     self._name = name
     self._parent = parent
 
+  def name(self):
+    return self._name
+
+  def parent(self):
+    return self._parent
+
   def __getattr__(self, item):
     return _MemberToLoad(item, self)
-
-
-class LazyModule(types.ModuleType):
-  """Turns a given __init__ module into lazily importing specified symbols."""
-
-  def __init__(self, parent):
-    self._parent = parent
-    self._symbols = dict()
-    super(LazyModule, self).__init__(parent)
-    self.__dict__.update(sys.modules[self._parent].__dict__)
-
-  def _find_and_load(self, name, import_):
-    del import_
-    return _ModuleToLoad(name, self)
-
-  def __enter__(self):
-    if typing.TYPE_CHECKING or _DISABLE_LAZY_IMPORTS:
-      return
-    self._org_find_and_load = importlib._bootstrap._find_and_load
-    # Start capturing import statements.
-    importlib._bootstrap._find_and_load = self._find_and_load
-
-  def __exit__(self, type_, value, traceback):
-    if typing.TYPE_CHECKING or _DISABLE_LAZY_IMPORTS:
-      return
-    # Stop capturing import statements and register all lazy imports.
-    importlib._bootstrap._find_and_load = self._org_find_and_load
-    members = sys.modules[self._parent].__dict__
-    for name in members:
-      member = members[name]
-      if isinstance(member, _MemberToLoad):
-        self.add(name, member._parent._name, member._name)
-    # Replace original module with LazyModule.
-    sys.modules[self._parent] = self
-
-  def add(self, local_name, module, member=None):
-    symbol = ImportSymbol(module, member)
-    self._symbols[local_name] = symbol
-    if typing.TYPE_CHECKING or _DISABLE_LAZY_IMPORTS:
-      return self.__getattr__(local_name)
-    return symbol
-
-  def __getattr__(self, name):
-    if name in self._symbols:
-      symbol = self._symbols[name]
-      res = importlib.import_module(symbol.module)
-      if symbol.member:
-        res = res.__dict__[symbol.member]
-      self.__dict__[name] = res
-      return res
-    raise AttributeError(f'module {self._parent!r} has no attribute {name!r}')
-
-  def __reduce__(self):
-    return self.__class__, (self._parent,)
 
 
 class LazyImport(types.ModuleType):
