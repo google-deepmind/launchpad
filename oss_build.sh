@@ -21,7 +21,7 @@ set -o pipefail
 cd "$(dirname "$0")"
 
 # Flags
-PYTHON_VERSIONS=3.8 # Options 3.7, 3.8, 3.9 (default)
+PYTHON_VERSIONS=3.8 # Options 3.7, 3.8, 3.9, 3.10
 CLEAN=false # Set to true to run bazel clean.
 OUTPUT_DIR=/tmp/launchpad/dist/
 INSTALL=true # Should the built package be installed.
@@ -86,7 +86,7 @@ for python_version in $PYTHON_VERSIONS; do
   fi
 
   if [ "$python_version" = "3.7" ]; then
-    export PYTHON_BIN_PATH=/usr/local/bin/python3.7 && export PYTHON_LIB_PATH=/usr/local/lib/python3.7/dist-packages
+    export PYTHON_BIN_PATH=/usr/bin/python3.7 && export PYTHON_LIB_PATH=/usr/local/lib/python3.7/dist-packages
     ABI=cp37
   elif [ "$python_version" = "3.8" ]; then
     export PYTHON_BIN_PATH=/usr/bin/python3.8 && export PYTHON_LIB_PATH=/usr/local/lib/python3.8/dist-packages
@@ -94,8 +94,11 @@ for python_version in $PYTHON_VERSIONS; do
   elif [ "$python_version" = "3.9" ]; then
     export PYTHON_BIN_PATH=/usr/bin/python3.9 && export PYTHON_LIB_PATH=/usr/local/lib/python3.9/dist-packages
     ABI=cp39
+  elif [ "$python_version" = "3.10" ]; then
+    export PYTHON_BIN_PATH=/usr/bin/python3.10 && export PYTHON_LIB_PATH=/usr/local/lib/python3.10/dist-packages
+    ABI=cp310
   else
-    echo "Error unknown --python. Only [3.7|3.8|3.9]"
+    echo "Error unknown --python. Only [3.7|3.8|3.9|3.10]"
     exit 1
   fi
 
