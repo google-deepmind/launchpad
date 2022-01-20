@@ -98,7 +98,7 @@ class LaunchTest(absltest.TestCase):
     processes = launch.launch(p, test_case=self, local_resources=resources)
 
     with self.assertRaisesRegexp(  
-        RuntimeError, 'One of the workers failed.'):
+        RuntimeError, 'One of the workers exited.'):
       processes.wait(['main'])
 
 

@@ -145,7 +145,7 @@ class WorkerManagerTest(absltest.TestCase):
   def test_process_worker_failure(self):
     self._manager.process_worker('failure', ['cat', 'missing_file'])
     with self.assertRaisesRegexp(  
-        RuntimeError, 'One of the workers failed.'):
+        RuntimeError, 'One of the workers exited'):
       self._manager.wait()
 
 

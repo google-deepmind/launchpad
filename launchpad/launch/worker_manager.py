@@ -468,7 +468,8 @@ class WorkerManager:
             res = worker.wait(0)
             active = False
             if res and not self._first_failure and not self._stop_counter:
-              self._first_failure = RuntimeError('One of the workers failed.')
+              self._first_failure = RuntimeError(
+                  f'One of the workers exited with code {res}.')
           except subprocess.TimeoutExpired:
             pass
         else:
