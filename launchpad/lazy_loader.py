@@ -39,8 +39,6 @@ class LazyImports():
           as it is important for these modules to resolve Lazy symbol upon its
           first access (not when accessing members of the Lazy import).
     """
-    self._org_find_and_load = importlib._bootstrap._find_and_load
-    self._org_handle_fromlist = importlib._bootstrap._handle_fromlist
     self._parent = sys.modules[parent]
     self._globals = vars(self._parent)
     self._add_to_globals = add_to_globals
@@ -64,6 +62,8 @@ class LazyImports():
     if typing.TYPE_CHECKING or _DISABLE_LAZY_IMPORTS:
       return
     # Start capturing import statements.
+    self._org_find_and_load = importlib._bootstrap._find_and_load
+    self._org_handle_fromlist = importlib._bootstrap._handle_fromlist
     importlib._bootstrap._find_and_load = self._find_and_load
     importlib._bootstrap._handle_fromlist = self._handle_fromlist
 
@@ -107,7 +107,7 @@ class _MemberToLoad():
     return getattr(self.load(), item)
 
   def __call__(self, *args, **kwargs):
-    return self.load().__call__(*args, **kwargs)
+    return self.load()(*args, **kwargs)
 
   def load(self):
     try:
