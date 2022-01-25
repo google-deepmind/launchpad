@@ -92,6 +92,8 @@ def _register_signal_handler(sig, handler):
 def _remove_signal_handler(sig, handler):
   """Unregisters a signal handler."""
   global _SIGNAL_HANDLERS
+  if not _SIGNAL_HANDLERS:
+    return
   try:
     _SIGNAL_HANDLERS[sig].remove(handler)
   except KeyError:
@@ -171,7 +173,8 @@ class WorkerManager:
         killing workers. This is not possible when thread workers run in the
         same process.
       register_in_thread: TODO
-      register_signals: Whether or not to register signal handlers.
+      register_signals: Whether or not to register signal handlers. Note that
+        this can be overridden by FLAGS.lp_worker_manager_registers_signals.
     """
     self._mutex = threading.Lock()
     self._termination_notice_secs = -1
@@ -190,7 +193,7 @@ class WorkerManager:
     self._kill_main_thread = kill_main_thread
     self._stop_event = threading.Event()
     self._main_thread = threading.current_thread().ident
-    if register_signals:
+    if register_signals and FLAGS.lp_worker_manager_registers_signals:
       _register_signal_handler(signal.SIGTERM, self._sigterm)
       _register_signal_handler(signal.SIGQUIT, self._sigquit)
     if handle_user_stop:
