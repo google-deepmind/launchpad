@@ -23,6 +23,9 @@ from launchpad import lazy_loader
 # Basic types
 from launchpad import flags
 from launchpad.context import LaunchType
+from launchpad.context import is_local_launch
+from launchpad.context import is_local_launch_or_test
+from launchpad.flags import LAUNCH_TYPE  # Set via --lp_launch_type
 from launchpad.program import Program
 
 

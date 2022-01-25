@@ -17,7 +17,7 @@
 import enum
 import threading
 
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union
 
 
 class LaunchType(enum.Enum):
@@ -107,3 +107,44 @@ def get_context():
 
 def set_context(context: LaunchContext):
   _LAUNCH_CONTEXT.lp_context = context
+
+
+def is_local_launch(launch_type: Union[LaunchType, str]) -> bool:
+  """Returns true if launch type is local multithreading/multiprocessing.
+
+  If you use `--lp_launch_type=...`, please call it with
+  `is_local_launch(lp.LAUNCH_TYPE.value)`, where lp.LAUNCH_TYPE.value gives the
+  value of `--lp_launch_type`.
+
+  Args:
+    launch_type: A string (e.g., 'local_mp') or a LaunchType object.
+
+  Returns:
+    True if launch_type is a local one, otherwise False.
+  """
+  if isinstance(launch_type, str):
+    launch_type = LaunchType(launch_type)
+  return launch_type in [
+      LaunchType.LOCAL_MULTI_THREADING, LaunchType.LOCAL_MULTI_PROCESSING
+  ]
+
+
+def is_local_launch_or_test(launch_type: Union[LaunchType, str]) -> bool:
+  """Returns true if launch type is local/test multithreading/multiprocessing.
+
+  If you use `--lp_launch_type=...`, please call it with
+  `is_local_launch_or_test(lp.LAUNCH_TYPE.value)`, where lp.LAUNCH_TYPE.value
+  gives the value of `--lp_launch_type`.
+
+  Args:
+    launch_type: A string (e.g., 'local_mp') or a LaunchType object.
+
+  Returns:
+    True if launch_type is local or unit test, otherwise False.
+  """
+  if isinstance(launch_type, str):
+    launch_type = LaunchType(launch_type)
+  return launch_type in [
+      LaunchType.LOCAL_MULTI_THREADING, LaunchType.LOCAL_MULTI_PROCESSING,
+      LaunchType.TEST_MULTI_PROCESSING, LaunchType.TEST_MULTI_THREADING
+  ]

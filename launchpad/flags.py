@@ -28,7 +28,7 @@ flags.DEFINE_list('lp_dummy_list', [], 'Internal implementation details.')
 flags.DEFINE_enum('lp_dummy_enum', '', [''], 'Internal implementation details.')
 
 _DEFAULT_LAUNCH_TYPE = context.LaunchType.LOCAL_MULTI_THREADING.value
-flags.DEFINE_enum(
+LAUNCH_TYPE = flags.DEFINE_enum(
     'lp_launch_type',
     _DEFAULT_LAUNCH_TYPE, [t.value for t in context.LaunchType],
     'How to launch a Launchpad program when launch() is called',
