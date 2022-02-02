@@ -94,13 +94,3 @@ lp_cc_library(
         "@com_google_absl//absl/synchronization",
     ],
 )
-
-lp_cc_library(
-    name = "tensor_conversion",
-    srcs = ["tensor_conversion.cc"],
-    deps = [
-        "//courier/platform:tensor_conversion_hdr",
-        "//courier/serialization:serialization_cc_proto",
-        "@com_google_absl//absl/status:statusor",
-    ],
-)

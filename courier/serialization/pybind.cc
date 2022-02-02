@@ -16,8 +16,8 @@
 #include <pybind11/pytypes.h>
 
 #include "courier/platform/status_macros.h"
-#include "courier/platform/tensor_conversion.h"
 #include "courier/serialization/py_serialize.h"
+#include "courier/serialization/tensor_conversion.h"
 #include "pybind11_abseil/absl_casters.h"
 #include "pybind11_abseil/status_casters.h"
 

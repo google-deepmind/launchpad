@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef THIRD_PARTY_PY_COURIER_PLATFORM_TENSOR_CONVERSION_H_
-#define THIRD_PARTY_PY_COURIER_PLATFORM_TENSOR_CONVERSION_H_
+#ifndef THIRD_PARTY_PY_COURIER_SERIALIZATION_TENSOR_CONVERSION_H_
+#define THIRD_PARTY_PY_COURIER_SERIALIZATION_TENSOR_CONVERSION_H_
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/statusor.h"
@@ -26,12 +26,12 @@ namespace courier {
 using TensorLookup =
     ::absl::flat_hash_map<const tensorflow::TensorProto*, tensorflow::Tensor>;
 
-// The minimum size required for the tensor to be inserted into the lookup.
-// Smaller tensors will be deserialized "just in time", similar to all other
-// data types. We apply this constraint as the lookup may be built in parallel
+// The minimum size required for the tensor to be deserialized in a background.
+// Smaller tensors will be deserialized on the calling thread.
+// We apply this constraint as the lookup may be built in parallel
 // by more than one thread. The latency of the context switch is therefore
-// comparable (if not worse) than simply unpacking the tensors as they are
-// encountered during the deserialisation process.
+// comparable (if not worse) than simply unpacking the tensor on the calling
+// thread.
 //
 // The value of 128kB was estimated from a simple benchmark running on one
 // machine. The system seems to be robust against changes of this value. Values
@@ -53,4 +53,4 @@ absl::StatusOr<TensorLookup> CreateTensorLookup(
 
 }  // namespace courier
 
-#endif  // THIRD_PARTY_PY_COURIER_PLATFORM_TENSOR_CONVERSION_H_
+#endif  // THIRD_PARTY_PY_COURIER_SERIALIZATION_TENSOR_CONVERSION_H_

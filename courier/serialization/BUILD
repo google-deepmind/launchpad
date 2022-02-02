@@ -9,8 +9,8 @@ lp_pybind_extension(
     srcs = ["pybind.cc"],
     deps = [
         ":py_serialize",
+        ":tensor_conversion",
         "//courier/platform:status_macros",
-        "//courier/platform:tensor_conversion",
         "@pybind11_abseil//pybind11_abseil:absl_casters",
         "@pybind11_abseil//pybind11_abseil:status_casters",
     ],
@@ -36,8 +36,8 @@ lp_cc_library(
     deps = [
         ":pyobject_ptr",
         ":serialization_cc_proto",
+        ":tensor_conversion",
         "//courier/platform:status_macros",
-        "//courier/platform:tensor_conversion",
         "//courier/platform/default:py_utils",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/flags:flag",
@@ -62,5 +62,21 @@ lp_cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+lp_cc_library(
+    name = "tensor_conversion",
+    srcs = ["tensor_conversion.cc"],
+    hdrs = ["tensor_conversion.h"],
+    deps = [
+        ":serialization_cc_proto",
+        "//courier/platform:status_macros",
+        "//courier/platform/default:status_macros",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/synchronization",
     ],
 )

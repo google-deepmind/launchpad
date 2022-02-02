@@ -19,7 +19,7 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "courier/platform/tensor_conversion.h"
+#include "courier/serialization/tensor_conversion.h"
 #include "courier/serialization/pyobject_ptr.h"
 #include "courier/serialization/serialization.pb.h"
 

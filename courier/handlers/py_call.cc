@@ -29,9 +29,9 @@
 #include "courier/handlers/interface.h"
 #include "courier/platform/logging.h"
 #include "courier/platform/status_macros.h"
-#include "courier/platform/tensor_conversion.h"
 #include "courier/serialization/py_serialize.h"
 #include "courier/serialization/serialization.pb.h"
+#include "courier/serialization/tensor_conversion.h"
 
 namespace courier {
 namespace {
