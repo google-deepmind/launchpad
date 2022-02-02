@@ -28,26 +28,19 @@ namespace py = pybind11;
 
 absl::StatusOr<py::bytes> SerializeToString(const py::handle& handle) {
   PyObject* object = handle.ptr();
-  auto result = SerializePyObjectToString(object);
-  if (!result.ok()) {
-    return result.status();
-  }
-  return py::bytes(result.value());
+  COURIER_ASSIGN_OR_RETURN(auto result, SerializePyObjectToString(object));
+  return py::bytes(result);
 }
 
-py::object DeserializeFromString(const std::string& str) {
-  auto result = DeserializePyObjectFromString(str);
-  py::object object = py::reinterpret_steal<py::object>(result.value());
+absl::StatusOr<py::object> DeserializeFromString(const std::string& str) {
+  COURIER_ASSIGN_OR_RETURN(auto result, DeserializePyObjectFromString(str));
+  py::object object = py::reinterpret_steal<py::object>(result);
   return object;
 }
 
 absl::StatusOr<SerializedObject> SerializeToProto(const py::handle& handle) {
   PyObject* object = handle.ptr();
-  auto result = SerializePyObject(object);
-  if (!result.ok()) {
-    return result.status();
-  }
-  return result.value();
+  return SerializePyObject(object);
 }
 
 absl::StatusOr<py::object> DeserializeFromProto(
