@@ -19,13 +19,13 @@
 #include <memory>
 #include <string>
 
-#include "courier/platform/default/py_utils.h"
 #include "absl/base/casts.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "courier/handlers/helpers.h"
 #include "courier/handlers/interface.h"
 #include "courier/platform/logging.h"
 #include "courier/platform/status_macros.h"
@@ -37,35 +37,6 @@ namespace courier {
 namespace {
 
 
-absl::StatusCode PythonExceptionErrorCode() {
-  if (!PyErr_Occurred()) {
-    return absl::StatusCode::kUnknown;
-  }
-  if (PyErr_ExceptionMatches(PyExc_ValueError) ||
-      PyErr_ExceptionMatches(PyExc_TypeError)) {
-    return absl::StatusCode::kInvalidArgument;
-  }
-  if (PyErr_ExceptionMatches(PyExc_StopIteration)) {
-    return absl::StatusCode::kOutOfRange;
-  }
-  if (PyErr_ExceptionMatches(PyExc_MemoryError)) {
-    return absl::StatusCode::kResourceExhausted;
-  }
-  if (PyErr_ExceptionMatches(PyExc_NotImplementedError)) {
-    return absl::StatusCode::kUnimplemented;
-  }
-  if (PyErr_ExceptionMatches(PyExc_KeyboardInterrupt)) {
-    return absl::StatusCode::kAborted;
-  }
-  if (PyErr_ExceptionMatches(PyExc_SystemError) ||
-      PyErr_ExceptionMatches(PyExc_SyntaxError)) {
-    return absl::StatusCode::kInternal;
-  }
-  if (PyErr_ExceptionMatches(PyExc_LookupError)) {
-    return absl::StatusCode::kNotFound;
-  }
-  return absl::StatusCode::kUnknown;
-}
 
 class PyCallHandler : public HandlerInterface {
  public:
@@ -112,17 +83,7 @@ class PyCallHandler : public HandlerInterface {
           SerializePyObject(py_result.get(), result.mutable_result()));
       return result;
     } else {
-      std::string error_prefix = "Python exception was raised on the server";
-      absl::StatusCode status_code = PythonExceptionErrorCode();
-      std::string exception;
-      if (PythonUtils::FetchPendingException(&exception)) {
-        std::string error_message =
-            absl::StrCat(error_prefix, ":\n", exception);
-        COURIER_LOG(COURIER_ERROR) << error_message;
-        return absl::Status(status_code, error_message);
-      }
-      return absl::InternalError(absl::StrCat(
-          error_prefix, " but the exception message could not be caught.   "));
+      return ReturnPythonException();
     }
   }
 

@@ -21,10 +21,10 @@ lp_cc_library(
     hdrs = ["py_call.h"],
     features = ["-use_header_modules"],
     deps = [
+        ":helpers",
         ":interface",
         "//courier/platform:logging",
         "//courier/platform:status_macros",
-        "//courier/platform/default:py_utils",
         "//courier/serialization:py_serialize",
         "//courier/serialization:serialization_cc_proto",
         "//courier/serialization:tensor_conversion",
@@ -34,5 +34,16 @@ lp_cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@pybind11",
+    ],
+)
+
+lp_cc_library(
+    name = "helpers",
+    srcs = ["helpers.cc"],
+    hdrs = ["helpers.h"],
+    deps = [
+        "//courier/platform:logging",
+        "//courier/platform/default:py_utils",
+        "@com_google_absl//absl/status",
     ],
 )
