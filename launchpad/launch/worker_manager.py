@@ -374,9 +374,6 @@ class WorkerManager:
     self._stop_or_kill()
 
   def _disable_alarm(self):
-    if sys.is_finalizing():
-      # See https://bugs.python.org/issue26133.
-      return
     _remove_signal_handler(signal.SIGALRM, self._stop_or_kill)
     signal.alarm(0)
 
@@ -493,4 +490,11 @@ class WorkerManager:
       self._disable_alarm()
 
   def __del__(self):
+    try:
+      if sys.is_finalizing():
+        return
+    except AttributeError:
+      # AttributeError can be thrown when `sys` was already destroyed upon
+      # finalization.
+      return
     self._disable_signals()
