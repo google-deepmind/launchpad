@@ -286,12 +286,14 @@ class WorkerManager:
   def _kill_process_tree(self, pid):
     """Kills all child processes of the current process."""
     parent = psutil.Process(pid)
+    processes = [parent]
     for process in parent.children(recursive=True):
       try:
-        process.send_signal(signal.SIGKILL)
+        processes.append(process)
       except psutil.NoSuchProcess:
         pass
-    parent.send_signal(signal.SIGKILL)
+    for process in processes:
+      process.send_signal(signal.SIGKILL)
 
   def _kill(self):
     """Kills all workers (and main thread/process if needed)."""
