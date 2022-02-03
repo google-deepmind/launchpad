@@ -131,7 +131,7 @@ python3 -m launch --lp_launch_type=local_mp
 The `--lp_launch_type` controls how the program is launched. In the above case
 it is launched locally with each node executed in a separate process.
 List of supported execution modes can be found
-[here](<https://github.com/deepmind/launchpad/search?q="class LaunchType">).
+[here](<https://github.com/deepmind/launchpad/search?q="class%20LaunchType">).
 
 ## Add a test
 
