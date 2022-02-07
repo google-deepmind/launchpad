@@ -73,6 +73,9 @@ class Server:
   def Bind(self, method_name: str, py_func):
     self._router.Bind(method_name, pybind.BuildPyCallHandler(py_func))
 
+  def BindHandler(self, method_name, handler):
+    self._router.Bind(method_name, handler)
+
 
   def Join(self):
     if not self._server:

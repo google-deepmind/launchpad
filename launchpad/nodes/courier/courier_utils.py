@@ -20,6 +20,7 @@ from typing import Any, Callable, Text
 from absl import logging
 
 import courier
+from courier.handlers.python import pybind
 
 
 def _should_expose_method(func: Callable[..., Any], method_name: Text) -> bool:
@@ -47,6 +48,9 @@ def make_courier_server(instance: Any, *courier_args,
     func = getattr(instance, method_name)
     if _should_expose_method(func, method_name):
       logging.info('Binding: %s', method_name)
-      server.Bind(method_name, func)
+      handler = None
+      if handler is None:
+        handler = pybind.BuildPyCallHandler(func)
+      server.BindHandler(method_name, handler)
 
   return server
