@@ -44,12 +44,9 @@ def make_courier_server(instance: Any, *courier_args,
 
   # Bind all non-private user-defined local methods.
   for method_name in dir(instance):
-    if method_name.startswith('_'):
-      continue
-
     func = getattr(instance, method_name)
-    logging.info('Binding: %s', method_name)
     if _should_expose_method(func, method_name):
+      logging.info('Binding: %s', method_name)
       server.Bind(method_name, func)
 
   return server
