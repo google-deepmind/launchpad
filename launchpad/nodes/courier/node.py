@@ -38,6 +38,12 @@ class CourierHandle(base.Handle[CourierClient]):
     self._address = address
     self._kwargs = kwargs
 
+  def __getattr__(self, method):
+    raise AttributeError(
+        f'\'CourierHandle\' object has no attribute \'{method}\'. '
+        'Most likely you need to dereference handle before use '
+        '(see launchpad.maybe_dereference).')
+
   def set_client_kwargs(self, **kwargs):
     self._kwargs = kwargs
 
