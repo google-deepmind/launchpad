@@ -46,6 +46,32 @@ std::shared_ptr<HandlerInterface> BuildPyCallHandlerWrapper(
 }
 
 
+
+absl::StatusOr<pybind11::object> CallHandler(
+    std::shared_ptr<HandlerInterface> handler,
+    const std::string& method, const pybind11::list& args,
+    const pybind11::dict& kwargs) {
+  courier::CallArguments arguments;
+  for (pybind11::handle arg : args) {
+    PyObject* object = arg.ptr();
+    COURIER_RETURN_IF_ERROR(SerializePyObject(object, arguments.add_args()));
+  }
+  for (const auto& kwarg : kwargs) {
+    auto ins = arguments.mutable_kwargs()->insert(
+        {kwarg.first.cast<std::string>(), courier::SerializedObject()});
+    COURIER_RET_CHECK(ins.second)
+        << "Duplicate kwargs key: " << kwarg.first.cast<std::string>();
+    PyObject* object = kwarg.second.ptr();
+    COURIER_RETURN_IF_ERROR(SerializePyObject(object, &ins.first->second));
+  }
+  PyThreadState* thread_state = PyEval_SaveThread();
+  COURIER_ASSIGN_OR_RETURN(auto result, handler->Call(method, arguments));
+  PyEval_RestoreThread(thread_state);
+  COURIER_ASSIGN_OR_RETURN(courier::SafePyObjectPtr py_object,
+                           DeserializePyObject(result.result()));
+  return pybind11::reinterpret_steal<pybind11::object>(py_object.release());
+}
+
 PYBIND11_MODULE(pybind, m) {
   py::google::ImportStatusModule();
 
