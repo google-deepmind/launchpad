@@ -30,7 +30,7 @@ while [[ $# -gt -0 ]]; do
     *)
       echo "Unknown flag: $key"
       echo "Usage:"
-      echo "--python  [3.7|3.8(default)|3.9]"
+      echo "--python  [3.7|3.8(default)|3.9|3.10]"
       exit 1
       ;;
   esac
@@ -60,7 +60,7 @@ N_CPU=$(grep -c ^processor /proc/cpuinfo)
 
 # Run static type-checking.
 # TODO(b/205923232): enable PyType once they address the typed_ast problem.
-if [[ ${PYTHON} != "3.9" ]]
+if [[ ${PYTHON} == "3.8" ]]
 then
   date
   pytype -k -x /tmp/launchpad/launchpad/pip_package/ \
