@@ -24,6 +24,7 @@ from typing import Union
 from absl import logging
 
 from launchpad import context
+from launchpad.launch import worker_manager
 
 
 
@@ -56,11 +57,15 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
   """
   launch_type = context.LaunchType(launch_type)
 
+  if launch_type is context.LaunchType.TEST_MULTI_THREADING:
+    def _stop():
+      worker_manager.get_worker_manager()._sigterm()  
+    return _stop
+
   if launch_type in [
       context.LaunchType.LOCAL_MULTI_PROCESSING,
       context.LaunchType.LOCAL_MULTI_THREADING,
       context.LaunchType.TEST_MULTI_PROCESSING,
-      context.LaunchType.TEST_MULTI_THREADING
   ]:
     return functools.partial(_ask_launcher_for_termination, os.getpid())
 

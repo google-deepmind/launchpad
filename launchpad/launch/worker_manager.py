@@ -145,7 +145,7 @@ def wait_for_stop(timeout_secs: Optional[float] = None):
   return get_worker_manager().wait_for_stop(timeout_secs)
 
 
-def stop_event():
+def stop_event() -> threading.Event:
   """Returns a threading.Event used to wait for termination signal on a Program.
 
   Usage examples:
