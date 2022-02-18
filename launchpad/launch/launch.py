@@ -57,18 +57,6 @@ def launch(
       FLAGS.lp_launch_type. See the definition of context.LaunchType for the
       valid choices. The benefit of setting it to None is you can control the
       launch type from command line (by just passing --lp_launch_type=...).
-    xm_resources: (for XManager launch) A dictionary to specify per-node launch
-      configuration.
-    # END GOOGLE-INTERNAL
-    xm_description: (for XManager launch) A xm.ExperimentDescription object to
-      use for the resulting XManager experiment.
-    xm_execution_settings: (for XManager launch) Experiment's execution
-      settings.
-    max_parallel_work_units: (for XManager launch) maximum work units to run in
-      parallel.
-    xm_aux_executables: (for XManager launch) Auxiliary executables to add to
-      the XManager experiment.
-    # END GOOGLE-INTERNAL
     local_resources: (for local/test multiprocessing launch) A dictionary to
       specify per-node launch configuration.
     test_case: (for test multiprocessing launch) test case in which the program
