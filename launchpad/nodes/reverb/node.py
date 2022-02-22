@@ -69,12 +69,29 @@ class ReverbNode(python.PyNode):
 
   def __init__(self,
                priority_tables_fn: PriorityTablesFactory,
-               checkpoint_ctor: Optional[CheckpointerFactory] = None):
+               checkpoint_ctor: Optional[CheckpointerFactory] = None,
+               checkpoint_time_delta_minutes: Optional[int] = None):
+    """Initialize a ReverbNode.
+
+    Args:
+      priority_tables_fn: A mapping from table name to function used to
+        compute priorities for said table.
+      checkpoint_ctor: Constructor for the checkpointer to be used. Passing None
+        uses Reverb's default checkpointer.
+      checkpoint_time_delta_minutes: Time between async (non-blocking)
+        checkpointing calls.
+    """
     super().__init__(self.run)
     self._priority_tables_fn = priority_tables_fn
     self._checkpoint_ctor = checkpoint_ctor
+    self._checkpoint_time_delta_minutes = checkpoint_time_delta_minutes
     self._address = lp_address.Address(REVERB_PORT_NAME)
     self.allocate_address(self._address)
+
+    if (self._checkpoint_time_delta_minutes is not None and
+        self._checkpoint_time_delta_minutes <= 0):
+      raise ValueError(
+          'Replay checkpoint time delta must be positive when specified.')
 
   def create_handle(self):
     return self._track_handle(ReverbHandle(self._address))
@@ -90,7 +107,13 @@ class ReverbNode(python.PyNode):
         tables=priority_tables,
         port=lp_address.get_port_from_address(self._address.resolve()),
         checkpointer=checkpointer)
-    worker_manager.wait_for_stop()
+
+    if self._checkpoint_time_delta_minutes is not None:
+      while not worker_manager.wait_for_stop(
+          self._checkpoint_time_delta_minutes * 60):
+        self._server.localhost_client().checkpoint()
+    else:
+      worker_manager.wait_for_stop()
 
   @staticmethod
   def to_executables(nodes: Sequence['ReverbNode'], label: str,
