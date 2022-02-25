@@ -37,6 +37,10 @@ flags.DEFINE_integer(
     ' data_file)')
 flags.DEFINE_string('data_file', '',
                     'Pickle file location with entry points for all nodes')
+# An index of an entry point in a pickle file. Will not match work unit id if
+# entry points are saved to separate pickle files.
+flags.DEFINE_integer('lp_unit_id', None,
+                     'Which work unit within pickle file to run.')
 flags.DEFINE_string(
     'lp_job_name', '',
     'The name of the job, used to access the correct pickle file resource when '
