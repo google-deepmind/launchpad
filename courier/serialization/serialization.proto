@@ -118,3 +118,16 @@ message TypeValue {
   bytes module = 1;
   bytes name = 2;
 }
+
+message TensorDataChunkMetadata {
+  // Holds the sizes of the individual tensor data buffers that have been
+  // concatenated to form chunks.
+  repeated int64 sizes = 1;
+}
+
+// When using the chunked serialization format, data held by Tensors is stored
+// in a sequence of these chunk protos. An individual chunk has no semantic
+// meaning and its data may belong to one or more tensors.
+message TensorDataChunk {
+  bytes data = 1 [ctype = CORD];
+}

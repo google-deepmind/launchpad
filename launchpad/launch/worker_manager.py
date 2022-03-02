@@ -52,6 +52,9 @@ def get_worker_manager():
 
 def _signal_dispatcher(sig, frame=None):
   """Dispatches a given signal to all registered handlers."""
+  if sig != signal.SIGALRM and sig != signal.SIGUSR1:
+    # Notify user-registered stop handler(s) before other once.
+    _signal_dispatcher(signal.SIGUSR1, frame)
   dispatchers = _SIGNAL_HANDLERS[sig].copy()
   if sig != signal.SIGALRM:
     _SIGNAL_HANDLERS[sig].clear()
