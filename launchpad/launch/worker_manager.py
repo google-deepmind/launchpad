@@ -291,12 +291,12 @@ class WorkerManager:
     parent = psutil.Process(pid)
     processes = [parent]
     for process in parent.children(recursive=True):
+      processes.append(process)
+    for process in processes:
       try:
-        processes.append(process)
+        process.send_signal(signal.SIGKILL)
       except psutil.NoSuchProcess:
         pass
-    for process in processes:
-      process.send_signal(signal.SIGKILL)
 
   def _kill(self):
     """Kills all workers (and main thread/process if needed)."""
