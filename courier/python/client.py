@@ -49,7 +49,7 @@ def exception_handler(func):
     try:
       return func(*args, **kwargs)
     except StatusThrown as e:
-      raise translate_status(e.status)
+      raise translate_status(e.status) from e
 
   return inner_function
 
@@ -129,7 +129,7 @@ class Client:
       wait_for_ready: Sets `wait_for_ready` on the gRPC::ClientContext.
         This specifies whether to wait for a server to come online.
     """
-    self._init_args = (server_address, compress)
+    self._init_args = (server_address, compress, call_timeout, wait_for_ready)
     self._address = str(server_address)
     self._compress = compress
     self._client = py_client.PyClient(self._address)
