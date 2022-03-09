@@ -364,6 +364,66 @@ def _rpath_linkopts(name):
     levels_to_root = native.package_name().count("/") + name.count("/")
     return ["-Wl,%s" % (_make_search_paths("$$ORIGIN", levels_to_root),)]
 
+def _py_extension_bundle_impl(ctx):
+    # Create CcInfo from the dependencies.
+    cc_infos = []
+    for dep in ctx.attr.deps:
+        if CcInfo in dep:
+            cc_infos.append(dep[CcInfo])
+        elif PyCcLinkParamsProvider in dep:
+            cc_infos.append(dep[PyCcLinkParamsProvider].cc_info)
+
+    # 'direct_cc_infos' will export header files of the direct dependencies.
+    cc_info = cc_common.merge_cc_infos(direct_cc_infos = cc_infos)
+
+    # Create PyInfo from the dependencies.
+    py_infos = [dep[PyInfo] for dep in ctx.attr.deps if PyInfo in dep]
+    py_info = PyInfo(
+        transitive_sources = depset(transitive = [info.transitive_sources for info in py_infos]),
+        uses_shared_libraries = any([info.uses_shared_libraries for info in py_infos]),
+        imports = depset(transitive = [info.imports for info in py_infos]),
+        has_py2_only_sources = any([info.has_py2_only_sources for info in py_infos]),
+        has_py3_only_sources = any([info.has_py3_only_sources for info in py_infos]),
+    )
+
+    default_info = ctx.runfiles()
+    for dep in ctx.attr.deps:
+        default_info = DefaultInfo(runfiles = default_info.merge(dep[DefaultInfo].default_runfiles))
+
+    return [default_info, cc_info, py_info]
+
+_py_extension_bundle = rule(
+    implementation = _py_extension_bundle_impl,
+    provides = [CcInfo, PyInfo],
+    attrs = {
+        "deps": attr.label_list(providers = [[CcInfo], [PyInfo]]),
+    },
+)
+
+def lp_py_extension_bundle(name, deps = [], **kwargs):
+    """A cc_library and py_library in a single target.
+
+    It is only meant to be used by another `py_library` or `py_extension`,
+    *not* a `cc_library`.
+
+    This rule is basically to work around the problem
+    where `py_extension` doesn't allow `py_library` in its deps. This occurs
+    when a `py_extension` target wants to depend on a `pybind_extension`
+    target (whose public target is a `py_library`).
+
+    All dependencies will be added to the final result.
+
+    Args:
+      name: the name of the target
+      deps: Other Python or CC dependencies.
+      **kwargs: common attributes for the target.
+    """
+
+    # Wrap the rule in a macro so that, should macro-level features be
+    # needed in the future, they can be easily used without worrying
+    # about obscure, Hyrum's law dependencies on the symbol being a rule.
+    _py_extension_bundle(name = name, deps = deps, **kwargs)
+
 def lp_pybind_extension(
         name,
         srcs,
@@ -487,6 +547,52 @@ def lp_pybind_extension(
         visibility = visibility,
         deprecation = deprecation,
         restricted_to = restricted_to,
+        compatible_with = compatible_with,
+    )
+
+def lp_pybind_library(
+        name,
+        copts = [],
+        features = [],
+        tags = [],
+        deps = [],
+        py_deps = [],
+        visibility = None,
+        compatible_with = None,
+        **kwargs):
+    """A cc_library compatible with pybind11, to be reused by other pybind targets.
+
+    The library can also have 'py_deps', useful when the C++ code imports
+    Python modules.
+
+    Args:
+      name: Generated py_library/py_extension module name.
+      copts: Options for native cc_library.
+      features: Build features for all libraries.
+      tags: Build tags for all libraries.
+      py_deps: Python deps (py_libraries, py_extensions, pybind_extensions).
+      deps: cc only deps (pybind11_libraries and/or cc_libraries).
+      visibility: passed to inner targets.
+      compatible_with: passed to inner targets.
+      **kwargs: Additional arguments to pass to the cc_library.
+    """
+    lib_rule = name + "_pybind"
+    native.cc_library(
+        name = lib_rule,
+        copts = copts + ["-fexceptions"],
+        features = features + ["-use_header_modules"],
+        visibility = visibility,
+        compatible_with = compatible_with,
+        deps = deps + lp_pybind_deps(),
+        **kwargs
+    )
+    py_deps = py_deps + [lib_rule]
+    lp_py_extension_bundle(
+        name = name,
+        tags = tags,
+        features = features,
+        deps = py_deps,
+        visibility = visibility,
         compatible_with = compatible_with,
     )
 

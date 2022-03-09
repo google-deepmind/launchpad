@@ -1,4 +1,4 @@
-load("//launchpad:build_defs.bzl", "lp_cc_library", "lp_cc_proto_library", "lp_library", "lp_pybind_extension")
+load("//launchpad:build_defs.bzl", "lp_cc_library", "lp_cc_proto_library", "lp_library", "lp_pybind_extension", "lp_pybind_library")
 
 licenses(["notice"])
 
@@ -78,5 +78,17 @@ lp_cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/synchronization",
+    ],
+)
+
+lp_pybind_library(
+    name = "pybind_serialize",
+    srcs = ["pybind_serialize.cc"],
+    hdrs = ["pybind_serialize.h"],
+    deps = [
+        ":py_serialize",
+        ":serialization_cc_proto",
+        "//courier/platform:status_macros",
+        "@com_google_absl//absl/status",
     ],
 )

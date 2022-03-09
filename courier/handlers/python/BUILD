@@ -12,6 +12,7 @@ lp_pybind_extension(
         "//courier/handlers:py_call",
         "//courier/platform:status_macros",
         "//courier/serialization:py_serialize",
+        "//courier/serialization:pybind_serialize",
         "//courier/serialization:serialization_cc_proto",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/status",

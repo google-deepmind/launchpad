@@ -27,6 +27,7 @@
 #include "courier/handlers/py_call.h"
 
 #include "courier/serialization/py_serialize.h"
+#include "courier/serialization/pybind_serialize.h"
 #include "courier/serialization/serialization.pb.h"
 #include "pybind11_abseil/absl_casters.h"
 #include "pybind11_abseil/status_casters.h"
@@ -46,24 +47,12 @@ std::shared_ptr<HandlerInterface> BuildPyCallHandlerWrapper(
 }
 
 
-
 absl::StatusOr<pybind11::object> CallHandler(
-    std::shared_ptr<HandlerInterface> handler,
-    const std::string& method, const pybind11::list& args,
-    const pybind11::dict& kwargs) {
+    std::shared_ptr<HandlerInterface> handler, const std::string& method,
+    const pybind11::list& args, const pybind11::dict& kwargs) {
   courier::CallArguments arguments;
-  for (pybind11::handle arg : args) {
-    PyObject* object = arg.ptr();
-    COURIER_RETURN_IF_ERROR(SerializePyObject(object, arguments.add_args()));
-  }
-  for (const auto& kwarg : kwargs) {
-    auto ins = arguments.mutable_kwargs()->insert(
-        {kwarg.first.cast<std::string>(), courier::SerializedObject()});
-    COURIER_RET_CHECK(ins.second)
-        << "Duplicate kwargs key: " << kwarg.first.cast<std::string>();
-    PyObject* object = kwarg.second.ptr();
-    COURIER_RETURN_IF_ERROR(SerializePyObject(object, &ins.first->second));
-  }
+  COURIER_RETURN_IF_ERROR(SerializePybindArgs(args, kwargs, &arguments));
+
   PyThreadState* thread_state = PyEval_SaveThread();
   COURIER_ASSIGN_OR_RETURN(auto result, handler->Call(method, arguments));
   PyEval_RestoreThread(thread_state);

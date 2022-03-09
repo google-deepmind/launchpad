@@ -37,6 +37,7 @@ lp_pybind_extension(
         "//courier/platform:logging",
         "//courier/platform:status_macros",
         "//courier/serialization:py_serialize",
+        "//courier/serialization:pybind_serialize",
         "//courier/serialization:serialization_cc_proto",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",

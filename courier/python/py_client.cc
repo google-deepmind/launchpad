@@ -35,6 +35,7 @@
 #include "courier/platform/logging.h"
 #include "courier/platform/status_macros.h"
 #include "courier/serialization/py_serialize.h"
+#include "courier/serialization/pybind_serialize.h"
 #include "courier/serialization/serialization.pb.h"
 #include "pybind11_abseil/absl_casters.h"
 #include "pybind11_abseil/status_casters.h"
@@ -47,18 +48,8 @@ absl::StatusOr<py::object> PyClient::PyCall(
     const std::string& method, const py::list& args, const py::dict& kwargs,
     bool wait_for_ready, absl::Duration timeout, bool compress) {
   auto arguments = std::make_unique<courier::CallArguments>();
-  for (py::handle arg : args) {
-    PyObject* object = arg.ptr();
-    COURIER_RETURN_IF_ERROR(SerializePyObject(object, arguments->add_args()));
-  }
-  for (const auto& kwarg : kwargs) {
-    auto ins = arguments->mutable_kwargs()->insert(
-        {kwarg.first.cast<std::string>(), courier::SerializedObject()});
-    COURIER_RET_CHECK(ins.second)
-        << "Duplicate kwargs key: " << kwarg.first.cast<std::string>();
-    PyObject* object = kwarg.second.ptr();
-    COURIER_RETURN_IF_ERROR(SerializePyObject(object, &ins.first->second));
-  }
+  COURIER_RETURN_IF_ERROR(SerializePybindArgs(args, kwargs, arguments.get()));
+
   PyThreadState* thread_state = PyEval_SaveThread();
   CallContext context(timeout, /*wait_for_ready=*/wait_for_ready,
                       /*compress=*/compress, /*interruptible=*/true);
@@ -76,18 +67,8 @@ absl::StatusOr<PyClientCallCanceller> PyClient::AsyncPyCall(
     PyObjectCallback result_cb, PyObjectCallback exception_cb,
     bool wait_for_ready, absl::Duration timeout, bool compress) {
   auto arguments = absl::make_unique<courier::CallArguments>();
-  for (const py::handle& arg : args) {
-    PyObject* object = arg.ptr();
-    COURIER_RETURN_IF_ERROR(SerializePyObject(object, arguments->add_args()));
-  }
-  for (const auto& kwarg : kwargs) {
-    auto ins = arguments->mutable_kwargs()->insert(
-        {kwarg.first.cast<std::string>(), courier::SerializedObject()});
-    COURIER_RET_CHECK(ins.second)
-        << "Duplicate kwargs key: " << kwarg.first.cast<std::string>();
-    PyObject* object = kwarg.second.ptr();
-    COURIER_RETURN_IF_ERROR(SerializePyObject(object, &ins.first->second));
-  }
+  COURIER_RETURN_IF_ERROR(SerializePybindArgs(args, kwargs, arguments.get()));
+
   auto context = std::make_shared<CallContext>(
       timeout, /*wait_for_ready=*/wait_for_ready, /*compress=*/compress,
       /*interruptible=*/true);
