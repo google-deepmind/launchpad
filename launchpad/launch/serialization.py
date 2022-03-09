@@ -56,6 +56,29 @@ def enable_lru_cache_pickling_once():
   copyreg.pickle(lru_cache_type, _pickle_lru_cache)
 
 
+def _cloudpickle_dump_with_user_friendly_error(functions,
+                                               description: str,
+                                               file=None):
+  """Serializes functions, and throws user-friendly error upon failure."""
+  try:
+    if file:
+      return cloudpickle.dump(functions, file)
+    else:
+      return cloudpickle.dumps(functions)
+  except Exception as e:
+    # When using `pdb`, we want to be able to go up the stack that goes into
+    # the serialization error, not through the call-stack up to functions like
+    # `check_nodes_are_serializable`. Thus, we need to propagate the traceback.
+    raise RuntimeError(
+        str(e.__class__.__name__) + ": " + str(e) + "\n"
+        f"The nodes associated to {description} were "
+        "not serializable using cloudpickle. Make them picklable, or pass "
+        "`serialize_py_nodes=False` to `lp.launch` if you want to disable this "
+        "check, for example when you want to use FLAGS, mocks, threading.Event "
+        "etc, in your node definition."
+    ).with_traceback(e.__traceback__) from e
+
+
 def check_nodes_are_serializable(label, nodes):
   """Raises an exception if some `PyNode` objects are not serializable."""
   enable_lru_cache_pickling_once()
@@ -63,16 +86,8 @@ def check_nodes_are_serializable(label, nodes):
   # which the default implementation of `to_executables` will do serialization
   # of `node.function`).
   functions = [node.function for node in nodes if hasattr(node, "function")]
-  try:
-    cloudpickle.dumps(functions)
-  except Exception as e:
-    raise RuntimeError(
-        f"The nodes associated to the label '{label}' ({type(nodes[0])}) were "
-        "not serializable using cloudpickle. Make them pickable, or pass "
-        "`serialize_py_nodes=False` to `lp.launch` if you want to disable this "
-        "check, for example when you want to use FLAGS, mocks, threading.Event "
-        "etc, in your node definition."
-    ) from e
+  _cloudpickle_dump_with_user_friendly_error(functions,
+                                             f"{label} ({type(nodes[0])}")
 
 
 def serialize_functions(data_file_path: str, description: str, functions):
@@ -86,11 +101,4 @@ def serialize_functions(data_file_path: str, description: str, functions):
   """
   enable_lru_cache_pickling_once()
   with open(data_file_path, "wb") as f:
-    try:
-      cloudpickle.dump(functions, f)
-    except Exception as e:
-      raise RuntimeError(
-          f"The nodes associated to '{description}' are not serializable "
-          "by cloudpickle. Please make them serializable, or use a launch type "
-          "that does not require serialization."
-      ) from e
+    _cloudpickle_dump_with_user_friendly_error(functions, description, f)

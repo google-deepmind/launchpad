@@ -65,9 +65,7 @@ class SerializationTest(absltest.TestCase):
   def test_quick_stop(self):
     nodes = [python.PyNode(NotSeriazableNode())]
 
-    with self.assertRaisesRegex(
-        RuntimeError,
-        "The nodes associated to the label 'my_node'"):
+    with self.assertRaisesRegex(RuntimeError, 'The nodes associated to'):
       serialization.check_nodes_are_serializable('my_node', nodes)
 
   def test_lru_cache(self):
