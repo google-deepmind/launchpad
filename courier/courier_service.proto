@@ -37,6 +37,7 @@ message ListMethodsResponse {
   repeated string methods = 1;
 }
 
+
 service CourierService {
   // Calls a method on the server and returns the call's result.
   rpc Call(CallRequest) returns (CallResponse) {
@@ -45,4 +46,5 @@ service CourierService {
   // Lists the methods available on the server.
   rpc ListMethods(ListMethodsRequest) returns (ListMethodsResponse) {
   }
+
 }
