@@ -22,11 +22,12 @@
 namespace courier {
 
 CallContext::CallContext(absl::Duration timeout, bool wait_for_ready,
-                         bool compress, bool interruptible)
+                         bool compress, bool interruptible, bool chunk_tensors)
     : deadline_(timeout == absl::ZeroDuration() ? absl::InfiniteFuture()
                                                 : absl::Now() + timeout),
       wait_for_ready_(wait_for_ready),
       compress_(compress),
+      chunk_tensors_(chunk_tensors),
       cancelled_(false),
       context_(NewContext()) {
 }

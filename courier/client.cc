@@ -25,6 +25,7 @@
 #include "grpcpp/channel.h"
 #include "grpcpp/client_context.h"
 #include "grpcpp/create_channel.h"
+#include "absl/base/optimization.h"
 #include "absl/functional/bind_front.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
@@ -113,15 +114,14 @@ void Client::cq_polling() {
   }
 }
 
-Client::Client(absl::string_view server_address) :
+Client::Client(absl::string_view server_address)
+    :
       cq_thread_(&Client::cq_polling, this),
       server_address_(server_address) {
   ClientCreation();
 }
 
-Client::~Client() {
-  Shutdown();
-}
+Client::~Client() { Shutdown(); }
 
 void Client::Shutdown() {
   if (!shutdown_) {
@@ -156,6 +156,7 @@ absl::StatusOr<courier::CallResult> Client::CallF(
   }
   return std::move(response).result();
 }
+
 
 void Client::AsyncCallF(
     CallContext* context, absl::string_view method_name,

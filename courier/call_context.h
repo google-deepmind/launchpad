@@ -31,7 +31,7 @@ class CallContext {
   // interrupt signal handler to initiate cancellation on CTRL-C.
   explicit CallContext(absl::Duration timeout = absl::ZeroDuration(),
                        bool wait_for_ready = true, bool compress = false,
-                       bool interruptible = false);
+                       bool interruptible = false, bool chunk_tensors = false);
 
   // Removes the signal handler and destroys the context. Should only be called
   // once the grpc::ClientContext call has completed.
@@ -51,6 +51,7 @@ class CallContext {
   grpc::ClientContext* context();
 
   bool wait_for_ready() const { return wait_for_ready_; }
+  bool chunk_tensors() const { return chunk_tensors_; }
 
  private:
   std::unique_ptr<grpc::ClientContext> NewContext() const;
@@ -63,6 +64,9 @@ class CallContext {
 
   // Used to set compression attributes when creating a new context.
   const bool compress_;
+
+  // Feature unsupported at the moment.
+  const bool chunk_tensors_;
 
 
   // The GRPC client context.
