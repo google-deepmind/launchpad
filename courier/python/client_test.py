@@ -58,8 +58,9 @@ class PyIntegrationTest(absltest.TestCase):
     self._client = client.Client(self._server.address)
 
   def tearDown(self):
-    super(PyIntegrationTest, self).tearDown()
     self._server.Stop()
+    self._server.Join()
+    super(PyIntegrationTest, self).tearDown()
 
   def testLambdaCall(self):
     result = self._client.lambda_add(12, 5)
