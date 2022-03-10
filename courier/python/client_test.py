@@ -25,6 +25,7 @@ from courier.python import client  # pytype: disable=import-error
 from courier.python import py_server  # pytype: disable=import-error
 
 import mock
+import numpy as np
 
 from pybind11_abseil.status import StatusNotOk  # pytype: disable=import-error
 
@@ -44,6 +45,7 @@ class PyIntegrationTest(absltest.TestCase):
     self._server.Bind('lambda_add', lambda a, b: a + b)
     self._server.Bind('method_add', _A().add)
     self._server.Bind('add_default', lambda a, b=100: a + b)
+    self._server.Bind('echo', lambda a: a)
 
     def _exception_method():
       raise ValueError('Exception method called')
@@ -128,7 +130,7 @@ class PyIntegrationTest(absltest.TestCase):
         client.list_methods(self._client), [
             'no_args', 'lambda_add', 'add_default', 'exception_method',
             'slow_method', 'method_add', 'rebind', 'bytes_value',
-            'unicode_value',
+            'unicode_value', 'echo',
         ])
 
 

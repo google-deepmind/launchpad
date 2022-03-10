@@ -63,8 +63,8 @@ class PyClient : public Client {
                                           const pybind11::list& args,
                                           const pybind11::dict& kwargs,
                                           bool wait_for_ready,
-                                          absl::Duration timeout,
-                                          bool compress);
+                                          absl::Duration timeout, bool compress,
+                                          bool chunk_tensors);
 
   // Asynchronous variant of PyCall.
   // A non-zero `timeout` will be used as the timeout for the RPC call.
@@ -74,7 +74,7 @@ class PyClient : public Client {
       const std::string& method, const pybind11::list& args,
       const pybind11::dict& kwargs, PyObjectCallback result_cb,
       PyObjectCallback exception_cb, bool wait_for_ready,
-      absl::Duration timeout, bool compress);
+      absl::Duration timeout, bool compress, bool chunk_tensors);
 };
 
 }  // namespace courier

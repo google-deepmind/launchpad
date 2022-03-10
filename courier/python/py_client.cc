@@ -44,15 +44,19 @@ namespace courier {
 
 namespace py = pybind11;
 
-absl::StatusOr<py::object> PyClient::PyCall(
-    const std::string& method, const py::list& args, const py::dict& kwargs,
-    bool wait_for_ready, absl::Duration timeout, bool compress) {
+absl::StatusOr<py::object> PyClient::PyCall(const std::string& method,
+                                            const py::list& args,
+                                            const py::dict& kwargs,
+                                            bool wait_for_ready,
+                                            absl::Duration timeout,
+                                            bool compress, bool chunk_tensors) {
   auto arguments = std::make_unique<courier::CallArguments>();
   COURIER_RETURN_IF_ERROR(SerializePybindArgs(args, kwargs, arguments.get()));
 
   PyThreadState* thread_state = PyEval_SaveThread();
   CallContext context(timeout, /*wait_for_ready=*/wait_for_ready,
-                      /*compress=*/compress, /*interruptible=*/true);
+                      /*compress=*/compress, /*interruptible=*/true,
+                      /*chunk_tensors=*/chunk_tensors);
   absl::StatusOr<courier::CallResult> result_or =
       CallF(&context, method, std::move(arguments));
   PyEval_RestoreThread(thread_state);
@@ -65,13 +69,14 @@ absl::StatusOr<py::object> PyClient::PyCall(
 absl::StatusOr<PyClientCallCanceller> PyClient::AsyncPyCall(
     const std::string& method, const py::list& args, const py::dict& kwargs,
     PyObjectCallback result_cb, PyObjectCallback exception_cb,
-    bool wait_for_ready, absl::Duration timeout, bool compress) {
+    bool wait_for_ready, absl::Duration timeout, bool compress,
+    bool chunk_tensors) {
   auto arguments = absl::make_unique<courier::CallArguments>();
   COURIER_RETURN_IF_ERROR(SerializePybindArgs(args, kwargs, arguments.get()));
 
   auto context = std::make_shared<CallContext>(
       timeout, /*wait_for_ready=*/wait_for_ready, /*compress=*/compress,
-      /*interruptible=*/true);
+      /*interruptible=*/true, /*chunk_tensors=*/chunk_tensors);
   // Release the GIL as `AsynCallF` might block on `Client::Init()`.
   PyThreadState* thread_state = PyEval_SaveThread();
   AsyncCallF(

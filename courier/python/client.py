@@ -63,11 +63,13 @@ class _AsyncClient:
       wait_for_ready: bool,
       call_timeout: datetime.timedelta,
       compress: bool,
+      chunk_tensors: bool,
   ):
     self._client = client
     self._wait_for_ready = wait_for_ready
     self._call_timeout = call_timeout
     self._compress = compress
+    self._chunk_tensors = chunk_tensors
 
   def __getattr__(self, method):
     """Gets a callable function for the method that returns a future.
@@ -92,7 +94,8 @@ class _AsyncClient:
       canceller = self._client.AsyncPyCall(method, list(args), kwargs,
                                            f.set_result, set_exception,
                                            self._wait_for_ready,
-                                           self._call_timeout, self._compress)
+                                           self._call_timeout, self._compress,
+                                           self._chunk_tensors)
 
       def done_callback(f):
         if f.cancelled():
@@ -117,17 +120,19 @@ class Client:
       compress: bool = False,
       call_timeout: Optional[Union[int, float, datetime.timedelta]] = None,
       wait_for_ready: bool = True,
+      chunk_tensors: bool = False,
   ):
     """Initiates a new client that will connect to a server.
 
     Args:
-      server_address: Address of the server. If the string does not start
-        with "/" or "localhost" then it will be interpreted as a custom BNS
+      server_address: Address of the server. If the string does not start with
+        "/" or "localhost" then it will be interpreted as a custom BNS
         registered server_name (constructor passed to Server).
       compress: Whether to use compression.
       call_timeout: If set, uses a timeout for all calls.
-      wait_for_ready: Sets `wait_for_ready` on the gRPC::ClientContext.
-        This specifies whether to wait for a server to come online.
+      wait_for_ready: Sets `wait_for_ready` on the gRPC::ClientContext. This
+        specifies whether to wait for a server to come online.
+      chunk_tensors: Unsupported feature.
     """
     self._init_args = (server_address, compress, call_timeout, wait_for_ready)
     self._address = str(server_address)
@@ -137,8 +142,10 @@ class Client:
     if not isinstance(self._call_timeout, datetime.timedelta):
       self._call_timeout = datetime.timedelta(seconds=self._call_timeout)
     self._wait_for_ready = wait_for_ready
+    self._chunk_tensors = chunk_tensors
     self._async_client = _AsyncClient(self._client, self._wait_for_ready,
-                                      self._call_timeout, self._compress)
+                                      self._call_timeout, self._compress,
+                                      self._chunk_tensors)
 
   def __del__(self):
     self._client.Shutdown()
@@ -164,11 +171,12 @@ class Client:
     Returns:
       Callable function for the method.
     """
+
     @exception_handler
     def func(*args, **kwargs):
       return self._client.PyCall(method, list(args), kwargs,
                                  self._wait_for_ready, self._call_timeout,
-                                 self._compress)
+                                 self._compress, self._chunk_tensors)
 
     setattr(self, method, func)
     return func
