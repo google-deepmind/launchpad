@@ -57,7 +57,7 @@ py_library(
 )
 
 py_library(
-    name = "py_server",
+    name = "py_server_no_tf",
     srcs = ["py_server.py"],
     srcs_version = "PY3",
     deps = [
@@ -65,4 +65,10 @@ py_library(
         ":server",
         "//courier/handlers/python:pybind",
     ],
+)
+
+py_library(
+    name = "py_server",
+    srcs_version = "PY3",
+    deps = [":py_server_no_tf"],
 )

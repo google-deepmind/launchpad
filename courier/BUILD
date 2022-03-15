@@ -8,13 +8,21 @@ licenses(["notice"])
 
 exports_files(["LICENSE"])
 
+# Full version of Courier, including TensorFlow support.
 py_library(
     name = "courier",
+    srcs_version = "PY3",
+    deps = [":courier_no_tf"],
+)
+
+# Light-weight Courier version without TensorFlow support.
+py_library(
+    name = "courier_no_tf",
     srcs = ["__init__.py"],
     srcs_version = "PY3",
     deps = [
         "//courier/python:client",
-        "//courier/python:py_server",
+        "//courier/python:py_server_no_tf",
     ],
 )
 
