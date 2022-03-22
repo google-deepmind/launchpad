@@ -182,10 +182,16 @@ class WorkerManager:
     """Initializes a WorkerManager.
 
     Args:
-      kill_main_thread: When set to false try not to kill the launcher while
-        killing workers. This is not possible when thread workers run in the
-        same process.
-      register_in_thread: TODO
+      kill_main_thread: When True (the default), it will kill the current
+        process (program launcher or the node) after killing all th
+        subprocesses, to guarantee complete cleanup of the program. Setting it
+        to False disables this behavior, which can be useful in test_mp, where
+        killing the main process causes a test to fail.
+      register_in_thread: Make the worker manager accessible through
+        `get_worker_manager()` in the current thread (needed by `stop_event()`
+        for example). It should be False if we don't need to access
+        `get_worker_manager()` , e.g. at the launcher thread of local_mt and
+        local_mp.
     """
     self._mutex = threading.Lock()
     self._termination_notice_secs = -1
