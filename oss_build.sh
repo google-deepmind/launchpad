@@ -107,7 +107,7 @@ for python_version in $PYTHON_VERSIONS; do
 
   # Build Launchpad and run all bazel Python tests. All other tests are executed
   # later.
-  bazel build -c opt --copt=-mavx --config=manylinux2010 --test_output=errors //...
+  bazel build -c opt --copt=-mavx --config=manylinux2014 --test_output=errors //...
 
   # Builds Launchpad and creates the wheel package.
   /tmp/launchpad/launchpad/pip_package/build_pip_package.sh --dst $OUTPUT_DIR/fresh $PIP_PKG_EXTRA_ARGS
