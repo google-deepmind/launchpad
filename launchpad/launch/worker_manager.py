@@ -73,7 +73,17 @@ def _register_signal_dispatcher(sig):
   global _SIGNAL_HANDLERS
   assert sig not in _SIGNAL_HANDLERS
   _SIGNAL_HANDLERS[sig] = set()
-  old_signal = signal.signal(sig, _signal_dispatcher)
+  try:
+    old_signal = signal.signal(sig, _signal_dispatcher)
+  except ValueError as e:
+    raise RuntimeError(
+        'Launchpad cannot register its signal handler. This is likely because '
+        'you are not running lp.launch() from the main thread. If so, you will '
+        'need to pass --nolp_worker_manager_registers_signals (or set '
+        '`FLAGS.lp_worker_manager_registers_signals = False`). Note that this '
+        'will disable Launchpad signal propagation, meaning that Ctrl+C on the '
+        'launcher will NOT stop the workers in the case of local_mp.'
+    ) from e
   if callable(old_signal):
     _SIGNAL_HANDLERS[sig].add(old_signal)
 
@@ -168,7 +178,7 @@ class WorkerManager:
       self,
       kill_main_thread=True,
       register_in_thread=False,
-      register_signals=True):
+  ):
     """Initializes a WorkerManager.
 
     Args:
@@ -176,8 +186,6 @@ class WorkerManager:
         killing workers. This is not possible when thread workers run in the
         same process.
       register_in_thread: TODO
-      register_signals: Whether or not to register signal handlers. Note that
-        this can be overridden by FLAGS.lp_worker_manager_registers_signals.
     """
     self._mutex = threading.Lock()
     self._termination_notice_secs = -1
@@ -196,11 +204,11 @@ class WorkerManager:
     self._kill_main_thread = kill_main_thread
     self._stop_event = threading.Event()
     self._main_thread = threading.current_thread().ident
-    if register_signals and FLAGS.lp_worker_manager_registers_signals:
+    if FLAGS.lp_worker_manager_registers_signals:
       _register_signal_handler(signal.SIGTERM, self._sigterm)
       _register_signal_handler(signal.SIGQUIT, self._sigquit)
-    if handle_user_stop:
-      _register_signal_handler(signal.SIGINT, self._stop_by_user)
+      if handle_user_stop:
+        _register_signal_handler(signal.SIGINT, self._stop_by_user)
     if register_in_thread:
       _WORKER_MANAGERS.manager = self
 
