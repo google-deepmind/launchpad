@@ -195,13 +195,13 @@ class WorkerManager:
     """
     self._mutex = threading.Lock()
     self._termination_notice_secs = -1
-    handle_user_stop = False
+    handle_user_stop = True
     global _HAS_MAIN_MANAGER
-    # Make the first created worker manager the main manager, which handles
-    # signals.
     if not _HAS_MAIN_MANAGER:
+      # This logic resolves the potential conflict between two WorkerManagers
+      # in the same process. In particular, only the first one will execute the
+      # "countdown-and-sigkill" logic upon Ctrl+C.
       self._termination_notice_secs = FLAGS.lp_termination_notice_secs
-      handle_user_stop = True
       _HAS_MAIN_MANAGER = True
     self._active_workers = collections.defaultdict(list)
     self._workers_count = collections.defaultdict(lambda: 0)
@@ -292,12 +292,13 @@ class WorkerManager:
 
   def _stop_by_user(self):
     """Handles stopping of the runtime by a user."""
-    if self._termination_notice_secs != 0:
-      print(
-          termcolor.colored(
-              'User-requested termination. Asking workers to stop.', 'blue'))
+    print(
+        termcolor.colored(
+            'User-requested termination. Asking workers to stop.', 'blue'))
+    if self._termination_notice_secs > 0:
       print(termcolor.colored('Press CTRL+C to terminate immediately.', 'blue'))
-    signal.signal(signal.SIGINT, lambda sig, frame: self._kill())
+    if self._termination_notice_secs >= 0:
+      signal.signal(signal.SIGINT, lambda sig, frame: self._kill())
     self._stop()
 
   def _kill_process_tree(self, pid):

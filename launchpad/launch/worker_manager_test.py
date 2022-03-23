@@ -30,6 +30,7 @@ class WorkerManagerTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
+    worker_manager._HAS_MAIN_MANAGER = False
     self._sigterm_patcher = mock.patch.object(
         signal, 'SIGTERM', new=signal.SIGUSR1)
     self._sigterm_patcher.start()
@@ -147,6 +148,17 @@ class WorkerManagerTest(absltest.TestCase):
     with self.assertRaisesRegexp(  
         RuntimeError, 'One of the workers exited'):
       self._manager.wait()
+
+  def test_two_worker_managers(self):
+    another_manager = worker_manager.WorkerManager()
+    self.assertGreater(self._manager._termination_notice_secs, 0)
+    # The other WM won't duplicate the "countdown-and-sigkill" logic.
+    self.assertEqual(another_manager._termination_notice_secs, -1)
+    self.assertIn(self._manager._stop_by_user,
+                  worker_manager._SIGNAL_HANDLERS[signal.SIGINT])
+    # The other WM will still be able to handle signal correctly.
+    self.assertIn(another_manager._stop_by_user,
+                  worker_manager._SIGNAL_HANDLERS[signal.SIGINT])
 
 
 if __name__ == '__main__':
