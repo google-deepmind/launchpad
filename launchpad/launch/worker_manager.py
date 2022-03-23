@@ -75,15 +75,11 @@ def _register_signal_dispatcher(sig):
   _SIGNAL_HANDLERS[sig] = set()
   try:
     old_signal = signal.signal(sig, _signal_dispatcher)
-  except ValueError as e:
-    raise RuntimeError(
+  except ValueError:
+    logging.warn(
         'Launchpad cannot register its signal handler. This is likely because '
-        'you are not running lp.launch() from the main thread. If so, you will '
-        'need to pass --nolp_worker_manager_registers_signals (or set '
-        '`FLAGS.lp_worker_manager_registers_signals = False`). Note that this '
-        'will disable Launchpad signal propagation, meaning that Ctrl+C on the '
-        'launcher will NOT stop the workers in the case of local_mp.'
-    ) from e
+        'you are not running lp.launch() from the main thread. Launchpad will '
+        'NOT attempt to handle signal %s.', sig)
   if callable(old_signal):
     _SIGNAL_HANDLERS[sig].add(old_signal)
 
