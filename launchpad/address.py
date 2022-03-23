@@ -119,8 +119,11 @@ class Address(object):
   def __getstate__(self):
     state = self.__dict__.copy()
     # Don't pickle `_owning_node`, as it's here only for launch-time checks.
-    state['_owning_node'] = ('Restored from pickle node named: ' +
-                             repr(self._owning_node))
+    # Instead, store a description of the node. If a restored instance is
+    # re-pickled, leave the existing node description unchanged.
+    if not isinstance(self._owning_node, str):
+      state['_owning_node'] = ('Restored from pickle node named: ' +
+                               repr(self._owning_node))
     return state
 
 
