@@ -39,9 +39,9 @@ http_archive(
 
 http_archive(
   name = "pybind11_abseil",
-  strip_prefix = "pybind11_abseil-dc0479f3973b062783958da333a235bc528bfd22",
-  sha256 = "046fd1c297ba4eff0a59a336a4aee23774509e497bebced550cf8c9633cf3f54",
-  urls = ["https://github.com/pybind/pybind11_abseil/archive/dc0479f3973b062783958da333a235bc528bfd22.zip"],
+  strip_prefix = "pybind11_abseil-1bb411eb1b13440d5af61660e70e8c5b5b2998a1",
+  sha256 = "be5da399b4f62615fdc2a236674638480118f6030d7b16645c6d3f0e208a7f8f",
+  urls = ["https://github.com/pybind/pybind11_abseil/archive/1bb411eb1b13440d5af61660e70e8c5b5b2998a1.zip"],
 )
 
 http_archive(
