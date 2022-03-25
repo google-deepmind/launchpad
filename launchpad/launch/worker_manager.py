@@ -206,11 +206,10 @@ class WorkerManager:
     self._kill_main_thread = kill_main_thread
     self._stop_event = threading.Event()
     self._main_thread = threading.current_thread().ident
-    if FLAGS.lp_worker_manager_registers_signals:
-      _register_signal_handler(signal.SIGTERM, self._sigterm)
-      _register_signal_handler(signal.SIGQUIT, self._sigquit)
-      if handle_user_stop:
-        _register_signal_handler(signal.SIGINT, self._stop_by_user)
+    _register_signal_handler(signal.SIGTERM, self._sigterm)
+    _register_signal_handler(signal.SIGQUIT, self._sigquit)
+    if handle_user_stop:
+      _register_signal_handler(signal.SIGINT, self._stop_by_user)
     if register_in_thread:
       _WORKER_MANAGERS.manager = self
 
