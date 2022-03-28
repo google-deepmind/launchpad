@@ -71,16 +71,8 @@ class _AsyncClient:
     self._compress = compress
     self._chunk_tensors = chunk_tensors
 
-  def __getattr__(self, method):
-    """Gets a callable function for the method that returns a future.
-
-    Args:
-      method: Name of the method.
-
-    Returns:
-      Callable function for the method that returns a future.
-    """
-
+  def _build_handler(self, method: str):
+    """Build a future handler for a given method."""
     def call(*args, **kwargs):  
       f = futures.Future()
 
@@ -105,6 +97,20 @@ class _AsyncClient:
       return f
 
     return call
+
+  def __getattr__(self, method):
+    """Gets a callable function for the method that returns a future.
+
+    Args:
+      method: Name of the method.
+
+    Returns:
+      Callable function for the method that returns a future.
+    """
+    return self._build_handler(method)
+
+  def __call__(self, *args, **kwargs):
+    return self._build_handler('__call__')(*args, **kwargs)
 
 
 class Client:
@@ -162,6 +168,15 @@ class Client:
     """Gets an asynchronous client on which a method call returns a future."""
     return self._async_client
 
+  def _build_handler(self, method: str):
+    @exception_handler
+    def func(*args, **kwargs):
+      return self._client.PyCall(method, list(args), kwargs,
+                                 self._wait_for_ready, self._call_timeout,
+                                 self._compress, self._chunk_tensors)
+
+    return func
+
   def __getattr__(self, method: str):
     """Gets a callable function for the method and sets it as an attribute.
 
@@ -172,14 +187,13 @@ class Client:
       Callable function for the method.
     """
 
-    @exception_handler
-    def func(*args, **kwargs):
-      return self._client.PyCall(method, list(args), kwargs,
-                                 self._wait_for_ready, self._call_timeout,
-                                 self._compress, self._chunk_tensors)
-
+    func = self._build_handler(method)
     setattr(self, method, func)
     return func
+
+  @exception_handler
+  def __call__(self, *args, **kwargs):
+    return self._build_handler('__call__')(*args, **kwargs)
 
 
 @exception_handler

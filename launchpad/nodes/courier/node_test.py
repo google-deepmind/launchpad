@@ -32,10 +32,15 @@ class Server(object):
   def __init__(self):
     self._server = None  # type: courier.Server
     self._has_ping = threading.Event()
+    self._has_call = threading.Event()
 
   def ping(self):
     self._has_ping.set()
     return 'pong'
+
+  def __call__(self):
+    self._has_call.set()
+    return 'called'
 
   def set_courier_server(self, server: courier.Server):
     self._server = server
@@ -43,6 +48,7 @@ class Server(object):
   def run(self):
     self._server.Start()
     self._has_ping.wait()
+    self._has_call.wait()
     self._server.Stop()
 
 
@@ -58,6 +64,21 @@ class CourierNodeTest(absltest.TestCase):
     threading.Thread(target=node.run).start()
     client = handle.dereference()
     self.assertEqual(client.ping(), 'pong')
+    self.assertEqual(client(), 'called')
+    # Make sure Tensorflow is not imported.
+    self.assertNotIn('tensorflow', sys.modules)
+
+  def test_future_ping_pong(self):
+    node = lp_courier.CourierNode(Server)
+    handle = node.create_handle()
+
+    # Bind all addresses
+    address_builder.bind_addresses([node])
+
+    threading.Thread(target=node.run).start()
+    client = handle.dereference()
+    self.assertEqual(client.futures.ping().result(), 'pong')
+    self.assertEqual(client.futures().result(), 'called')
     # Make sure Tensorflow is not imported.
     self.assertNotIn('tensorflow', sys.modules)
 

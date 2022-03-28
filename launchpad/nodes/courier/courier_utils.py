@@ -24,8 +24,8 @@ from courier.handlers.python import pybind
 
 
 def _should_expose_method(func: Callable[..., Any], method_name: Text) -> bool:
-  return (callable(func) and not method_name.startswith('_') and
-          method_name != 'set_courier_server')
+  return (callable(func) and method_name != 'set_courier_server' and
+          (not method_name.startswith('_') or method_name == '__call__'))
 
 
 def make_courier_server(instance: Any, *courier_args,
