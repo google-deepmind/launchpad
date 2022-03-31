@@ -8,6 +8,7 @@ lp_pybind_extension(
     name = "pybind",
     srcs = ["pybind.cc"],
     deps = [
+        "//courier/handlers:handler_batcher",
         "//courier/handlers:interface",
         "//courier/handlers:py_call",
         "//courier/platform:status_macros",

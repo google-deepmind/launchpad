@@ -94,6 +94,7 @@ class PyCallHandler : public HandlerInterface {
 }  // namespace
 
 std::unique_ptr<HandlerInterface> BuildPyCallHandler(PyObject* py_func) {
+  ImportNumpy();
   return absl::make_unique<PyCallHandler>(py_func);
 }
 

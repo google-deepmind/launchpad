@@ -53,6 +53,8 @@ absl::StatusOr<py::object> DeserializeFromProto(
 
 
 PYBIND11_MODULE(pybind, m) {
+  ImportNumpy();
+
   py::google::ImportStatusModule();
 
   m.def("SerializeToString", &SerializeToString,

@@ -56,3 +56,4 @@ from launchpad.stop_program.stop import stop
 with lazy_loader.LazyImports(__name__, False):
   from launchpad.nodes.reverb.node import ReverbNode
   from launchpad.nodes.python.xm_docker import DockerConfig
+  from launchpad.nodes.courier.courier_utils import batched_handler

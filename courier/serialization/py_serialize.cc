@@ -32,9 +32,8 @@
 #include "courier/platform/status_macros.h"
 #include "courier/serialization/serialization.pb.h"
 #include "courier/serialization/tensor_conversion.h"
-#include "tensorflow/python/lib/core/bfloat16.h"
 
-#include "tensorflow/python/lib/core/ndarray_tensor_bridge.h"
+#include <numpy/ndarrayobject.h>
 #include "reverb/conversions.h"
 
 using std::isfinite;
@@ -190,7 +189,6 @@ absl::Status SerializeAsTensorProto(PyObject* object,
     tensor.AsProtoTensorContent(proto);
     dtype = tensor.dtype();
   }
-  tensorflow::ClearDecrefCache();
 
   if (absl::GetFlag(FLAGS_py_serialize_debug_check_finite)) {
     if (dtype == tensorflow::DataType::DT_FLOAT) {
@@ -400,6 +398,8 @@ absl::Status SerializePyObject(PyObject* object, SerializedObject* buffer) {
                                "initialized using Py_Initialize()";
   if (PyBool_Check(object)) {
     buffer->set_bool_value(PyObject_IsTrue(object));
+  } else if (PyArray_Check(object) || PyArray_CheckScalar(object)) {
+    COURIER_RETURN_IF_ERROR(SerializeNdArray(object, buffer));
   } else if (PyInt_Check(object)) {
     buffer->set_int_value(PyInt_AsLong(object));
   } else if (PyLong_Check(object)) {
@@ -638,7 +638,8 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
       COURIER_ASSIGN_OR_RETURN(auto ret_safe,
                                TensorToNdArray(std::move(tensor)));
 
-      return reinterpret_cast<PyObject *>(ret_safe.release());
+      // PyArray_Return turns rank 0 arrays into numpy scalars
+      return PyArray_Return(ret_safe.release());
     }
     case SerializedObject::kJaxTensorValue: {
       auto tensor = absl::make_unique<tensorflow::Tensor>();
@@ -647,7 +648,9 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
 
       COURIER_ASSIGN_OR_RETURN(auto ret_safe,
                                TensorToNdArray(std::move(tensor)));
-      return reinterpret_cast<PyObject *>(ret_safe.release());
+      // PyArray_Return turns rank 0 arrays into numpy scalars
+      return PyArray_Return(
+          reinterpret_cast<PyArrayObject*>(ret_safe.release()));
     }
     case SerializedObject::kTypeValue: {
       COURIER_ASSIGN_OR_RETURN(PyObject * py_class,
@@ -781,6 +784,12 @@ absl::StatusOr<PyObject*> DeserializePyObjectFromString(
   COURIER_ASSIGN_OR_RETURN(SafePyObjectPtr obj,
                            DeserializePyObject(buffer, tensor_lookup));
   return obj.release();
+}
+
+void ImportNumpy() {
+  // import_array1 has to be called from each module using Numpy Arrays.
+  deepmind::reverb::pybind::ImportNumpy();
+  import_array1();
 }
 
 }  // namespace courier

@@ -23,6 +23,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/synchronization/notification.h"
+#include "courier/handlers/handler_batcher.h"
 #include "courier/handlers/interface.h"
 #include "courier/handlers/py_call.h"
 
@@ -47,24 +48,11 @@ std::shared_ptr<HandlerInterface> BuildPyCallHandlerWrapper(
 }
 
 
-absl::StatusOr<pybind11::object> CallHandler(
-    std::shared_ptr<HandlerInterface> handler, const std::string& method,
-    const pybind11::list& args, const pybind11::dict& kwargs) {
-  courier::CallArguments arguments;
-  COURIER_RETURN_IF_ERROR(SerializePybindArgs(args, kwargs, &arguments));
-
-  PyThreadState* thread_state = PyEval_SaveThread();
-  COURIER_ASSIGN_OR_RETURN(auto result, handler->Call(method, arguments));
-  PyEval_RestoreThread(thread_state);
-  COURIER_ASSIGN_OR_RETURN(courier::SafePyObjectPtr py_object,
-                           DeserializePyObject(result.result()));
-  return pybind11::reinterpret_steal<pybind11::object>(py_object.release());
-}
-
 PYBIND11_MODULE(pybind, m) {
   py::google::ImportStatusModule();
 
   m.def("BuildPyCallHandler", &BuildPyCallHandlerWrapper);
+  m.def("BuildBatchedHandlerWrapper", &BuildBatchedHandlerWrapper);
 
   py::class_<HandlerInterface, std::shared_ptr<HandlerInterface>>(
       m, "HandlerInterface");

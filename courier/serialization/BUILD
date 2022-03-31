@@ -8,6 +8,7 @@ lp_pybind_extension(
     name = "pybind",
     srcs = ["pybind.cc"],
     deps = [
+        ":batching",
         ":py_serialize",
         ":tensor_conversion",
         "//courier/platform:status_macros",
@@ -50,6 +51,19 @@ lp_cc_library(
         "@pybind11",  # build_cleaner: keep
         "@tensorflow_includes//:includes",
         "@tensorflow_solib//:framework_lib",
+    ],
+)
+
+lp_cc_library(
+    name = "batching",
+    srcs = ["batching.cc"],
+    hdrs = ["batching.h"],
+    deps = [
+        ":serialization_cc_proto",
+        ":tensor_conversion",
+        "//courier/platform:status_macros",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status",
     ],
 )
 

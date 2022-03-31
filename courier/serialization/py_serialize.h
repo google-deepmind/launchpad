@@ -46,6 +46,8 @@ absl::StatusOr<std::string> SerializePyObjectToString(PyObject* object);
 // Convenience method for deserializing a string to a PyObject.
 absl::StatusOr<PyObject*> DeserializePyObjectFromString(const std::string& str);
 
+void ImportNumpy();
+
 }  // namespace courier
 
 #endif  // COURIER_SERIALIZATION_PY_SERIALIZE_H_

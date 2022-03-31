@@ -38,6 +38,21 @@ lp_cc_library(
 )
 
 lp_cc_library(
+    name = "handler_batcher",
+    srcs = ["handler_batcher.cc"],
+    hdrs = ["handler_batcher.h"],
+    features = ["-use_header_modules"],
+    deps = [
+        ":interface",
+        "//courier/platform:status_macros",
+        "//courier/serialization:batching",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/synchronization",
+        "@tensorflow_includes//:includes",
+    ],
+)
+
+lp_cc_library(
     name = "helpers",
     srcs = ["helpers.cc"],
     hdrs = ["helpers.h"],

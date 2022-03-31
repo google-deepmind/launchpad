@@ -108,6 +108,7 @@ absl::StatusOr<PyClientCallCanceller> PyClient::AsyncPyCall(
 namespace {
 
 PYBIND11_MODULE(py_client, m) {
+  ImportNumpy();
   py::google::ImportStatusModule();
 
   py::class_<PyClientCallCanceller>(m, "PyClientCallCanceller")
