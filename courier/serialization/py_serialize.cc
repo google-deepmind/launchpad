@@ -33,8 +33,9 @@
 #include "courier/serialization/serialization.pb.h"
 #include "courier/serialization/tensor_conversion.h"
 #include "tensorflow/python/lib/core/bfloat16.h"
-#include "tensorflow/python/lib/core/ndarray_tensor.h"
+
 #include "tensorflow/python/lib/core/ndarray_tensor_bridge.h"
+#include "reverb/conversions.h"
 
 using std::isfinite;
 
@@ -179,7 +180,7 @@ absl::Status SerializeAsTensorProto(PyObject* object,
   tensorflow::DataType dtype;
   {
     tensorflow::Tensor tensor;
-    tensorflow::Status status = tensorflow::NdarrayToTensor(object, &tensor);
+    tensorflow::Status status = ::deepmind::reverb::pybind::NdArrayToTensor(object, &tensor);
     if (absl::StartsWith(status.error_message(), "Unsupported object type")) {
       return absl::InvalidArgumentError(
           "Cannot serialize array of objects. NumPy arrays of np.object can "
@@ -280,7 +281,6 @@ absl::StatusOr<int> GetJaxBfloat16NumpyType() {
 }
 
 absl::Status SerializeNdArray(PyObject* object, SerializedObject* buffer) {
-  tensorflow::RegisterNumpyBfloat16();
 
   // If it is not an array then we are trying to convert a scalar. Since JAX
   // objects are first converted to ndarrays using __array__ we know that any
@@ -318,25 +318,7 @@ absl::Status SerializeNdArray(PyObject* object, SerializedObject* buffer) {
     return SerializeAsTensorProto(object, buffer->mutable_tensor_value());
   }
 
-  // User defined types are almost definitely bfloat16 but we check just to
-  // be sure. If it is not bfloat16 then we fallback to the default tensor
-  // serialization. Note that this will most likely result in an error but
-  // if tensorflow starts supporting other user defined types in the future
-  // then we are prepared.
-  COURIER_ASSIGN_OR_RETURN(int jax_bfloat16_type_num,
-                           GetJaxBfloat16NumpyType());
-  if (array_type != jax_bfloat16_type_num) {
-    return SerializeAsTensorProto(object, buffer->mutable_tensor_value());
-  }
-
-  // Create a tf bfloat16 view of the JAX bfloat16 array. We assume that the
-  // bit patterns are identical in the two types.
-  SafePyObjectPtr tf_bfloat16_obj(PyArray_View(
-      array, PyArray_DescrFromType(tensorflow::Bfloat16NumpyType()), nullptr));
-  COURIER_RET_CHECK(tf_bfloat16_obj);
-
-  return SerializeAsTensorProto(tf_bfloat16_obj.get(),
-                                buffer->mutable_jax_tensor_value());
+  return SerializeAsTensorProto(object, buffer->mutable_tensor_value());
 }
 
 // UTF-8 decodes all strings stored in an array of dtype byte_. This is
@@ -388,6 +370,28 @@ absl::StatusOr<PyArrayObject*> DeserializeByteArray(PyArrayObject* array) {
   return unicode_array.release();
 }
 
+// Converts a Tensor to an ndarray using aliasing if possible.
+absl::StatusOr<PyGenericPtr<PyArrayObject>> TensorToNdArray(
+    std::unique_ptr<tensorflow::Tensor> tensor) {
+  PyObject* ret;
+
+  auto res = tensorflow::ToUtilStatus(
+      ::deepmind::reverb::pybind::TensorToNdArray(*tensor, &ret));
+  COURIER_RETURN_IF_ERROR(res);
+  return MakeSafePyPtr<PyArrayObject>(ret);
+}
+
+absl::Status TensorFromTensorProto(
+    const tensorflow::TensorProto* proto, TensorLookup& tensor_lookup,
+    tensorflow::Tensor* result) {
+  auto it = tensor_lookup.find(proto);
+  if (it != tensor_lookup.end()) {
+    *result = std::move(it->second);
+  } else if (!result->FromProto(*proto)) {
+    return absl::InternalError("Failed to parse TensorProto.");
+  }
+  return absl::OkStatus();
+}
 
 }  // namespace
 
@@ -623,6 +627,27 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
         }
         return py_list;
       }
+    }
+    case SerializedObject::kTensorValue: {
+      auto tensor = absl::make_unique<tensorflow::Tensor>();
+      COURIER_RETURN_IF_ERROR(TensorFromTensorProto(
+          &buffer.tensor_value(), tensor_lookup, tensor.get()));
+
+      const auto dtype = tensor->dtype();
+
+      COURIER_ASSIGN_OR_RETURN(auto ret_safe,
+                               TensorToNdArray(std::move(tensor)));
+
+      return reinterpret_cast<PyObject *>(ret_safe.release());
+    }
+    case SerializedObject::kJaxTensorValue: {
+      auto tensor = absl::make_unique<tensorflow::Tensor>();
+      COURIER_RETURN_IF_ERROR(TensorFromTensorProto(
+          &buffer.jax_tensor_value(), tensor_lookup, tensor.get()));
+
+      COURIER_ASSIGN_OR_RETURN(auto ret_safe,
+                               TensorToNdArray(std::move(tensor)));
+      return reinterpret_cast<PyObject *>(ret_safe.release());
     }
     case SerializedObject::kTypeValue: {
       COURIER_ASSIGN_OR_RETURN(PyObject * py_class,
