@@ -124,6 +124,8 @@ def to_multiprocessing_executables(
         '--data_file', data_file_path,
         '--lp_task_id', str(task_id),
     ])
+    if pdb_post_mortem:
+      command_as_list.append('--pdb_post_mortem')
     env = {**launch_config.env}
     env.update(per_task_env[task_id])
     command = mp_commands.Command(command_as_list, env,
