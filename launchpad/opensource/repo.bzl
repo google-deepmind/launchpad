@@ -1,9 +1,9 @@
-"""Reverb custom external dependencies."""
+"""Launchpad custom external dependencies."""
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 # Sanitize a dependency so that it works correctly from code that includes
-# reverb as a submodule.
+# Launchpad as a submodule.
 def clean_dep(dep):
     return str(Label(dep))
 
@@ -102,7 +102,7 @@ def _find_python_solib_path(repo_ctx):
     if not full_path.exists:
         fail("Unable to find python shared library file:\n{}/{}"
             .format(solib_dir, basename))
-    return struct(dir = solib_dir, basename = basename)
+    return struct(basename = basename, dir = solib_dir)
 
 def _eigen_archive_repo_impl(repo_ctx):
     tf_include_path = _find_tf_include_path(repo_ctx)
@@ -200,7 +200,6 @@ cc_library(
     ),
     includes = ["tensorflow_includes"],
     deps = [
-        "@com_google_absl//absl/container:flat_hash_map",
         "@eigen_archive//:includes",
         "@protobuf_archive//:includes",
         "@zlib_includes//:includes",
@@ -299,16 +298,16 @@ def cc_tf_configure():
     )
     make_python_inc_repo(name = "python_includes")
 
-def reverb_python_deps():
+def lp_python_deps():
     http_archive(
         name = "pybind11",
+        build_file = clean_dep("//third_party:pybind11.BUILD"),
+        sha256 = "1eed57bc6863190e35637290f97a20c81cfe4d9090ac0a24f3bbf08f265eb71d",
+        strip_prefix = "pybind11-2.4.3",
         urls = [
             "https://storage.googleapis.com/mirror.tensorflow.org/github.com/pybind/pybind11/archive/v2.4.3.tar.gz",
             "https://github.com/pybind/pybind11/archive/v2.4.3.tar.gz",
         ],
-        sha256 = "1eed57bc6863190e35637290f97a20c81cfe4d9090ac0a24f3bbf08f265eb71d",
-        strip_prefix = "pybind11-2.4.3",
-        build_file = clean_dep("//third_party:pybind11.BUILD"),
     )
 
     http_archive(
@@ -321,11 +320,11 @@ def reverb_python_deps():
         ],
     )
 
-def _reverb_protoc_archive(ctx):
+def _lp_protoc_archive(ctx):
     version = ctx.attr.version
     sha256 = ctx.attr.sha256
 
-    override_version = ctx.os.environ.get("REVERB_PROTOC_VERSION")
+    override_version = ctx.os.environ.get("LP_PROTOC_VERSION")
     if override_version:
         sha256 = ""
         version = override_version
@@ -350,13 +349,13 @@ filegroup(
         executable = False,
     )
 
-reverb_protoc_archive = repository_rule(
-    implementation = _reverb_protoc_archive,
+lp_protoc_archive = repository_rule(
     attrs = {
         "version": attr.string(mandatory = True),
         "sha256": attr.string(mandatory = True),
     },
+    implementation = _lp_protoc_archive,
 )
 
-def reverb_protoc_deps(version, sha256):
-    reverb_protoc_archive(name = "protobuf_protoc", version = version, sha256 = sha256)
+def lp_protoc_deps(version, sha256):
+    lp_protoc_archive(name = "protobuf_protoc", sha256 = sha256, version = version)
