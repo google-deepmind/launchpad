@@ -88,12 +88,12 @@ apple_support_dependencies()
 load(
     "//launchpad:repo.bzl",
     "cc_tf_configure",
-    "lp_protoc_deps",
-    "lp_python_deps",
+    "protoc_deps",
+    "python_deps",
 )
 
 cc_tf_configure()
 
-lp_python_deps()
+python_deps()
 
-lp_protoc_deps(version = PROTOC_VERSION, sha256 = PROTOC_SHA256)
+protoc_deps(version = PROTOC_VERSION, sha256 = PROTOC_SHA256)
