@@ -29,6 +29,12 @@ def batched_handler(batch_size, max_parallelism=1,
                     pad_batch=False):
   """A decorator to enable batching of the CourierNode method.
 
+  IMPORTANT: A courier method wrapped with batched_handler(batch_sie) can
+  use and block up to `batch_size` Courier serving threads from its pool-size.
+  When only processing full batches (e.g. with timeout = 30 min), you can then
+  dead-lock the Courier server. Configure Courier `thread_pool_size` to use more
+  than batch_size threads for each function wrapped under `batched_handler`.
+
   `batch_size` calls to the method will be batched and executed in one go.
   Tensors and Numpy arrays are batched by adding an additional batching
   dimension. Each value inside of the dictionary as well as elements of the

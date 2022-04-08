@@ -40,6 +40,10 @@ struct Batch {
 };
 
 
+// Design: the internal `Batch` is the currently being built one. The first
+// thread which will start the batch will be responsible for executing it
+// if the timeout expires, while the thread filling the last item of the batch
+// will be responsible for executing it in that case.
 class BatchedPyCallHandler : public HandlerInterface {
  public:
   BatchedPyCallHandler(absl::string_view endpoint,
