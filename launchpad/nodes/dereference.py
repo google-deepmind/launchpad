@@ -40,8 +40,8 @@ def maybe_dereference(obj: Union[T, Dereferenceable[T]]) -> T:
   return obj
 
 
-_EXCEPTION_MESSAGE = ('Error occurred when evaluating Deferred defined at:\n'
-                      '{init_stack}\n')
+_EXCEPTION_MESSAGE = ('Error ({error_msg}) occurred when evaluating Deferred '
+                      'defined at:\n{init_stack}\n')
 
 
 class Deferred(Dereferenceable[T], Generic[T]):
@@ -89,10 +89,12 @@ class Deferred(Dereferenceable[T], Generic[T]):
                                         (self._args, self._kwargs))
       try:
         self._deferred_object = self._constructor(*args, **kwargs)
-      except:  
+      except Exception as e:  
         new_message = _EXCEPTION_MESSAGE.format(
-            init_stack=''.join(self._init_stack))
-        raise RuntimeError(new_message)
+            init_stack=''.join(self._init_stack),
+            # For clarity during pdb, we also inline the internal error message.
+            error_msg=str(e))
+        raise RuntimeError(new_message) from e
 
     return self._deferred_object
 
