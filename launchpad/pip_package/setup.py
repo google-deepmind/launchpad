@@ -27,8 +27,8 @@ from setuptools.dist import Distribution
 from version import launchpad_version
 
 # Version dependencies for a release build.
-TENSORFLOW_VERSION = 'tensorflow~=2.7.0'
-REVEB_VERSION = 'dm-reverb==0.6.1'
+TENSORFLOW_VERSION = 'tensorflow~=2.8.0'
+REVEB_VERSION = 'dm-reverb==0.7.1'
 
 
 class BinaryDistribution(Distribution):
