@@ -47,6 +47,7 @@ def launch(
     terminal: Optional[str] = None,
     *,
     serialize_py_nodes: Optional[bool] = None,
+    controller_xm_requirements: Optional[Mapping[str, Any]] = None,
 ) -> Any:
   """Launches a Launchpad program.
 
