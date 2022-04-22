@@ -97,7 +97,11 @@ class PyNode(base.Node[HandleType], Generic[HandleType, ReturnType]):
     elif (
         launch_context.launch_type is context.LaunchType.TEST_MULTI_PROCESSING):
       return local_multi_processing.to_multiprocessing_executables(
-          nodes, label, launch_context.launch_config, pdb_post_mortem=False)
+          nodes,
+          label,
+          launch_context.launch_config,
+          pdb_post_mortem=False,
+      )
     elif launch_context.launch_type == context.LaunchType.VERTEX_AI:
       from launchpad.nodes.python import xm_docker  
       return xm_docker.to_docker_executables(nodes,

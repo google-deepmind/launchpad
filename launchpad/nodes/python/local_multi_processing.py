@@ -75,8 +75,11 @@ _DATA_FILE_NAME = 'job.pkl'
 
 
 def to_multiprocessing_executables(
-    nodes: Sequence[Any], label: str, launch_config: PythonProcess,
-    pdb_post_mortem: bool) -> List[mp_commands.Command]:
+    nodes: Sequence[Any],
+    label: str,
+    launch_config: PythonProcess,
+    pdb_post_mortem: bool,
+    ) -> List[mp_commands.Command]:
   """Returns a list of `Command`s objects for the given `PyNode`s."""
   launch_config = launch_config or PythonProcess()
   if not isinstance(launch_config, PythonProcess):
