@@ -50,16 +50,6 @@ while [[ $# -gt -0 ]]; do
       OUTPUT_DIR="$2"
       shift
       ;;
-      --tf_package)
-      # Setup.py is told this is the tensorflow dependency.
-      PIP_PKG_EXTRA_ARGS="${PIP_PKG_EXTRA_ARGS} --tf_package ${2}"
-      shift
-      ;;
-      --reverb_package)
-      # Setup.py is told this is the Reverb dependency.
-      PIP_PKG_EXTRA_ARGS="${PIP_PKG_EXTRA_ARGS} --reverb_package ${2}"
-      shift
-      ;;
     *)
       echo "Unknown flag: $key"
       echo "Usage:"
@@ -67,10 +57,6 @@ while [[ $# -gt -0 ]]; do
       echo "--python  [3.7|3.8(default)|3.9]"
       echo "--clean   [true to run bazel clean]"
       echo "--install [true to install built package]"
-      echo "--tf_package  [Required tensorflow version to pass to setup.py."
-      echo "               Examples: tensorflow==2.3.0rc0  or tensorflow>=2.3.0]"
-      echo "--reverb_package [Required Reverb version to pass to setup.py."
-      echo "                  Example: dm-reverb==0.3.0]"
       echo "--output_dir  [location to copy .whl file.]"
       exit 1
       ;;

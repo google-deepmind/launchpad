@@ -25,10 +25,6 @@ from setuptools.command.install import install as InstallCommandBase
 from setuptools.dist import Distribution
 from version import launchpad_version
 
-# Version dependencies for a release build.
-TENSORFLOW_VERSION = 'tensorflow~=2.8.0'
-REVEB_VERSION = 'dm-reverb==0.7.1'
-
 
 class BinaryDistribution(Distribution):
 
@@ -57,17 +53,13 @@ class InstallCommand(InstallCommandBase):
 class SetupToolsHelper(object):
   """Helper to execute `setuptools.setup()`."""
 
-  def __init__(self, release, tf_package, reverb_package):
+  def __init__(self, release):
     """Initialize ReleaseBuilder class.
 
     Args:
       release: True to do a release build. False for a nightly build.
-      tf_package: Version of Tensorflow to depend on.
-      reverb_package: Version of Reverb to depend on.
     """
     self.release = release
-    self.tf_package = tf_package
-    self.reverb_package = reverb_package
 
   def _get_version(self):
     """Returns the version and project name to associate with the build."""
@@ -98,11 +90,17 @@ class SetupToolsHelper(object):
 
   def _get_tensorflow_packages(self):
     """Returns packages needed to install Tensorflow."""
-    return [self.tf_package]
+    if self.release:
+      return [launchpad_version.__tensorflow_version__]
+    else:
+      return [launchpad_version.__nightly_tensorflow_version__]
 
   def _get_reverb_packages(self):
     """Returns packages needed to install Reverb."""
-    return [self.reverb_package]
+    if self.release:
+      return [launchpad_version.__reverb_version__]
+    else:
+      return [launchpad_version.__nightly_reverb_version__]
 
   def run_setup(self):
     # Builds the long description from the README.
@@ -169,21 +167,11 @@ if __name__ == '__main__':
       action='store_true',
       default=False,
       help='Pass as true to do a release build.')
-  parser.add_argument(
-      '--tf_package',
-      required=True,
-      help='Version of Tensorflow to depend on.')
-  parser.add_argument(
-      '--reverb_package',
-      required=True,
-      help='Version of Reverb to depend on.')
   FLAGS, unparsed = parser.parse_known_args()
   # Go forward with only non-custom flags.
   sys.argv.clear()
   # Downstream `setuptools.setup` expects args to start at the second element.
   unparsed.insert(0, 'foo')
   sys.argv.extend(unparsed)
-  setup_tools_helper = SetupToolsHelper(release=FLAGS.release,
-                                        tf_package=FLAGS.tf_package,
-                                        reverb_package=FLAGS.reverb_package)
+  setup_tools_helper = SetupToolsHelper(release=FLAGS.release)
   setup_tools_helper.run_setup()

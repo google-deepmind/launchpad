@@ -19,9 +19,7 @@ set -e
 DEBUG_DOCKER=true
 CLEAN=false
 RELEASE=false
-PYTHON=3.9
-TF_PACKAGE=tf-nightly
-REVERB_PACKAGE=dm-reverb-nightly
+PYTHON=3.10
 
 while [[ $# -gt -0 ]]; do
   key="$1"
@@ -42,19 +40,11 @@ while [[ $# -gt -0 ]]; do
       RELEASE="$2"
       shift
       ;;
-      --tf_package)
-      TF_PACKAGE="$2"
-      shift
-      ;;
-      --reverb_package)
-      REVERB_PACKAGE="$2"
-      shift
-      ;;
     *)
       echo "Unknown flag: $key"
       echo "Usage:"
       echo "--debug_docker [Enter the Docker image upon failure for debugging.]"
-      echo "--python  [3.7|3.8|3.9(default)]"
+      echo "--python  [3.7|3.8|3.9|3.10(default)]"
       echo "--clean   [true to run bazel clean]"
       echo "--release [true to build a release binary]"
       exit 1
@@ -83,9 +73,14 @@ run_docker() {
 }
 
 RELEASE_FLAG=''
+pushd launchpad/pip_package
 if [[ $RELEASE == 'true' ]]; then
   RELEASE_FLAG='--release'
+  TF_PACKAGE=`python3 -c 'import launchpad_version as v; print(v.__tensorflow_version__)'`
+else
+  TF_PACKAGE=`python3 -c 'import launchpad_version as v; print(v.__nightly_tensorflow_version__)'`
 fi
+popd
 
 run_docker docker build --tag launchpad:build \
   --build-arg python_version="${PYTHON}" \
@@ -94,8 +89,7 @@ run_docker docker build --tag launchpad:build \
 
 run_docker docker run --rm ${MOUNT_CMD} \
   launchpad:build /tmp/launchpad/oss_build.sh --python "${PYTHON}" \
-  --clean ${CLEAN} --install false --tf_package $TF_PACKAGE \
-  --reverb_package $REVERB_PACKAGE $RELEASE_FLAG
+  --clean ${CLEAN} --install false $RELEASE_FLAG
 
 for python_version in $PYTHON; do
 
