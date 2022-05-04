@@ -21,7 +21,6 @@ from absl import flags
 import launchpad as lp
 from launchpad.examples.consumer_producers.program import make_program
 
-
 _NUM_PRODUCERS = flags.DEFINE_integer('num_producers', 2,
                                       'The number of concurrent producers.')
 

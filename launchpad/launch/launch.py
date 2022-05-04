@@ -52,23 +52,25 @@ def launch(
 
   Args:
     programs: One or more programs to launch, or a Controller instance to launch
-      a workflow.
     launch_type: Type of launch. If this is None it will read from
       FLAGS.lp_launch_type. See the definition of context.LaunchType for the
       valid choices. The benefit of setting it to None is you can control the
-      launch type from command line (by just passing --lp_launch_type=...).
+      launch type from command line (by just passing --lp_launch_type=...). #
     local_resources: (for local/test multiprocessing launch) A dictionary to
       specify per-node launch configuration.
     test_case: (for test multiprocessing launch) test case in which the program
       is launched.
     terminal: (for local multiprocessing launch) Terminal to use to run the
       commands. Valid choices are gnome-terminal, gnome-terminal-tabs, xterm,
-      tmux_session, current_terminal, and output_to_files.
+      tmux_session, current_terminal, and output_to_files. # BEGIN
+      GOOGLE-INTERNAL
+    guitar_clean_up_experiment_on_test_exit: (for Guitar launch) determines
+      whether to try to tear down this experiment when the test case finishes. #
+      END GOOGLE-INTERNAL
     serialize_py_nodes: If `True`, `local_mt` & `test_mt` will fail if the nodes
       are not serializable. This can be useful to debug xmanager experiments in
       tests or locally. If `False`, the nodes won't be serialized. If `None`
       (the default), it will default to the implementation default value (
-      `local_mt` is False, `test_mt` is True).
 
   Returns:
     Anything returns from the specific launcher.
