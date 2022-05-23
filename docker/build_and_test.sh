@@ -82,8 +82,10 @@ else
 fi
 popd
 
+PYTHON_CMDS=$(echo ${PYTHON} | sed 's/[^ ]* */python&/g')
+
 run_docker docker build --tag launchpad:build \
-  --build-arg python_version="python${PYTHON}" \
+  --build-arg python_version="${PYTHON_CMDS}" \
   --build-arg tensorflow_pip="${TF_PACKAGE}" \
   -f "docker/build.dockerfile" .
 
