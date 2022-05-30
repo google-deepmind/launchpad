@@ -351,7 +351,10 @@ class WorkerManager:
           # Thread workers should use wait_for_stop or register_stop_handler.
           pass
         elif isinstance(worker, subprocess.Popen):
-          worker.send_signal(signal.SIGTERM)
+          try:
+            worker.send_signal(signal.SIGTERM)
+          except psutil.NoSuchProcess:
+            pass
         else:
           # Notify all workers running under a proxy process.
           children = worker.children(recursive=True)
