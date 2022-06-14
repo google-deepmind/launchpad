@@ -22,7 +22,7 @@ from absl import flags
 from absl import logging
 from absl.testing import absltest
 from launchpad import context
-from launchpad import flags as lp_flags  
+from launchpad import flags as lp_flags
 from launchpad import program as lp_program
 from launchpad.launch.local_multi_processing import launch as launch_local_multiprocessed
 from launchpad.launch.local_multi_threading import launch as launch_local_multithreaded
@@ -81,7 +81,7 @@ def launch(
   if not FLAGS.is_parsed():
     FLAGS(sys.argv, known_only=True)
 
-  launch_type = launch_type or FLAGS.lp_launch_type
+  launch_type = launch_type or lp_flags.LAUNCH_TYPE.value
   if isinstance(launch_type, str):
     launch_type = context.LaunchType(launch_type)
 
@@ -115,3 +115,5 @@ def launch(
         program, test_case=test_case, local_resources=local_resources)
   else:
     logging.fatal('Unknown launch type: %s', launch_type)
+
+
