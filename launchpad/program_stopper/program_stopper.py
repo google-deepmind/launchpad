@@ -21,9 +21,10 @@ import sys
 from typing import Union
 
 from absl import logging
-
 from launchpad import context
+from launchpad import flags as lp_flags
 from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_v2
 
 
 
@@ -60,6 +61,12 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
     def _stop():
       worker_manager.get_worker_manager()._sigterm()  
     return _stop
+
+  if lp_flags.LP_WORKER_MANAGER_V2.value:
+    assert launch_type == context.LaunchType.LOCAL_MULTI_THREADING
+    def _stop_local_mt():
+      worker_manager_v2.get_worker_manager().stop_event.set()
+    return _stop_local_mt
 
   if launch_type in [
       context.LaunchType.LOCAL_MULTI_PROCESSING,

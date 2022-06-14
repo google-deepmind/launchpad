@@ -20,12 +20,14 @@ from typing import Callable, Generic, TypeVar
 from absl import logging
 import courier
 from launchpad import address as lp_address
+from launchpad import flags as lp_flags
 from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_v2
 from launchpad.nodes import base
 from launchpad.nodes.courier import courier_utils
 from launchpad.nodes.python import node as python
 
-WorkerType = TypeVar('WorkerType')
+WorkerType = TypeVar('WorkerType')  
 CourierClient = courier.Client
 
 COURIER_PORT_NAME = 'courier'
@@ -129,7 +131,10 @@ class CourierNode(python.PyClassNode[CourierHandle, WorkerType],
           # If a run() method is provided, stop the server at the end of run().
           instance.run()
         else:
-          worker_manager.wait_for_stop()
+          if lp_flags.LP_WORKER_MANAGER_V2.value:
+            worker_manager_v2.wait_for_stop()
+          else:
+            worker_manager.wait_for_stop()
       finally:
         self._server.Stop()
         self._server.Join()

@@ -22,10 +22,11 @@ from typing import Optional
 
 from absl import flags
 from launchpad import context
-from launchpad import flags as lp_flags  
+from launchpad import flags as lp_flags
 from launchpad import program as lp_program
 from launchpad.launch import serialization
 from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_v2
 
 FLAGS = flags.FLAGS
 
@@ -62,9 +63,13 @@ def launch(program: lp_program.Program,
 
 def thread_handler(program):
   """Runs the threads and wraps them in Worker Manager."""
-
-  manager = worker_manager.WorkerManager(
-  )
+  if lp_flags.LP_WORKER_MANAGER_V2.value:
+    manager = worker_manager_v2.WorkerManager(
+        handle_user_stop=True,
+    )
+  else:
+    manager = worker_manager.WorkerManager(
+    )
   for label, nodes in program.groups.items():
     # to_executables() is a static method, so we can call it from any of the
     # nodes in this group.

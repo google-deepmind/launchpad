@@ -32,11 +32,15 @@ LAUNCH_TYPE = flags.DEFINE_enum(
     _DEFAULT_LAUNCH_TYPE, [t.value for t in context.LaunchType],
     'How to launch a Launchpad program when launch() is called',
     allow_override=True)
-flags.DEFINE_integer(
+LP_TERMINATION_NOTICE_SECS = flags.DEFINE_integer(
     'lp_termination_notice_secs', 10,
     'Send termination notice to all nodes that many seconds before hard '
     'termination. Set to 0 to trigger hard termination righ away (skip '
     'termination notice), set to negative value to disable hard termination.')
+LP_WORKER_MANAGER_V2 = flags.DEFINE_bool(
+    'lp_worker_manager_v2', False,
+    'Use the new WorkerManager implementation (note: please do NOT use this '
+    'flag. It will be removed once V2 is fully implemented).')
 flags.DEFINE_string('tmux_open_window', None,
                     'Window in new Tmux session to switch to.')
 flags.DEFINE_string('tmux_session_name', 'launchpad',
