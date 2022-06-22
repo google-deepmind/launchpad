@@ -60,7 +60,7 @@ N_CPU=$(grep -c ^processor /proc/cpuinfo)
 
 # Run static type-checking.
 # TODO(b/205923232): enable PyType once they address the typed_ast problem.
-if [[ ${PYTHON} == "3.8" ]]
+if [[ ${PYTHON} == "3.9" ]]
 then
   date
   pytype -k -x /tmp/launchpad/launchpad/pip_package/ \
