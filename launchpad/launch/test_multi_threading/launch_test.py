@@ -17,7 +17,10 @@
 import signal
 import threading
 
+from absl import flags
+
 from absl.testing import absltest
+from absl.testing import parameterized
 from launchpad import context
 from launchpad import program as lp_program
 from launchpad.launch import serialization_test
@@ -26,16 +29,21 @@ from launchpad.nodes.python import node as python
 from launchpad.program_stopper import program_stopper
 import mock
 
+FLAGS = flags.FLAGS
+
 
 def _block():
-  launch.worker_manager.wait_for_stop()
+  if flags.FLAGS.lp_worker_manager_v2:
+    launch.worker_manager_v2.wait_for_stop()
+  else:
+    launch.worker_manager.wait_for_stop()
 
 
 def _stop(stopper):
   stopper()
 
 
-class LaunchTest(absltest.TestCase):
+class LaunchTest(parameterized.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -47,7 +55,9 @@ class LaunchTest(absltest.TestCase):
     self._sigterm_patcher.stop()
     super().tearDown()
 
-  def test_one_py_node_program(self):
+  @parameterized.parameters(False, True)
+  def test_one_py_node_program(self, use_wm_v2):
+    FLAGS.lp_worker_manager_v2 = use_wm_v2
     has_run = threading.Event()
 
     def run():
@@ -58,7 +68,9 @@ class LaunchTest(absltest.TestCase):
     launch.launch(program, test_case=self, serialize_py_nodes=False)
     has_run.wait()
 
-  def test_handle_exception(self):
+  @parameterized.parameters(False, True)
+  def test_handle_exception(self, use_wm_v2):
+    FLAGS.lp_worker_manager_v2 = use_wm_v2
     def run():
       raise RuntimeError('Launchpad has stopped working')
 
@@ -69,7 +81,9 @@ class LaunchTest(absltest.TestCase):
       waiter = launch.launch(program, test_case=self)
       waiter.wait()
 
-  def test_program_stopper(self):
+  @parameterized.parameters(False, True)
+  def test_program_stopper(self, use_wm_v2):
+    FLAGS.lp_worker_manager_v2 = use_wm_v2
     # This verifies the program stopper works for test_multi_threading
     p = lp_program.Program('test')
 
@@ -83,7 +97,9 @@ class LaunchTest(absltest.TestCase):
     threads = launch.launch(p, test_case=self)
     threads.wait()
 
-  def test_cleanup(self):
+  @parameterized.parameters(False, True)
+  def test_cleanup(self, use_wm_v2):
+    FLAGS.lp_worker_manager_v2 = use_wm_v2
     # Test verifies that test cleanup works.
     p = lp_program.Program('test')
 

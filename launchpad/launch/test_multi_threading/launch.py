@@ -18,17 +18,21 @@ This is very similar to local_multi_threading/launch.py but terminates the
 process upon exception (instead of entering pdb).
 """
 
+from concurrent import futures
 import os
 import signal
 import threading
 import time
+import typing
 from typing import Optional
 
 from absl import logging
 from absl.testing import absltest
 from launchpad import context
+from launchpad import flags as lp_flags
 from launchpad.launch import serialization
 from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_v2
 
 
 
@@ -60,16 +64,25 @@ def launch(program,
 
 
 
-  manager = worker_manager.WorkerManager()
+  if lp_flags.LP_WORKER_MANAGER_V2.value:
+    manager = worker_manager_v2.WorkerManager(
+        termination_notice_secs=None,
+        handle_user_stop=False,
+    )
+  else:
+    manager = worker_manager.WorkerManager()
 
   # Run a background thread to detect and handle node failures.
   stop_node_monitor = threading.Event()
+
+  monitor_future = futures.Future()
   def _node_monitor():
     while not stop_node_monitor.is_set():
       time.sleep(.5)
       try:
         manager.check_for_thread_worker_exception()
-      except Exception:  
+      except Exception as e:  
+        monitor_future.set_exception(e)
         logging.exception('One of the workers has FAILED!')
         # Wait for 3s, in case the exception is caught timely.
         time.sleep(3)
@@ -81,13 +94,22 @@ def launch(program,
                        'above for stack traces.')
           os.kill(os.getpid(), signal.SIGQUIT)
           return
+    monitor_future.set_result(None)
+
   node_monitor_thread = threading.Thread(target=_node_monitor, daemon=True)
   node_monitor_thread.start()
 
   def _cleanup():
     stop_node_monitor.set()
     node_monitor_thread.join()
-    manager.cleanup_after_test(test_case)
+    monitor_future.result()
+    if lp_flags.LP_WORKER_MANAGER_V2.value:
+      typing.cast(worker_manager_v2.WorkerManager,
+                  manager).stop_event.set()
+      manager.wait()
+    else:
+      typing.cast(worker_manager.WorkerManager,
+                  manager).cleanup_after_test(test_case)
 
   if test_case is not None:
     test_case.addCleanup(_cleanup)
@@ -97,8 +119,7 @@ def launch(program,
     # nodes in this group.
     # Somehow pytype thinks to_executables() gets wrong arg count.
     # pytype: disable=wrong-arg-count
-    executables = nodes[0].to_executables(nodes, label,
-                                          nodes[0].launch_context)
+    executables = nodes[0].to_executables(nodes, label, nodes[0].launch_context)
     # pytype: enable=wrong-arg-count
     for executable in executables:
       manager.thread_worker(label, executable)

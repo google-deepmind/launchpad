@@ -57,16 +57,20 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
   """
   launch_type = context.LaunchType(launch_type)
 
-  if launch_type is context.LaunchType.TEST_MULTI_THREADING:
-    def _stop():
-      worker_manager.get_worker_manager()._sigterm()  
-    return _stop
+  def _stop_mt():
+    worker_manager_v2.get_worker_manager().stop_event.set()
 
-  if lp_flags.LP_WORKER_MANAGER_V2.value:
-    assert launch_type == context.LaunchType.LOCAL_MULTI_THREADING
-    def _stop_local_mt():
-      worker_manager_v2.get_worker_manager().stop_event.set()
-    return _stop_local_mt
+  if launch_type is context.LaunchType.TEST_MULTI_THREADING:
+    if lp_flags.LP_WORKER_MANAGER_V2.value:
+      return _stop_mt
+    else:
+      def _stop():
+        worker_manager.get_worker_manager()._sigterm()  
+      return _stop
+
+  if (launch_type is context.LaunchType.LOCAL_MULTI_THREADING and
+      lp_flags.LP_WORKER_MANAGER_V2.value):
+    return _stop_mt
 
   if launch_type in [
       context.LaunchType.LOCAL_MULTI_PROCESSING,

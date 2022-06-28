@@ -20,7 +20,7 @@ import functools
 import signal
 import threading
 import time
-from typing import Any, Callable, List, MutableMapping, Optional
+from typing import Any, Callable, List, MutableMapping, Optional, Tuple
 
 from absl import logging
 from launchpad import flags as lp_flags
@@ -151,15 +151,55 @@ class WorkerManager:
       self._thread_workers[name].append(ThreadWorker(thread, future))
 
   def _has_active_workers(self):
+    _, has_active_workers = self._update_and_get_recently_finished()
+    return has_active_workers
+
+  def _update_and_get_recently_finished(
+      self) -> Tuple[List[futures.Future[Any]], bool]:
+    """Update self._thread_workers and return a tuple representing the change.
+
+    This will update self._thread_workers so that it only contains active
+    workers.
+
+    Returns:
+      A tuple. The first element of the tuple are futures for recently finished
+      workers, and the second is a bool indicating if there are still active
+      workers.
+    """
+    recently_finished = []
+    has_active_workers = False
+    active_workers = collections.defaultdict(list)
     with self._mutex:
-      for workers in self._thread_workers.values():
-        for worker in workers:
+      for label in self._thread_workers:
+        for worker in self._thread_workers[label]:
           if worker.thread.is_alive():
-            return True
-    return False
+            active_workers[label].append(worker)
+            has_active_workers = True
+          else:
+            recently_finished.append(worker.future)
+      self._thread_workers = active_workers
+    return recently_finished, has_active_workers
+
+  def check_for_thread_worker_exception(self):
+    """Raises an error if there's an exception in one of the workers."""
+    recently_finished, _ = self._update_and_get_recently_finished()
+    for future in recently_finished:
+      future.result()
 
   def wait(self):
-    while self._has_active_workers():
+    """Waits until all thread workers finish. Raises errors if any."""
+    has_active_worker = True
+    while has_active_worker:
+      has_active_worker = False
+      # Will raise errors, if any.
+      self.check_for_thread_worker_exception()
+      with self._mutex:
+        # check_for_thread_worker_exception() will update self._thread_workers
+        # so that it only contains active workers. If there are still non-empty
+        # lists, it means some workers have not finished yet.
+        for workers in self._thread_workers.values():
+          if workers:
+            has_active_worker = True
       time.sleep(0.1)
 
   def _handle_user_stop(self):
