@@ -17,6 +17,7 @@
 import datetime
 import sys
 import threading
+import time
 from unittest import mock
 
 from absl.testing import absltest
@@ -36,6 +37,10 @@ class Server(object):
   def ping(self):
     self._has_ping.set()
     return 'pong'
+
+  def ping_slow(self):
+    time.sleep(1)
+    return self.ping()
 
   def __call__(self):
     self._has_call.set()
@@ -101,6 +106,18 @@ class CourierNodeTest(absltest.TestCase):
     self.assertIn(foo_handle, bar_node._input_handles)
     self.assertIn(bar_handle, foo_node._input_handles)
 
+  def test_courier_client_kwargs(self):
+    node = lp_courier.CourierNode(
+        Server,
+        courier_client_kwargs={
+            'call_timeout': datetime.timedelta(milliseconds=50)
+        })
+    handle = node.create_handle()
+    address_builder.bind_addresses([node])
+    client = handle.dereference()
+
+    with self.assertRaisesRegex(Exception, 'Deadline Exceeded'):
+      client.ping_slow()
 
 
 

@@ -15,7 +15,7 @@
 """A PyClassNode subclass that also exposes the instance as a Courier server."""
 
 import datetime
-from typing import Callable, Generic, TypeVar
+from typing import Any, Callable, Generic, Optional, Mapping, TypeVar
 
 from absl import logging
 import courier
@@ -53,8 +53,8 @@ class CourierHandle(base.Handle[CourierClient]):
     return CourierClient(self._address.resolve(), **self._kwargs)
 
 
-class CourierNode(python.PyClassNode[CourierHandle, WorkerType],
-                  Generic[WorkerType]):
+class CourierNode(Generic[WorkerType], python.PyClassNode[CourierHandle,
+                                                          WorkerType]):
   """Exposes a Python instance as a Courier server.
 
   This will initialize the object and expose all its public methods as Courier
@@ -74,16 +74,26 @@ class CourierNode(python.PyClassNode[CourierHandle, WorkerType],
   def __init__(self,
                constructor: Callable[..., WorkerType],
                *args,
-               courier_kwargs=None,
+               courier_kwargs: Optional[Mapping[str, Any]] = None,
+               courier_client_kwargs: Optional[Mapping[str, Any]] = None,
                **kwargs):
-    super().__init__(constructor, *args, **kwargs)  # pytype:disable=wrong-arg-types
+    """Initializes a new instance of the `CourierNode` class.
+
+    Args:
+      constructor: Function that creates a new instance of the actual worker.
+      *args: Positional arguments passed to `constructor`.
+      courier_kwargs: Keyword arguments passed to the courier server.
+      courier_client_kwargs: Keyword arguments passed to the courier clients.
+      **kwargs: Keyword arguments passed to `constructor`.
+    """
+    super().__init__(constructor, *args, **kwargs)
     self._address = lp_address.Address(COURIER_PORT_NAME)
     self.allocate_address(self._address)
-    if courier_kwargs is None:
-      courier_kwargs = dict()
-    self._courier_kwargs = courier_kwargs
+    self._courier_kwargs = courier_kwargs or {}
+    self._courier_client_kwargs = courier_client_kwargs or {}
+
     # Set in `run()` method.
-    self._server = None  # type: courier.Server
+    self._server: Optional[courier.Server] = None
 
   def configure(self, *args, **kwargs):
     """Sets the args and kwargs being passed to the constructor.
@@ -105,14 +115,16 @@ class CourierNode(python.PyClassNode[CourierHandle, WorkerType],
     """
     self._args = args
     self._kwargs = kwargs
-    # Somehow pytype doesn't recognize CourierNode as the subclass.
-    self._collect_input_handles()  # pytype:disable=wrong-arg-types
+    self._collect_input_handles()
 
   def create_handle(self) -> CourierHandle:
-    return self._track_handle(CourierHandle(self._address))
+    """See `Node.create_handle`."""
+    return self._track_handle(
+        CourierHandle(self._address, **self._courier_client_kwargs))
 
   def run(self) -> None:
-    instance = self._construct_instance()  # pytype:disable=wrong-arg-types
+    """Creates the worker instance and executes the user-provided function."""
+    instance = self._construct_instance()
     self._server = courier_utils.make_courier_server(
         instance,
         port=lp_address.get_port_from_address(self._address.resolve()),
@@ -141,7 +153,7 @@ class CourierNode(python.PyClassNode[CourierHandle, WorkerType],
 
   @property
   def courier_address(self) -> lp_address.Address:
+    """Returns the physical address of the courier server."""
     return self._address
-
 
 
