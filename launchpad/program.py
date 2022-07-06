@@ -18,7 +18,7 @@ import contextlib
 import dataclasses
 import itertools
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from launchpad.nodes import base
 
