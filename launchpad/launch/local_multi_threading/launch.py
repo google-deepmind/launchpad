@@ -85,7 +85,9 @@ def thread_handler(program):
     # Make sure `manager.wait` will be called before ThreadPoolExecutor atexit
     # method. Otherwise running program will not be able to start new threads.
     futures.ThreadPoolExecutor  
-    threading._register_atexit(manager.wait)  
+    
+    threading._register_atexit(manager.wait)  # pytype: disable=module-attr  # py39-upgrade
+    
   else:
     atexit.register(manager.wait)
 

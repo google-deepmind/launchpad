@@ -74,8 +74,10 @@ def make_program() -> lp.Program:
   batch_size = _NUM_CLIENTS.value
   # In case of big batch size it is important to set thread_pool_size to
   # prevent deadlocks (Courier uses synchronous GRPC server currently...).
-  server = program.add_node(lp.CourierNode(Server, batch_size), label='server',
-                            courier_kwargs={'thread_pool_size': batch_size})
+  server = program.add_node(
+      lp.CourierNode(
+          Server, batch_size, courier_kwargs={'thread_pool_size': batch_size}),
+      label='server')
   with program.group('clients'):
     for client_id in range(_NUM_CLIENTS.value):
       program.add_node(lp.CourierNode(Client, client_id, server))
