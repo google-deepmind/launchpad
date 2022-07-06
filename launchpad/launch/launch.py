@@ -16,7 +16,7 @@
 
 import sys
 import typing
-from typing import Any, Dict, Mapping, Optional, Sequence, Union, cast
+from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, Union, cast
 
 from absl import flags
 from absl import logging
