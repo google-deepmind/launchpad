@@ -20,8 +20,9 @@ import subprocess
 
 from absl import flags
 from absl import logging
-from launchpad import flags as lp_flags  
+from launchpad import flags as lp_flags
 from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_v2
 from launchpad.launch.run_locally import feature_testing
 
 
@@ -150,7 +151,13 @@ def _launch_with_multiplex_session(commands_to_launch, session_name_prefix,
     ]
     subprocess.run(command, check=True)
 
-  manager = worker_manager.WorkerManager()
+  if lp_flags.LP_WORKER_MANAGER_V2.value:
+    # process_tree_depth=2 because the interpreter will be at level 2 of
+    # tmux -> bash -> interpreter.
+    manager = worker_manager_v2.WorkerManager(
+        handle_sigterm=True, handle_user_stop=True, process_tree_depth=2)
+  else:
+    manager = worker_manager.WorkerManager()
   atexit.register(manager.wait)
   for pid in get_session_processes():
     manager.register_existing_process('tmux', pid)

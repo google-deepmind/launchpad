@@ -72,6 +72,22 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
       lp_flags.LP_WORKER_MANAGER_V2.value):
     return _stop_mt
 
+  if (launch_type is context.LaunchType.LOCAL_MULTI_PROCESSING and
+      lp_flags.LP_WORKER_MANAGER_V2.value):
+
+    def _sigint_to_launcher(launcher_process_id, mark_as_completed=False):
+      del mark_as_completed
+      # Here we send a SIGINT to the launcher process for simplicity, but it
+      # will bring down all programs launched from that process. A better
+      # approach is to communicate to the launcher process through a unix pipe
+      # (named after the launcher pid), so that the launcher process will only
+      # kill subprocesses associated with the specific program.
+      os.kill(launcher_process_id, signal.SIGINT)
+    # In local_mp, we treat lp.stop() as a user-requested stop. The reason is
+    # that it provides convenience in observing preemption handling logic (using
+    # `lp.wait_for_stop()` or the stop event) being triggered locally.
+    return functools.partial(_sigint_to_launcher, os.getpid())
+
   if launch_type in [
       context.LaunchType.LOCAL_MULTI_PROCESSING,
       context.LaunchType.LOCAL_MULTI_THREADING,

@@ -20,21 +20,38 @@ import functools
 import signal
 import threading
 import time
-from typing import Any, Callable, List, MutableMapping, Optional, Tuple
+from typing import Any, Callable, Iterable, List, MutableMapping, Optional, Tuple
 
 from absl import logging
 from launchpad import flags as lp_flags
+import psutil
 import termcolor
-
 
 
 _WORKER_MANAGERS = threading.local()
 
 
+def _call_once(func):
+  """Calls the function only once, regardless of arguments."""
+
+  @functools.wraps(func)
+  def _wrapper():
+    # If we haven't been called yet, actually invoke func and save the result.
+    if not _wrapper.has_run():
+      _wrapper.mark_as_run()
+      _wrapper.return_value = func()
+    return _wrapper.return_value
+
+  _wrapper._has_run = False  
+  _wrapper.has_run = lambda: _wrapper._has_run  
+  _wrapper.mark_as_run = lambda: setattr(_wrapper, '_has_run', True)
+  return _wrapper
+
+
 def _register_signal_handler(sig: signal.Signals, handler: Callable[[], None]):
   """Registers a signal handler."""
   # We only call the handler once.
-  handler = functools.cache(handler)
+  handler = _call_once(handler)
   old_handler = signal.getsignal(sig)
 
   def _run_handler(sig=sig,
@@ -53,7 +70,7 @@ def wait_for_stop(timeout_secs: Optional[float] = None):
 
   Args:
     timeout_secs: Floating point number specifying a timeout for the operation,
-        in seconds. If not provided, timeout is infinite.
+      in seconds. If not provided, timeout is infinite.
 
   Returns:
     True if program is being terminated, False if timeout was reached.
@@ -89,13 +106,38 @@ class ThreadWorker:
   future: futures.Future[Any]
 
 
+def _get_child_processes_with_depth(process: psutil.Process,
+                                    depth: int) -> Iterable[psutil.Process]:
+  """Returns child processes at the given depth."""
+  if depth == 0:
+    return [process]
+  if depth == 1:
+    return process.children(recursive=False)
+
+  children_at_depth = []
+  for child in process.children(recursive=False):
+    children_at_depth.extend(_get_child_processes_with_depth(child, depth - 1))
+  return children_at_depth
+
+
+def _send_signal_to_processes_with_depth(processes: Iterable[psutil.Process],
+                                         sig: signal.Signals, depth: int):
+  for process in processes:
+    for child in _get_child_processes_with_depth(process, depth):
+      child.send_signal(sig)
+
+
 class WorkerManager:
   """Manages running threads and processes of a Launchpad Program."""
 
-  def __init__(self,
-               termination_notice_secs: Optional[int] = None,
-               handle_user_stop: bool = False,
-               ):
+  def __init__(
+      self,
+      termination_notice_secs: Optional[int] = None,
+      handle_user_stop: bool = False,
+      handle_sigterm: bool = False,
+      register_in_thread: bool = False,
+      process_tree_depth: int = 0,
+  ):
     """Initializes a WorkerManager.
 
     Args:
@@ -104,7 +146,20 @@ class WorkerManager:
         2) when =0, SIGKILL happens immediately upon user-requested stop.
       handle_user_stop: Whether to handle Ctrl+C or not. This should be set to
         True in local_mt and local_mp, so that the user can stop the program
-        with Ctrl+C.
+        with Ctrl+C. This will set the stop event, and also send SIGTERM to all
+        subprocesses.
+      handle_sigterm: When this is True, kill all workers upon SIGTERM, by 1)
+        forwarding SIGTERM to process workers 2) setting stop event for thread
+        workers. Set this to True in process_entry.py so that the stop event
+        will be triggered in the subprocesses via SIGTERM.
+      register_in_thread: Make the worker manager accessible through
+        `get_worker_manager()` in the current thread (needed by `stop_event()`
+        for example). It should be False if we don't need to access
+        `get_worker_manager()` , e.g. at the launcher thread of local_mt and
+        local_mp. It should be True for process_entry.py.
+      process_tree_depth: the depth of Launchpad subprocesses in the process
+        tree. For example, when the process is managed by GNOME, this value
+        should be 2, so that in a tree of gnome-terminal -> bash -> interpreter
     """
     if termination_notice_secs is None:
       termination_notice_secs = lp_flags.LP_TERMINATION_NOTICE_SECS.value
@@ -113,10 +168,19 @@ class WorkerManager:
     self._termination_notice_secs = termination_notice_secs
     if handle_user_stop:
       _register_signal_handler(signal.SIGINT, self._handle_user_stop)
+
+    if handle_sigterm:
+      _register_signal_handler(
+          signal.SIGTERM, self._set_stop_event_and_terminate_process_workers)
     self._stop_event = threading.Event()
     self._thread_workers: MutableMapping[
         str, List[ThreadWorker]] = collections.defaultdict(list)
+    self._process_workers: MutableMapping[
+        str, List[psutil.Process]] = collections.defaultdict(list)
     self._mutex = threading.Lock()
+    if register_in_thread:
+      _WORKER_MANAGERS.manager = self
+    self._process_tree_depth = process_tree_depth
 
   @property
   def stop_event(self):
@@ -150,6 +214,16 @@ class WorkerManager:
     with self._mutex:
       self._thread_workers[name].append(ThreadWorker(thread, future))
 
+  def register_existing_process(self, name: str, pid: int):
+    """Registers already started worker process.
+
+    Args:
+      name: Name of the workers' group.
+      pid: Pid of the process to monitor.
+    """
+    with self._mutex:
+      self._process_workers[name].append(psutil.Process(pid))
+
   def _has_active_workers(self):
     _, has_active_workers = self._update_and_get_recently_finished()
     return has_active_workers
@@ -178,6 +252,12 @@ class WorkerManager:
           else:
             recently_finished.append(worker.future)
       self._thread_workers = active_workers
+      for _, processes in self._process_workers.items():
+        for process in processes:
+          if process.is_running():
+            has_active_workers = True
+
+            break
     return recently_finished, has_active_workers
 
   def check_for_thread_worker_exception(self):
@@ -190,17 +270,32 @@ class WorkerManager:
     """Waits until all thread workers finish. Raises errors if any."""
     has_active_worker = True
     while has_active_worker:
-      has_active_worker = False
-      # Will raise errors, if any.
-      self.check_for_thread_worker_exception()
-      with self._mutex:
-        # check_for_thread_worker_exception() will update self._thread_workers
-        # so that it only contains active workers. If there are still non-empty
-        # lists, it means some workers have not finished yet.
-        for workers in self._thread_workers.values():
-          if workers:
-            has_active_worker = True
-      time.sleep(0.1)
+      try:
+        has_active_worker = False
+        # Will raise errors, if any.
+        self.check_for_thread_worker_exception()
+        with self._mutex:
+          # check_for_thread_worker_exception() will update self._thread_workers
+          # so that it only contains active workers. If there are still
+          # non-empty lists, it means some workers have not finished yet.
+          for workers in self._thread_workers.values():
+            if workers:
+              has_active_worker = True
+              break
+        for _, processes in self._process_workers.items():
+          for process in processes:
+            if process.is_running():
+              has_active_worker = True
+              break
+        time.sleep(0.1)
+      except KeyboardInterrupt:
+        pass
+
+  def _set_stop_event_and_terminate_process_workers(self):
+    self._stop_event.set()
+    for _, processes in self._process_workers.items():
+      _send_signal_to_processes_with_depth(processes, signal.SIGTERM,
+                                           self._process_tree_depth)
 
   def _handle_user_stop(self):
     """Handles user-issued stop (Ctrl+C).
@@ -216,12 +311,30 @@ class WorkerManager:
     print(
         termcolor.colored('User-requested termination. Asking workers to stop.',
                           'blue'))
-
+    # Notify all the thread workers.
     self._stop_event.set()
+
+    # Notify all the process workers.
+    for _, processes in self._process_workers.items():
+      _send_signal_to_processes_with_depth(processes, signal.SIGTERM,
+                                           self._process_tree_depth)
+
     if self._termination_notice_secs > 0:
       print(termcolor.colored('Press CTRL+C to terminate immediately.', 'blue'))
-      _register_signal_handler(
-          signal.SIGINT, functools.partial(signal.raise_signal, signal.SIGKILL))
+
+      def _force_stop():
+        # Since we are forcefully stopping the system, we send signals to all
+        # levels of the process trees. This makes sure to kill
+        # tmux/gnome-terminal/etc, processes that create the Launchpad
+        # subprocesses.
+        for _, processes in self._process_workers.items():
+          for process in processes:
+            for child in process.children(recursive=True):
+              child.send_signal(signal.SIGKILL)
+            process.send_signal(signal.SIGKILL)
+        signal.raise_signal(signal.SIGKILL)
+
+      _register_signal_handler(signal.SIGINT, _force_stop)
       pending_secs = self._termination_notice_secs
       while self._has_active_workers() and pending_secs:
         print(
@@ -232,5 +345,4 @@ class WorkerManager:
         pending_secs -= 1
     if self._has_active_workers():
       print(termcolor.colored('\nKilling entire runtime.', 'blue'))
-
-      signal.raise_signal(signal.SIGKILL)
+      _force_stop()

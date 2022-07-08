@@ -24,7 +24,9 @@ from absl import app
 from absl import flags
 from absl import logging
 import cloudpickle
+from launchpad import flags as lp_flags
 from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_v2
 import six
 
 
@@ -115,10 +117,15 @@ def main(_):
   functions = cloudpickle.load(open(data_file, 'rb'))
   task_id = _get_task_id()
 
-  # Worker manager is used here to handle termination signals and provide
-  # preemption support.
-  worker_manager.WorkerManager(
-      register_in_thread=True)
+  if lp_flags.LP_WORKER_MANAGER_V2.value:
+    worker_manager_v2.WorkerManager(
+        handle_sigterm=True,
+        register_in_thread=True)
+  else:
+    # Worker manager is used here to handle termination signals and provide
+    # preemption support.
+    worker_manager.WorkerManager(
+        register_in_thread=True)
 
   with contextlib.suppress():  # no-op context manager
     functions[task_id]()

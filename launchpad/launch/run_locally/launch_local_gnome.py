@@ -15,6 +15,7 @@
 """Run commands to launch Launchpad workers in gnome-terminal."""
 
 import atexit
+import copy
 import datetime
 import os
 import shlex
@@ -24,7 +25,9 @@ import subprocess
 import tempfile
 import time
 
+from launchpad import flags as lp_flags
 from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_v2
 from launchpad.launch.run_locally import feature_testing
 
 GNOME_TERMINAL_SERVER_PATHS = [
@@ -140,6 +143,10 @@ def launch_with_gnome_terminal(commands_to_launch, use_tabs=False):
   Returns:
     Worker manager that can be used to wait for a program execution to finish.
   """
+  if lp_flags.LP_WORKER_MANAGER_V2.value:
+    commands_to_launch = copy.deepcopy(commands_to_launch)
+    for command_to_launch in commands_to_launch:
+      command_to_launch.command_as_list.append('--lp_worker_manager_v2')
   # The new server-client architecture of gnome-terminal removes several
   # extremely useful features. Relevant ones here are
   #   * The ability to launch commands as new tabs.
@@ -177,7 +184,13 @@ def launch_with_gnome_terminal(commands_to_launch, use_tabs=False):
   ],
                                     env=os.environ,
                                     preexec_fn=preexec_fn)
-  manager = worker_manager.WorkerManager()
+  if lp_flags.LP_WORKER_MANAGER_V2.value:
+    # process_tree_depth=2 because the interpreter will be at level 2 of
+    # gnome-terminal -> bash -> interpreter.
+    manager = worker_manager_v2.WorkerManager(
+        handle_sigterm=True, handle_user_stop=True, process_tree_depth=2)
+  else:
+    manager = worker_manager.WorkerManager()
   atexit.register(manager.wait)
   manager.register_existing_process('gnome', server_process.pid)
   if use_tabs:
