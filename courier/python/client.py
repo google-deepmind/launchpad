@@ -83,8 +83,15 @@ class _AsyncClient:
           # Call could have been already canceled by the user.
           pass
 
+      def set_result(r):
+        try:
+          f.set_result(r)
+        except futures.InvalidStateError:
+          # Call could have been already canceled by the user.
+          pass
+
       canceller = self._client.AsyncPyCall(method, list(args), kwargs,
-                                           f.set_result, set_exception,
+                                           set_result, set_exception,
                                            self._wait_for_ready,
                                            self._call_timeout, self._compress,
                                            self._chunk_tensors)

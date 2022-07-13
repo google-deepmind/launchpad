@@ -55,6 +55,7 @@ class PyIntegrationTest(absltest.TestCase):
     self._server.Bind('rebind', lambda: 1234)
     self._server.Bind('bytes_value', lambda: b'1234')
     self._server.Bind('unicode_value', lambda: u'1234')
+
     self._server.Start()
 
     self._client = client.Client(self._server.address)
@@ -127,10 +128,18 @@ class PyIntegrationTest(absltest.TestCase):
 
   def testListMethods(self):
     self.assertCountEqual(
-        client.list_methods(self._client), [
-            'no_args', 'lambda_add', 'add_default', 'exception_method',
-            'slow_method', 'method_add', 'rebind', 'bytes_value',
-            'unicode_value', 'echo',
+        client.list_methods(self._client),
+        [
+            'no_args',
+            'lambda_add',
+            'add_default',
+            'exception_method',
+            'slow_method',
+            'method_add',
+            'rebind',
+            'bytes_value',
+            'unicode_value',
+            'echo',
         ])
 
 
