@@ -17,7 +17,10 @@
 import atexit
 import os
 
+from launchpad import flags as lp_flags
+
 from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_v2
 
 # Use environment variable to direct logging to specified directory.
 if 'LAUNCHPAD_LOGGING_DIR' in os.environ:
@@ -36,7 +39,11 @@ def launch_and_output_to_files(commands_to_launch):
     Worker manager that can be used to wait for a program execution to finish.
   """
   titles = []
-  manager = worker_manager.WorkerManager()
+  if lp_flags.LP_WORKER_MANAGER_V2.value:
+    manager = worker_manager_v2.WorkerManager(
+        handle_sigterm=True, handle_user_stop=True)
+  else:
+    manager = worker_manager.WorkerManager()
   atexit.register(manager.wait)
   print(f'Logs are being output to: {_LOGGING_DIR}. '
         'The logging directory can be customized by setting the '

@@ -18,9 +18,10 @@ from concurrent import futures
 import dataclasses
 import functools
 import signal
+import subprocess
 import threading
 import time
-from typing import Any, Callable, Iterable, List, MutableMapping, Optional, Tuple
+from typing import Any, Callable, Iterable, List, Mapping, MutableMapping, Optional, Tuple
 
 from absl import logging
 from launchpad import flags as lp_flags
@@ -223,6 +224,23 @@ class WorkerManager:
     """
     with self._mutex:
       self._process_workers[name].append(psutil.Process(pid))
+
+  def process_worker(self,
+                     name,
+                     command,
+                     env: Optional[Mapping[str, Any]] = None,
+                     **kwargs):
+    """Adds process worker to the runtime.
+
+    Args:
+      name: Name of the worker's group.
+      command: Command to execute in the worker.
+      env: Environment variables to set for the worker.
+      **kwargs: Other parameters to be passed to `subprocess.Popen`.
+    """
+    with self._mutex:
+      process = subprocess.Popen(command, env=env or {}, **kwargs)
+      self._process_workers[name].append(psutil.Process(process.pid))
 
   def _has_active_workers(self):
     _, has_active_workers = self._update_and_get_recently_finished()

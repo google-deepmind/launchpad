@@ -18,7 +18,10 @@ import atexit
 import os
 import subprocess
 
+from launchpad import flags as lp_flags
+
 from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_v2
 
 _COLOUR_PALETTE = [
     36,  # Blue
@@ -38,7 +41,11 @@ def launch_in_current_terminal(commands_to_launch):
   Returns:
     Worker manager that can be used to wait for a program execution to finish.
   """
-  manager = worker_manager.WorkerManager()
+  if lp_flags.LP_WORKER_MANAGER_V2.value:
+    manager = worker_manager_v2.WorkerManager(
+        handle_sigterm=True, handle_user_stop=True)
+  else:
+    manager = worker_manager.WorkerManager()
   atexit.register(manager.wait)
   decorate_output = os.path.dirname(__file__) + '/decorate_output'
 
@@ -54,4 +61,3 @@ def launch_in_current_terminal(commands_to_launch):
         env=env)
     manager.register_existing_process(command_to_launch.title, process.pid)
   return manager
-

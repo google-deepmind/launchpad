@@ -18,7 +18,9 @@ import atexit
 import os
 import subprocess
 
+from launchpad import flags as lp_flags
 from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_v2
 from launchpad.launch.run_locally import feature_testing
 
 
@@ -34,7 +36,11 @@ def launch_with_xterm(commands_to_launch):
   if not feature_testing.has_xterm():
     raise ValueError(
         'xterm is not available, please choose another way to launch.')
-  manager = worker_manager.WorkerManager()
+  if lp_flags.LP_WORKER_MANAGER_V2.value:
+    manager = worker_manager_v2.WorkerManager(
+        handle_sigterm=True, handle_user_stop=True)
+  else:
+    manager = worker_manager.WorkerManager()
   atexit.register(manager.wait)
   for window_index, command_to_launch in enumerate(commands_to_launch):
     inner_cmd = '{}; exec $SHELL'.format(
