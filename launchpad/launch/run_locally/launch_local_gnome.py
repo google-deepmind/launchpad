@@ -188,7 +188,7 @@ def launch_with_gnome_terminal(commands_to_launch, use_tabs=False):
     # process_tree_depth=2 because the interpreter will be at level 2 of
     # gnome-terminal -> bash -> interpreter.
     manager = worker_manager_v2.WorkerManager(
-        handle_sigterm=True, handle_user_stop=True, process_tree_depth=2)
+        handle_sigterm=True, kill_all_upon_sigint=True, process_tree_depth=2)
   else:
     manager = worker_manager.WorkerManager()
   atexit.register(manager.wait)

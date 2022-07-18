@@ -65,7 +65,7 @@ def thread_handler(program):
   """Runs the threads and wraps them in Worker Manager."""
   if lp_flags.LP_WORKER_MANAGER_V2.value:
     manager = worker_manager_v2.WorkerManager(
-        handle_user_stop=True,
+        kill_all_upon_sigint=True,
     )
   else:
     manager = worker_manager.WorkerManager(

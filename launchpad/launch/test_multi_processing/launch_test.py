@@ -15,13 +15,18 @@
 """Tests for launchpad.launch.test_multi_processing.launch."""
 
 
+from absl import flags
+
 from absl.testing import absltest
+from absl.testing import parameterized
 import launchpad as lp
 from launchpad import program
 from launchpad.launch.test_multi_processing import launch
 from launchpad.nodes.python import local_multi_processing
 from launchpad.nodes.python import node as python
 from launchpad.program_stopper import program_stopper
+
+FLAGS = flags.FLAGS
 
 
 def _get_default_py_node_config():
@@ -46,22 +51,29 @@ def _stop(stopper):
   stopper()
 
 
-class LaunchTest(absltest.TestCase):
+class LaunchTest(parameterized.TestCase):
 
-  def test_wait_for_one(self):
+  @parameterized.parameters(False, True)
+  def test_wait_for_one(self, use_wm_v2):
+    FLAGS.lp_worker_manager_v2 = use_wm_v2
     p = program.Program('test')
 
     p.add_node(python.PyNode(_noop), 'noop')
     resources = dict(noop=_get_default_py_node_config())
     processes = launch.launch(p, test_case=self, local_resources=resources)
 
-    p_dict = processes._active_workers
+    if use_wm_v2:
+      p_dict = processes._process_workers
+    else:
+      p_dict = processes._active_workers
     self.assertEqual(list(p_dict.keys()), ['noop'])
     self.assertLen(p_dict['noop'], 1)
-    p_dict['noop'][0].wait()  # Wait until termination
-    self.assertEqual(p_dict['noop'][0].returncode, 0)
+    # Wait until termination
+    self.assertEqual(p_dict['noop'][0].wait(), 0)
 
-  def test_wait_for_all(self):
+  @parameterized.parameters(False, True)
+  def test_wait_for_all(self, use_wm_v2):
+    FLAGS.lp_worker_manager_v2 = use_wm_v2
     p = program.Program('test')
 
     p.add_node(python.PyNode(_noop), 'noop')
@@ -70,7 +82,9 @@ class LaunchTest(absltest.TestCase):
 
     processes.wait()
 
-  def test_wait_for_some_only_waits_for_specified_node_groups(self):
+  @parameterized.parameters(False, True)
+  def test_wait_for_some_only_waits_for_specified_node_groups(self, use_wm_v2):
+    FLAGS.lp_worker_manager_v2 = use_wm_v2
     p = program.Program('test')
 
     with p.group('main'):
@@ -84,7 +98,9 @@ class LaunchTest(absltest.TestCase):
 
     processes.wait(['main'])
 
-  def test_wait_for_some_detects_exception_in_any_node_group(self):
+  @parameterized.parameters(False, True)
+  def test_wait_for_some_detects_exception_in_any_node_group(self, use_wm_v2):
+    FLAGS.lp_worker_manager_v2 = use_wm_v2
     p = program.Program('test')
 
     with p.group('main'):
@@ -96,12 +112,13 @@ class LaunchTest(absltest.TestCase):
         daemon=_get_default_py_node_config())
     processes = launch.launch(p, test_case=self, local_resources=resources)
 
-    with self.assertRaisesRegexp(  
-        RuntimeError, 'One of the workers exited.'):
+    with self.assertRaises(RuntimeError):
       processes.wait(['main'])
 
 
-  def test_grouping(self):
+  @parameterized.parameters(False, True)
+  def test_grouping(self, use_wm_v2):
+    FLAGS.lp_worker_manager_v2 = use_wm_v2
     # This verifies the process handles are grouped correctly
     p = program.Program('test')
 
@@ -116,12 +133,17 @@ class LaunchTest(absltest.TestCase):
     resources = dict(
         foo=_get_default_py_node_config(), bar=_get_default_py_node_config())
     processes = launch.launch(p, test_case=self, local_resources=resources)
-    p_dict = processes._active_workers
+    if use_wm_v2:
+      p_dict = processes._process_workers
+    else:
+      p_dict = processes._active_workers
     self.assertCountEqual(list(p_dict.keys()), ['foo', 'bar'])
     self.assertLen(p_dict['foo'], 1)
     self.assertLen(p_dict['bar'], 2)
 
-  def test_program_stopper(self):
+  @parameterized.parameters(False, True)
+  def test_program_stopper(self, use_wm_v2):
+    FLAGS.lp_worker_manager_v2 = use_wm_v2
     # This verifies the program stopper works for test_multi_processing
     p = program.Program('test')
 
@@ -137,7 +159,9 @@ class LaunchTest(absltest.TestCase):
     processes = launch.launch(p, test_case=self, local_resources=resources)
     processes.wait()
 
-  def test_cleanup(self):
+  @parameterized.parameters(False, True)
+  def test_cleanup(self, use_wm_v2):
+    FLAGS.lp_worker_manager_v2 = use_wm_v2
     # Test verifies that test cleanup works.
     p = program.Program('test')
 

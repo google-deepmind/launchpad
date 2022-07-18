@@ -67,7 +67,6 @@ def launch(program,
   if lp_flags.LP_WORKER_MANAGER_V2.value:
     manager = worker_manager_v2.WorkerManager(
         termination_notice_secs=None,
-        handle_user_stop=False,
     )
   else:
     manager = worker_manager.WorkerManager()

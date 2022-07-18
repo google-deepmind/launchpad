@@ -21,7 +21,7 @@ import signal
 import subprocess
 import threading
 import time
-from typing import Any, Callable, Iterable, List, Mapping, MutableMapping, Optional, Tuple
+from typing import Any, Callable, Iterable, List, Mapping, MutableMapping, Optional, Sequence, Tuple
 
 from absl import logging
 from launchpad import flags as lp_flags
@@ -125,7 +125,10 @@ def _send_signal_to_processes_with_depth(processes: Iterable[psutil.Process],
                                          sig: signal.Signals, depth: int):
   for process in processes:
     for child in _get_child_processes_with_depth(process, depth):
-      child.send_signal(sig)
+      try:
+        child.send_signal(sig)
+      except psutil.NoSuchProcess:
+        pass
 
 
 class WorkerManager:
@@ -134,7 +137,8 @@ class WorkerManager:
   def __init__(
       self,
       termination_notice_secs: Optional[int] = None,
-      handle_user_stop: bool = False,
+      kill_all_upon_sigint: bool = False,
+      kill_workers_upon_sigint: bool = False,
       handle_sigterm: bool = False,
       register_in_thread: bool = False,
       process_tree_depth: int = 0,
@@ -145,10 +149,13 @@ class WorkerManager:
       termination_notice_secs: 1) when >0, it's the countdown before a SIGKILL
         is issued upon a user-requested stop (relies on handle_user_stop=True).
         2) when =0, SIGKILL happens immediately upon user-requested stop.
-      handle_user_stop: Whether to handle Ctrl+C or not. This should be set to
-        True in local_mt and local_mp, so that the user can stop the program
-        with Ctrl+C. This will set the stop event, and also send SIGTERM to all
-        subprocesses.
+      kill_all_upon_sigint: When True, set the stop event and kill all worker
+        subprocesses, as well as the main process upon SIGINT. This allows the
+        user to stop the program with Ctrl+C. It should be set to True for
+        local_mp and local_mt.
+      kill_workers_upon_sigint: When True, similar to kill_all_upon_sigint,
+        except that it doesn't kill the main process. This is needed in test_mp
+        so as not to fail the test upon cleanup.
       handle_sigterm: When this is True, kill all workers upon SIGTERM, by 1)
         forwarding SIGTERM to process workers 2) setting stop event for thread
         workers. Set this to True in process_entry.py so that the stop event
@@ -167,8 +174,16 @@ class WorkerManager:
     if termination_notice_secs < 0:
       raise ValueError('termination_notice_secs must be >= 0.')
     self._termination_notice_secs = termination_notice_secs
-    if handle_user_stop:
-      _register_signal_handler(signal.SIGINT, self._handle_user_stop)
+    if kill_all_upon_sigint and kill_workers_upon_sigint:
+      raise ValueError(
+          'Only one of kill_all_upon_sigint and kill_workers_upon_sigint can '
+          'be True.')
+    if kill_all_upon_sigint:
+      _register_signal_handler(signal.SIGINT,
+                               functools.partial(self._handle_sigint, True))
+    elif kill_workers_upon_sigint:
+      _register_signal_handler(signal.SIGINT,
+                               functools.partial(self._handle_sigint, False))
 
     if handle_sigterm:
       _register_signal_handler(
@@ -260,22 +275,38 @@ class WorkerManager:
     """
     recently_finished = []
     has_active_workers = False
-    active_workers = collections.defaultdict(list)
     with self._mutex:
+      active_threads = collections.defaultdict(list)
       for label in self._thread_workers:
         for worker in self._thread_workers[label]:
           if worker.thread.is_alive():
-            active_workers[label].append(worker)
+            active_threads[label].append(worker)
             has_active_workers = True
           else:
             recently_finished.append(worker.future)
-      self._thread_workers = active_workers
-      for _, processes in self._process_workers.items():
-        for process in processes:
-          if process.is_running():
-            has_active_workers = True
+      self._thread_workers = active_threads
 
-            break
+      active_processes = collections.defaultdict(list)
+      for label, processes in self._process_workers.items():
+        for process in processes:
+          if process.is_running() and process.status() != psutil.STATUS_ZOMBIE:
+            has_active_workers = True
+            active_processes[label].append(process)
+          else:
+            future = futures.Future()
+            res = process.wait()
+            if res and not self._stop_event.is_set():
+              # Here we make sure stop_event hasn't been set yet, before we
+              # propagate the non-zero exit code. This is because when we
+              # forcefully terminate the program (e.g., due to `lp.stop()`),
+              # some subprocesses might have non-zero exit code.
+              future.set_exception(
+                  RuntimeError(f'A "{label}" worker exited with code {res}.'))
+            else:
+              future.set_result(None)
+            recently_finished.append(future)
+      self._process_workers = active_processes
+
     return recently_finished, has_active_workers
 
   def check_for_thread_worker_exception(self):
@@ -284,8 +315,13 @@ class WorkerManager:
     for future in recently_finished:
       future.result()
 
-  def wait(self):
-    """Waits until all thread workers finish. Raises errors if any."""
+  def wait(self, labels_to_wait_for: Optional[Sequence[str]] = None):
+    """Waits until all thread workers finish. Raises errors if any.
+
+    Args:
+      labels_to_wait_for: labels of the workers to wait for. If None, wait for
+        all workers.
+    """
     has_active_worker = True
     while has_active_worker:
       try:
@@ -296,27 +332,31 @@ class WorkerManager:
           # check_for_thread_worker_exception() will update self._thread_workers
           # so that it only contains active workers. If there are still
           # non-empty lists, it means some workers have not finished yet.
-          for workers in self._thread_workers.values():
+          for label, workers in self._thread_workers.items():
+            if labels_to_wait_for and label not in labels_to_wait_for:
+              continue
             if workers:
               has_active_worker = True
               break
-        for _, processes in self._process_workers.items():
-          for process in processes:
-            if process.is_running():
+          for label, processes in self._process_workers.items():
+            if labels_to_wait_for and label not in labels_to_wait_for:
+              continue
+            if processes:
               has_active_worker = True
               break
         time.sleep(0.1)
       except KeyboardInterrupt:
         pass
 
-  def _set_stop_event_and_terminate_process_workers(self):
+  def _set_stop_event_and_terminate_process_workers(
+      self, sig: signal.Signals = signal.SIGTERM):
     self._stop_event.set()
     for _, processes in self._process_workers.items():
-      _send_signal_to_processes_with_depth(processes, signal.SIGTERM,
+      _send_signal_to_processes_with_depth(processes, sig,
                                            self._process_tree_depth)
 
-  def _handle_user_stop(self):
-    """Handles user-issued stop (Ctrl+C).
+  def _handle_sigint(self, kill_main_process: bool):
+    """Handles SIGINT.
 
     This does the following:
 
@@ -325,6 +365,13 @@ class WorkerManager:
     2. Wait for termination_notice_secs (specified from   __init__()`), since
        the workers might need some time for cleanup.
     3. SIGKILL the remaining workers.
+
+    if kill_main_process=True, also kill the main process. This should be set
+    True for local_mp, but not for test_mp as it will fail the test case.
+
+    Args:
+      kill_main_process: whether or not to kill the main process after killing
+        all the subprocesses.
     """
     print(
         termcolor.colored('User-requested termination. Asking workers to stop.',
@@ -337,20 +384,21 @@ class WorkerManager:
       _send_signal_to_processes_with_depth(processes, signal.SIGTERM,
                                            self._process_tree_depth)
 
+    def _force_stop(kill_main_process=kill_main_process):
+      # Since we are forcefully stopping the system, we send signals to all
+      # levels of the process trees. This makes sure to kill
+      # tmux/gnome-terminal/etc, processes that create the Launchpad
+      # subprocesses.
+      for _, processes in self._process_workers.items():
+        for process in processes:
+          for child in process.children(recursive=True):
+            child.send_signal(signal.SIGKILL)
+          process.send_signal(signal.SIGKILL)
+      if kill_main_process:
+        signal.raise_signal(signal.SIGKILL)
+
     if self._termination_notice_secs > 0:
       print(termcolor.colored('Press CTRL+C to terminate immediately.', 'blue'))
-
-      def _force_stop():
-        # Since we are forcefully stopping the system, we send signals to all
-        # levels of the process trees. This makes sure to kill
-        # tmux/gnome-terminal/etc, processes that create the Launchpad
-        # subprocesses.
-        for _, processes in self._process_workers.items():
-          for process in processes:
-            for child in process.children(recursive=True):
-              child.send_signal(signal.SIGKILL)
-            process.send_signal(signal.SIGKILL)
-        signal.raise_signal(signal.SIGKILL)
 
       _register_signal_handler(signal.SIGINT, _force_stop)
       pending_secs = self._termination_notice_secs

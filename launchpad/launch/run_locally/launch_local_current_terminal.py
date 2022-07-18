@@ -43,7 +43,7 @@ def launch_in_current_terminal(commands_to_launch):
   """
   if lp_flags.LP_WORKER_MANAGER_V2.value:
     manager = worker_manager_v2.WorkerManager(
-        handle_sigterm=True, handle_user_stop=True)
+        handle_sigterm=True, kill_all_upon_sigint=True)
   else:
     manager = worker_manager.WorkerManager()
   atexit.register(manager.wait)

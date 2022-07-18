@@ -33,12 +33,16 @@ Usage:
 """
 
 import os
+import signal
+import typing
 from typing import Any, Mapping, Optional
 
 from absl.testing import absltest
 from launchpad import context
+from launchpad import flags as lp_flags
 from launchpad import program as lp_program
 from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_v2
 
 
 def launch(program: lp_program.Program,
@@ -78,12 +82,28 @@ def launch(program: lp_program.Program,
       # Not to create to actual processes, in case of failures in this loop.
       process_handles[label] = []
 
-  manager = worker_manager.WorkerManager(kill_main_thread=False)
+  if lp_flags.LP_WORKER_MANAGER_V2.value:
+    manager = worker_manager_v2.WorkerManager(
+        # Subprocess sends SIGINT back via lp.stop(), which stops the program.
+        kill_workers_upon_sigint=True,
+        # Kill all processes immediately.
+        termination_notice_secs=0)
+  else:
+    manager = worker_manager.WorkerManager(kill_main_thread=False)
   for label, commands in label_to_commands.items():
     for command in commands:
       env = {}
       env.update(os.environ)
       env.update(command.env_overrides)
       manager.process_worker(label, command.command_as_list, env=env)
-  test_case.addCleanup(manager.cleanup_after_test, test_case=test_case)
+  def _cleanup(manager=manager):
+    if lp_flags.LP_WORKER_MANAGER_V2.value:
+      manager = typing.cast(worker_manager_v2.WorkerManager, manager)
+      
+      manager._set_stop_event_and_terminate_process_workers(sig=signal.SIGKILL)
+      
+    else:
+      typing.cast(worker_manager.WorkerManager,
+                  manager).cleanup_after_test(test_case)
+  test_case.addCleanup(_cleanup)
   return manager

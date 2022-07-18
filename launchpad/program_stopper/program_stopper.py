@@ -72,8 +72,10 @@ def make_program_stopper(launch_type: Union[str, context.LaunchType]):
       lp_flags.LP_WORKER_MANAGER_V2.value):
     return _stop_mt
 
-  if (launch_type is context.LaunchType.LOCAL_MULTI_PROCESSING and
-      lp_flags.LP_WORKER_MANAGER_V2.value):
+  if (launch_type in [
+      context.LaunchType.LOCAL_MULTI_PROCESSING,
+      context.LaunchType.TEST_MULTI_PROCESSING
+  ] and lp_flags.LP_WORKER_MANAGER_V2.value):
 
     def _sigint_to_launcher(launcher_process_id, mark_as_completed=False):
       del mark_as_completed
