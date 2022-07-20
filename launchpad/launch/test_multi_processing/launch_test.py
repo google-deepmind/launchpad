@@ -63,9 +63,9 @@ class LaunchTest(parameterized.TestCase):
     processes = launch.launch(p, test_case=self, local_resources=resources)
 
     if use_wm_v2:
-      p_dict = processes._process_workers
+      p_dict = processes._process_workers  # pytype:disable=attribute-error
     else:
-      p_dict = processes._active_workers
+      p_dict = processes._active_workers  # pytype:disable=attribute-error
     self.assertEqual(list(p_dict.keys()), ['noop'])
     self.assertLen(p_dict['noop'], 1)
     # Wait until termination
@@ -134,9 +134,9 @@ class LaunchTest(parameterized.TestCase):
         foo=_get_default_py_node_config(), bar=_get_default_py_node_config())
     processes = launch.launch(p, test_case=self, local_resources=resources)
     if use_wm_v2:
-      p_dict = processes._process_workers
+      p_dict = processes._process_workers  # pytype:disable=attribute-error
     else:
-      p_dict = processes._active_workers
+      p_dict = processes._active_workers  # pytype:disable=attribute-error
     self.assertCountEqual(list(p_dict.keys()), ['foo', 'bar'])
     self.assertLen(p_dict['foo'], 1)
     self.assertLen(p_dict['bar'], 2)
