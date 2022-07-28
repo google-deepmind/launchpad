@@ -17,10 +17,19 @@
 import abc
 from typing import Callable, Generic, TypeVar, Union
 
+from absl import flags
+
 import tree
 
 
 T = TypeVar('T')
+
+_LP_CATCH_DEFERRED_EXCEPTION = flags.DEFINE_boolean(
+    'lp_catch_deferred_exception', True,
+    'Whether exceptions raised by the constructors of deferred objects should '
+    'be caught and annotated with the initiation stack of the object. A negative '
+    'side effect of using this is that pdb-on-error will enter at the re-raise '
+    'point rather than the source of the original exception.')
 
 
 class _Uninitialized:
@@ -41,7 +50,9 @@ def maybe_dereference(obj: Union[T, Dereferenceable[T]]) -> T:
 
 
 _EXCEPTION_MESSAGE = ('Error ({error_msg}) occurred when evaluating Deferred '
-                      'defined at:\n{init_stack}\n')
+                      'defined at:\n{init_stack}\nNOTE! If you want pdb to '
+                      'enter at raise point of the original exception, '
+                      'please rerun with flag --nolp_catch_deferred_exception')
 
 
 class Deferred(Dereferenceable[T], Generic[T]):
@@ -87,6 +98,11 @@ class Deferred(Dereferenceable[T], Generic[T]):
     if isinstance(self._deferred_object, _Uninitialized):
       args, kwargs = tree.map_structure(maybe_dereference,
                                         (self._args, self._kwargs))
+      if not _LP_CATCH_DEFERRED_EXCEPTION.value:
+        # Allows the user to pdb where the exception happens, but won't show
+        # where the deferred object was originally defined.
+        return self._constructor(*args, **kwargs)
+
       try:
         self._deferred_object = self._constructor(*args, **kwargs)
       except Exception as e:  
