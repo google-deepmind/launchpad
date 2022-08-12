@@ -90,6 +90,12 @@ class Program(object):
       # reset even if an exception occurs.
       self._current_group = None
 
+  @property
+  def current_group(self) -> str:
+    if self._current_group is None:
+      raise ValueError('Current group is only available in group context.')
+    return self._current_group
+
 
   def get_all_nodes(self) -> List[base.Node]:
     return list(itertools.chain(*self._groups.values()))
