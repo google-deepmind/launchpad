@@ -53,7 +53,11 @@ class LaunchTest(absltest.TestCase):
     # Launch should fail accessing GCP.
     exception_msg = (
         'Request failed|404|The specified bucket does not exist|CP project '
-        'seems not to be configured correctly')
+        'seems not to be configured correctly'
+        # We allow digit-only messages, assuming this is a KeyError as reported
+        # in b/241629570. Should be fixed together with
+        # https://github.com/python/cpython/issues/91351.
+        r'|\d+')
     with self.assertRaisesRegex(Exception, exception_msg):
       lp.launch(
           program,
