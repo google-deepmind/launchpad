@@ -18,7 +18,7 @@ import collections
 import itertools
 from typing import Any, Sequence
 
-from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_migration
 from launchpad.nodes.python import node as python
 
 HandleType = Any
@@ -74,7 +74,7 @@ class MultiThreadingColocation(python.PyNode):
     if not self._nodes:
       raise ValueError('MultiThreadingColocation requires at least one node.')
     group_name = f'coloc_{id(self)}'
-    manager = worker_manager.get_worker_manager()
+    manager = worker_manager_migration.get_worker_manager()
 
     for n in self._nodes:
       n._launch_context = self._launch_context  

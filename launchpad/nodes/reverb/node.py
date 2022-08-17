@@ -20,7 +20,7 @@ from typing import Any, Callable, Optional, Sequence
 from absl import logging
 from launchpad import address as lp_address
 from launchpad import context
-from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_migration
 from launchpad.nodes import base
 from launchpad.nodes.python import node as python
 import reverb
@@ -108,11 +108,11 @@ class ReverbNode(python.PyNode):
         checkpointer=checkpointer)
 
     if self._checkpoint_time_delta_minutes is not None:
-      while not worker_manager.wait_for_stop(
+      while not worker_manager_migration.wait_for_stop(
           self._checkpoint_time_delta_minutes * 60):
         self._server.localhost_client().checkpoint()
     else:
-      worker_manager.wait_for_stop()
+      worker_manager_migration.wait_for_stop()
 
   @staticmethod
   def to_executables(nodes: Sequence['ReverbNode'], label: str,
