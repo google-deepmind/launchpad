@@ -11,6 +11,7 @@ lp_cc_library(
     srcs = ["conversions.cc"],
     hdrs = ["conversions.h"],
     deps = [
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:cord",
         "@tensorflow_includes//:includes",

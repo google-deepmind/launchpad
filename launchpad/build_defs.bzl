@@ -631,7 +631,7 @@ def lp_tf_deps():
     return [
         "@tensorflow_includes//:includes",
         "@tensorflow_solib//:framework_lib",
-    ]
+    ] + lp_absl_deps()
 
 def lp_grpc_deps():
     return ["@com_github_grpc_grpc//:grpc++"]
