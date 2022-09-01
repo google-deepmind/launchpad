@@ -1,4 +1,6 @@
-## FAQ
+# FAQ
+
+[TOC]
 
 ### How do I specify per-node flags or environment variables?
 
