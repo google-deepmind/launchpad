@@ -75,7 +75,7 @@ def _register_signal_dispatcher(sig):
   try:
     old_signal = signal.signal(sig, _signal_dispatcher)
   except ValueError:
-    logging.warn(
+    logging.warning(
         'Launchpad cannot register its signal handler. This is likely because '
         'you are not running lp.launch() from the main thread. Launchpad will '
         'NOT attempt to handle signal %s.', sig)
