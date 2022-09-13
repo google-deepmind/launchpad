@@ -69,8 +69,7 @@ def _signal_dispatcher(sig, frame=None):
 
 
 def _register_signal_dispatcher(sig):
-  """Registers signal dispatcher for a givne signal type."""
-  global _SIGNAL_HANDLERS
+  """Registers signal dispatcher for a given signal type."""
   assert sig not in _SIGNAL_HANDLERS
   _SIGNAL_HANDLERS[sig] = set()
   try:
@@ -100,7 +99,6 @@ def _register_signal_handler(sig, handler):
 
 def _remove_signal_handler(sig, handler):
   """Unregisters a signal handler."""
-  global _SIGNAL_HANDLERS
   if not _SIGNAL_HANDLERS:
     return
   try:
