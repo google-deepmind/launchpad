@@ -73,10 +73,10 @@ ARG pip_dependencies=' \
       portpicker'
 
 RUN for python in ${python_version}; do \
-    $python get-pip.py && \
-    $python -mpip uninstall -y tensorflow tensorflow-gpu tf-nightly tf-nightly-gpu && \
-    $python -mpip --no-cache-dir install ${tensorflow_pip} --upgrade && \
-    $python -mpip --no-cache-dir install $pip_dependencies; \
+    python${python} get-pip.py && \
+    python${python} -mpip uninstall -y tensorflow tensorflow-gpu tf-nightly tf-nightly-gpu && \
+    python${python} -mpip --no-cache-dir install ${tensorflow_pip} --upgrade && \
+    python${python} -mpip --no-cache-dir install $pip_dependencies; \
   done
 RUN rm get-pip.py
 
