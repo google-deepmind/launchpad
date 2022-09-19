@@ -9,7 +9,7 @@ LABEL maintainer="no-reply@google.com"
 ARG cpu_base_image="tensorflow/build:latest-python3.7"
 ARG base_image=$cpu_base_image
 ARG tensorflow_pip="tf-nightly"
-ARG python_version="python3.7"
+ARG python_version="3.7"
 ARG APT_COMMAND="apt-get -o Acquire::Retries=3 -y"
 
 # Stops tzdata from asking about timezones and blocking install on user input.
