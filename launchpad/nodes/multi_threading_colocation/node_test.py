@@ -91,7 +91,8 @@ class NodeTest(absltest.TestCase):
     parent_manager = worker_manager.WorkerManager(register_in_thread=True)
     with self.assertRaisesRegex(RuntimeError, 'Foo'):
       manager = colo_node.run()
-      self.addCleanup(manager.cleanup_after_test, self)
+      self.addCleanup(manager.cleanup_after_test, self)  # pytype: disable=attribute-error
+    del parent_manager
 
   def test_first_completed(self):
     manager = worker_manager.WorkerManager(register_in_thread=True)
