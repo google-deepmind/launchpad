@@ -16,7 +16,6 @@
 set -e
 
 # Flags
-DEBUG_DOCKER=true
 CLEAN=false
 RELEASE=false
 PYTHON=3.10
@@ -24,10 +23,6 @@ PYTHON=3.10
 while [[ $# -gt -0 ]]; do
   key="$1"
   case $key in
-      --debug_docker)
-      DEBUG_DOCKER="$2"
-      shift
-      ;;
       --python)
       PYTHON="$2"
       shift
@@ -43,7 +38,6 @@ while [[ $# -gt -0 ]]; do
     *)
       echo "Unknown flag: $key"
       echo "Usage:"
-      echo "--debug_docker [Enter the Docker image upon failure for debugging.]"
       echo "--python  [3.7|3.8|3.9|3.10(default)]"
       echo "--clean   [true to run bazel clean]"
       echo "--release [true to build a release binary]"
@@ -60,12 +54,6 @@ run_docker() {
   set -x
   "$@"
   if [[ $? != 0 ]]; then
-    if [[ $DEBUG_DOCKER ]]; then
-      IMAGE=`docker container ls --last 1 | tail -n 1 | sed -r 's/.* ([a-z0-9]{12}).*/\1/'`
-      echo "Launchpad build failed, entering Docker image $IMAGE for debugging."
-      docker run --rm ${MOUNT_CMD} \
-        -it $IMAGE bash
-    fi
     exit 1
   fi
   set +x
