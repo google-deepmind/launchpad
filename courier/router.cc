@@ -40,8 +40,7 @@ absl::Status Router::Bind(absl::string_view method,
   }
 
   absl::WriterMutexLock lock(&mu_);
-  handlers_[std::string(method)] =
-      absl::make_unique<CallCountingHandler>(std::move(method_handler));
+  handlers_[std::string(method)] = std::move(method_handler);
   return absl::OkStatus();
 }
 
@@ -50,28 +49,19 @@ void Router::Unbind(absl::string_view method) {
   handlers_.erase(std::string(method));
 }
 
-absl::StatusOr<courier::CallResult> Router::Call(
-    absl::string_view method_name, const courier::CallArguments& arguments) {
+absl::StatusOr<std::shared_ptr<HandlerInterface>> Router::Lookup(
+    absl::string_view method_name) {
   tensorflow::profiler::TraceMe trace_me(method_name);
-  CallCountingHandler* handler = nullptr;
-  {
-    absl::ReaderMutexLock lock(&mu_);
-    auto func_it = handlers_.find(std::string(method_name));
-    if (func_it == handlers_.end()) {
-      func_it = handlers_.find("*");
-    }
-    if (func_it == handlers_.end()) {
-      return absl::Status(absl::StatusCode::kNotFound,
-                          absl::StrCat("method ", method_name, " not found"));
-    }
-    handler = func_it->second.get();
-    absl::MutexLock handler_lock(&handler->mu_);
-    handler->inflight_calls_++;
+  absl::ReaderMutexLock lock(&mu_);
+  auto func_it = handlers_.find(std::string(method_name));
+  if (func_it == handlers_.end()) {
+    func_it = handlers_.find("*");
   }
-  auto result = handler->handler_->Call(method_name, arguments);
-  absl::MutexLock handler_lock(&handler->mu_);
-  handler->inflight_calls_--;
-  return result;
+  if (func_it == handlers_.end()) {
+    return absl::Status(absl::StatusCode::kNotFound,
+                        absl::StrCat("method ", method_name, " not found"));
+  }
+  return func_it->second;
 }
 
 std::vector<std::string> Router::Names() {
@@ -82,16 +72,6 @@ std::vector<std::string> Router::Names() {
     names.push_back(item.first);
   }
   return names;
-}
-
-Router::CallCountingHandler::CallCountingHandler(
-    std::shared_ptr<HandlerInterface> handler)
-    : handler_(std::move(handler)) {}
-
-Router::CallCountingHandler::~CallCountingHandler() {
-  absl::MutexLock lock(&mu_);
-  mu_.Await(
-      absl::Condition(this, &Router::CallCountingHandler::NoInflightCalls));
 }
 
 }  // namespace courier
