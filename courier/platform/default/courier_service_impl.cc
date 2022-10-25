@@ -45,10 +45,10 @@ CourierServiceImpl::CourierServiceImpl(Router* router) : router_(router) {
 grpc::Status CourierServiceImpl::Call(::grpc::ServerContext* context,
                                       const CallRequest* request,
                                       CallResponse* reply) {
-  auto handler = router_->Lookup(request->method());
-  if (!handler.ok()) return ToGrpcStatus(handler.status());
+  auto handler_binding = router_->Lookup(request->method());
+  if (!handler_binding.ok()) return ToGrpcStatus(handler_binding.status());
   absl::StatusOr<courier::CallResult> result =
-      (*handler)->Call(request->method(), request->arguments());
+      handler_binding->handler->Call(request->method(), request->arguments());
   if (result.ok()) {
     *reply->mutable_result() = std::move(result).value();
     return grpc::Status();

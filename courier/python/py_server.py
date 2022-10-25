@@ -70,11 +70,12 @@ class Server:
   def address(self) -> str:
     return f'localhost:{self._port}'
 
-  def Bind(self, method_name: str, py_func):
-    self._router.Bind(method_name, pybind.BuildPyCallHandler(py_func))
+  def BindHandler(self, method_name, handler, is_priority: bool = False):
+    self._router.Bind(method_name, handler, is_priority)
 
-  def BindHandler(self, method_name, handler):
-    self._router.Bind(method_name, handler)
+  def Bind(self, method_name: str, py_func, is_priority: bool = False):
+    self.BindHandler(method_name, pybind.BuildPyCallHandler(py_func),
+                     is_priority)
 
 
   def Join(self):

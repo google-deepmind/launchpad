@@ -54,6 +54,12 @@ namespace courier {
 // significantly more complex than a simple, single mutex.
 class Router {
  public:
+  // Metadata about the call and how it should be carried out.
+  struct HandlerBinding final {
+    std::shared_ptr<HandlerInterface> handler;
+    bool is_high_priority;
+  };
+
   // Binds a method handler to a method name. The Router.Call function
   // will execute the Call function of the corresponding MethodHandler.
   //
@@ -61,13 +67,15 @@ class Router {
   // replaced by the new handler. Note: `method_name` must not be empty and
   // `method_handler` must not be null.
   //
+  // If is_high_priority is true, it signals the server to schedule calls to
+  // this method on the priority thread pool, if available.
   // If a method handler with the same name was registered before, then this
   // function will not block until concurrent calls to that handler have
   // finished. Instead, the new handler will be installed and handle incoming
   // calls from then on out.
   absl::Status Bind(absl::string_view method,
-                    std::shared_ptr<HandlerInterface> method_handler)
-      ABSL_LOCKS_EXCLUDED(mu_);
+                    std::shared_ptr<HandlerInterface> method_handler,
+                    bool is_high_priority = false) ABSL_LOCKS_EXCLUDED(mu_);
 
 
   // Deletes the function handler registed under the given name, if any;
@@ -80,8 +88,8 @@ class Router {
   // Looks up the requested method handler. If no method is registered under the
   // requested name, a NOT_FOUND error is returned. This function blocks until
   // concurrent calls to the binding functions have completed.
-  absl::StatusOr<std::shared_ptr<HandlerInterface>> Lookup(
-      absl::string_view method_name) ABSL_LOCKS_EXCLUDED(mu_);
+  absl::StatusOr<const HandlerBinding> Lookup(absl::string_view method_name)
+      ABSL_LOCKS_EXCLUDED(mu_);
 
   // Returns a list of the names of all registered method handlers.
   // The returned list is advisory only. Presence on the list does not imply
@@ -94,7 +102,7 @@ class Router {
 
  private:
   // Stores bound method names and their method handles.
-  std::map<std::string, std::shared_ptr<HandlerInterface>> handlers_
+  std::map<std::string, HandlerBinding> handlers_
       ABSL_GUARDED_BY(mu_);
   absl::Mutex mu_;
 };

@@ -31,7 +31,8 @@
 namespace courier {
 
 absl::Status Router::Bind(absl::string_view method,
-                          std::shared_ptr<HandlerInterface> method_handler) {
+                          std::shared_ptr<HandlerInterface> method_handler,
+                          bool is_high_priority) {
   if (method.empty()) {
     return absl::InvalidArgumentError("Bind method name must be non-empty");
   }
@@ -40,7 +41,9 @@ absl::Status Router::Bind(absl::string_view method,
   }
 
   absl::WriterMutexLock lock(&mu_);
-  handlers_[std::string(method)] = std::move(method_handler);
+  handlers_[std::string(method)] =
+      HandlerBinding{.handler = std::move(method_handler),
+                     .is_high_priority = is_high_priority};
   return absl::OkStatus();
 }
 
@@ -49,7 +52,7 @@ void Router::Unbind(absl::string_view method) {
   handlers_.erase(std::string(method));
 }
 
-absl::StatusOr<std::shared_ptr<HandlerInterface>> Router::Lookup(
+absl::StatusOr<const Router::HandlerBinding> Router::Lookup(
     absl::string_view method_name) {
   tensorflow::profiler::TraceMe trace_me(method_name);
   absl::ReaderMutexLock lock(&mu_);
