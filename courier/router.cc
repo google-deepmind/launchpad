@@ -26,7 +26,6 @@
 #include "absl/synchronization/mutex.h"
 #include "courier/handlers/interface.h"
 #include "courier/serialization/serialization.pb.h"
-#include "tensorflow/core/profiler/lib/traceme.h"
 
 namespace courier {
 
@@ -54,7 +53,6 @@ void Router::Unbind(absl::string_view method) {
 
 absl::StatusOr<const Router::HandlerBinding> Router::Lookup(
     absl::string_view method_name) {
-  tensorflow::profiler::TraceMe trace_me(method_name);
   absl::ReaderMutexLock lock(&mu_);
   auto func_it = handlers_.find(std::string(method_name));
   if (func_it == handlers_.end()) {

@@ -28,6 +28,7 @@
 #include "courier/platform/status_macros.h"
 #include "courier/router.h"
 #include "courier/serialization/serialization.pb.h"
+#include "tensorflow/core/profiler/lib/traceme.h"
 
 namespace courier {
 
@@ -45,6 +46,8 @@ CourierServiceImpl::CourierServiceImpl(Router* router) : router_(router) {
 grpc::Status CourierServiceImpl::Call(::grpc::ServerContext* context,
                                       const CallRequest* request,
                                       CallResponse* reply) {
+  absl::string_view method_name(request->method());
+  tensorflow::profiler::TraceMe trace_me(method_name);
   auto handler_binding = router_->Lookup(request->method());
   if (!handler_binding.ok()) return ToGrpcStatus(handler_binding.status());
   absl::StatusOr<courier::CallResult> result =

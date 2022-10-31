@@ -92,5 +92,6 @@ lp_cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
+        "@tensorflow_includes//:includes",
     ],
 )
