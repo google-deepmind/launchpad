@@ -25,11 +25,20 @@ namespace {
 
 namespace py = pybind11;
 
+template <typename T>
+struct unique_ptr_nogil_deleter {
+  void operator()(T *ptr) {
+    pybind11::gil_scoped_release nogil;
+    delete ptr;
+  }
+};
+
 PYBIND11_MODULE(server, m) {
   py::google::ImportStatusModule();
   m.def("BuildAndStart", &Server::BuildAndStart, py::return_value_policy::move);
 
-  py::class_<Server>(m, "Server")
+  py::class_<Server, std::unique_ptr<Server, unique_ptr_nogil_deleter<Server>>>(
+      m, "Server")
       .def("Join", &Server::Join, py::call_guard<py::gil_scoped_release>())
       .def("Stop", &Server::Stop, py::call_guard<py::gil_scoped_release>())
       .def("SetIsHealthy", &Server::SetIsHealthy,
