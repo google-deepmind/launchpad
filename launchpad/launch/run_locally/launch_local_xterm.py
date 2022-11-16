@@ -17,6 +17,7 @@
 import atexit
 import os
 import subprocess
+from typing import Union
 
 from launchpad import flags as lp_flags
 from launchpad.launch import worker_manager
@@ -24,7 +25,10 @@ from launchpad.launch import worker_manager_v2
 from launchpad.launch.run_locally import feature_testing
 
 
-def launch_with_xterm(commands_to_launch):
+def launch_with_xterm(
+    commands_to_launch
+    ) -> Union[worker_manager.WorkerManager,
+               worker_manager_v2.WorkerManager]:
   """Launch multiple commands given as CommandToLaunch tuples through xterm.
 
   Args:

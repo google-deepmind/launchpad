@@ -16,6 +16,7 @@
 
 import atexit
 import os
+from typing import Union
 
 from launchpad import flags as lp_flags
 
@@ -29,7 +30,10 @@ else:
   _LOGGING_DIR = '/tmp/launchpad_out/'
 
 
-def launch_and_output_to_files(commands_to_launch):
+def launch_and_output_to_files(
+    commands_to_launch
+    ) -> Union[worker_manager.WorkerManager,
+               worker_manager_v2.WorkerManager]:
   """Launch commands given as CommandToLaunch and log the outputs to files.
 
   Args:

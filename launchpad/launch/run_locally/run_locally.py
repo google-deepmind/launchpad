@@ -16,10 +16,12 @@
 
 import collections
 import os
-from typing import Optional, Sequence, Text
+from typing import Optional, Sequence, Text, Union
 
 from absl import logging
 
+from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_v2
 from launchpad.launch.run_locally import feature_testing
 from launchpad.launch.run_locally import launch_local_current_terminal
 from launchpad.launch.run_locally import launch_local_gnome
@@ -136,7 +138,11 @@ def _get_terminal(given_terminal: Optional[Text]):
   return terminal
 
 
-def run_commands_locally(commands: Sequence[CommandToLaunch], terminal=None):
+def run_commands_locally(
+    commands: Sequence[CommandToLaunch], terminal=None
+    ) -> Union[worker_manager.WorkerManager,
+               worker_manager_v2.WorkerManager]:
+  """Launches a program using multiple processes."""
   # Minimally validate all the commands before executing any of them. This also
   # gives better errors in the case that a terminal implementation executes
   # the commands via a wrapper.

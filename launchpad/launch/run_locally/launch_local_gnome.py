@@ -24,6 +24,7 @@ import stat
 import subprocess
 import tempfile
 import time
+from typing import Union
 
 from launchpad import flags as lp_flags
 from launchpad.launch import worker_manager
@@ -132,7 +133,11 @@ def _launch_in_tabs(commands_to_launch, app_id):
       os.environ)
 
 
-def launch_with_gnome_terminal(commands_to_launch, use_tabs=False):
+def launch_with_gnome_terminal(
+    commands_to_launch,
+    use_tabs=False
+    ) -> Union[worker_manager.WorkerManager,
+               worker_manager_v2.WorkerManager]:
   """Launch commands given as CommandToLaunch tuples with gnome-terminal.
 
   Args:

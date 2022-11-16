@@ -17,6 +17,7 @@
 import atexit
 import os
 import subprocess
+from typing import Union
 
 from absl import flags
 from absl import logging
@@ -29,8 +30,10 @@ from launchpad.launch.run_locally import feature_testing
 tty_write = print
 
 
-def launch_with_tmux_session(commands_to_launch,
-                             session_name_prefix=None):
+def launch_with_tmux_session(
+    commands_to_launch,
+    session_name_prefix=None) -> Union[worker_manager.WorkerManager,
+                                       worker_manager_v2.WorkerManager]:
   """Launch multiple CommandToLaunch tuples in a new tmux session."""
 
   if not feature_testing.has_tmux():
@@ -45,8 +48,11 @@ def launch_with_tmux_session(commands_to_launch,
                                         'tmux')
 
 
-def launch_with_byobu_session(commands_to_launch,
-                              session_name_prefix='launchpad'):
+def launch_with_byobu_session(
+    commands_to_launch,
+    session_name_prefix='launchpad'
+    ) -> Union[worker_manager.WorkerManager,
+               worker_manager_v2.WorkerManager]:
   """Launch multiple CommandToLaunch tuples in a new byobu session."""
 
   if not feature_testing.has_byobu():
@@ -59,8 +65,11 @@ def launch_with_byobu_session(commands_to_launch,
                                         'byobu')
 
 
-def _launch_with_multiplex_session(commands_to_launch, session_name_prefix,
-                                   multiplexer):
+def _launch_with_multiplex_session(
+    commands_to_launch,
+    session_name_prefix,
+    multiplexer) -> Union[worker_manager.WorkerManager,
+                          worker_manager_v2.WorkerManager]:
   """Launch multiple CommandToLaunch tuples in a new multiplex session.
 
   Args:

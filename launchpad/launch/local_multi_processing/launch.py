@@ -14,17 +14,21 @@
 
 """Launches a Launchpad program using multiple processes."""
 
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, Union
 
 from launchpad import context
 from launchpad import program as lp_program
+from launchpad.launch import worker_manager
+from launchpad.launch import worker_manager_v2
 from launchpad.launch.run_locally import run_locally
 
 
 
 def launch(program: lp_program.Program,
            local_resources: Optional[Mapping[str, Any]] = None,
-           terminal: str = 'gnome-terminal'):
+           terminal: str = 'gnome-terminal'
+           ) -> Union[worker_manager.WorkerManager,
+                      worker_manager_v2.WorkerManager]:
   """Launches a program using multiple processes."""
   # Set up the launch context (launch type & launch config) for all nodes
   local_resources = local_resources or {}

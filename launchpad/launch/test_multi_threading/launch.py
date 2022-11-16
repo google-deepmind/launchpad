@@ -24,7 +24,7 @@ import signal
 import threading
 import time
 import typing
-from typing import Optional
+from typing import Optional, Union
 
 from absl import logging
 from absl.testing import absltest
@@ -39,7 +39,9 @@ from launchpad.launch import worker_manager_v2
 def launch(program,
            test_case: Optional[absltest.TestCase] = None,
            *,
-           serialize_py_nodes: Optional[bool] = None):
+           serialize_py_nodes: Optional[bool] = None
+           ) -> Union[worker_manager.WorkerManager,
+                      worker_manager_v2.WorkerManager]:
   """Launches the program as a multi-threaded integration test."""
   if serialize_py_nodes is None:
     serialize_py_nodes = True

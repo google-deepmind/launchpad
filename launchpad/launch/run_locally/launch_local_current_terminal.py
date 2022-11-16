@@ -17,6 +17,7 @@
 import atexit
 import os
 import subprocess
+from typing import Union
 
 from launchpad import flags as lp_flags
 
@@ -32,7 +33,10 @@ _COLOUR_PALETTE = [
 ]
 
 
-def launch_in_current_terminal(commands_to_launch):
+def launch_in_current_terminal(
+    commands_to_launch
+    ) -> Union[worker_manager.WorkerManager,
+               worker_manager_v2.WorkerManager]:
   """Launch commands given as CommandToLaunch all in the same terminal.
 
   Args:
