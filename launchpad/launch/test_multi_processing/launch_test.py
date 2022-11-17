@@ -50,6 +50,10 @@ def _stop(stopper):
 
 class LaunchTest(parameterized.TestCase):
 
+  def setUp(self):
+    super().setUp()
+    launch.worker_manager._HAS_MAIN_MANAGER = False
+
   @parameterized.parameters(False, True)
   def test_wait_for_one(self, use_wm_v2):
     self.enter_context(flagsaver.flagsaver(lp_worker_manager_v2=use_wm_v2))
