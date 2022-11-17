@@ -22,5 +22,8 @@ FLAGS = flags.FLAGS
 
 
 def stop():
-  """Terminates the entire experiment."""
+  """Terminates the entire experiment.
+
+  Only a node's main thread can do this.
+  """
   context.get_context().program_stopper()

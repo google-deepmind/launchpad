@@ -100,8 +100,8 @@ _LAUNCH_CONTEXT = threading.local()
 
 def get_context():
   context = getattr(_LAUNCH_CONTEXT, 'lp_context', None)
-  assert context, ("Launchpad context was not instantiated. Do you try to "
-                   "access it outside of the main node's thread?")
+  assert context, ("Launchpad context was not instantiated. Are you trying to "
+                   "access it outside of the node's main thread?")
   return context
 
 
