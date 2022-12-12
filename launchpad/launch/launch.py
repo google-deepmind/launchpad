@@ -62,11 +62,7 @@ def launch(
       is launched.
     terminal: (for local multiprocessing launch) Terminal to use to run the
       commands. Valid choices are gnome-terminal, gnome-terminal-tabs, xterm,
-      tmux_session, current_terminal, and output_to_files. # BEGIN
-      GOOGLE-INTERNAL
-    guitar_clean_up_experiment_on_test_exit: (for Guitar launch) determines
-      whether to try to tear down this experiment when the test case finishes. #
-      END GOOGLE-INTERNAL
+      tmux_session, current_terminal, and output_to_files.
     serialize_py_nodes: If `True`, `local_mt` & `test_mt` will fail if the nodes
       are not serializable. This can be useful to debug xmanager experiments in
       tests or locally. If `False`, the nodes won't be serialized. If `None`
