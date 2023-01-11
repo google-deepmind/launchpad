@@ -42,6 +42,15 @@ _HAS_MAIN_MANAGER = False
 _SIGNAL_HANDLERS = None
 
 
+def _log_and_print_with_color(severity: int, message: str, *args) -> None:
+  logging.log(severity, message, *args)
+  if severity >= logging.ERROR:
+    color = 'red'
+  else:
+    color = 'blue'
+  print(termcolor.colored(message % args, color))
+
+
 def get_worker_manager():
   manager = getattr(_WORKER_MANAGERS, 'manager', None)
   if not manager:
@@ -285,11 +294,11 @@ class WorkerManager:
 
   def _stop_by_user(self):
     """Handles stopping of the runtime by a user."""
-    print(
-        termcolor.colored(
-            'User-requested termination. Asking workers to stop.', 'blue'))
+    _log_and_print_with_color(
+        logging.WARNING, 'User-requested termination. Asking workers to stop.')
     if self._termination_notice_secs > 0:
-      print(termcolor.colored('Press CTRL+C to terminate immediately.', 'blue'))
+      _log_and_print_with_color(logging.INFO,
+                                'Press CTRL+C to terminate immediately.')
     if self._termination_notice_secs >= 0:
       signal.signal(signal.SIGINT, lambda sig, frame: self._kill())
     self._stop()
@@ -308,7 +317,7 @@ class WorkerManager:
 
   def _kill(self):
     """Kills all workers (and main thread/process if needed)."""
-    print(termcolor.colored('\nKilling entire runtime.', 'blue'))
+    _log_and_print_with_color(logging.ERROR, 'Killing entire runtime.')
     kill_self = self._kill_main_thread
     for workers in self._active_workers.values():
       for worker in workers:
@@ -329,17 +338,15 @@ class WorkerManager:
             label for label in self._active_workers
             if self._active_workers[label]
         ]
-        print(
-            termcolor.colored(
-                f'Worker groups that did not terminate in time: {still_running}',
-                'red'))
+        _log_and_print_with_color(
+            logging.ERROR, 'Worker groups that did not terminate in time: %s',
+            still_running)
       self._kill()
       return
     if pending_secs >= 0:
-      print(
-          termcolor.colored(f'Waiting for workers to stop for {pending_secs}s.',
-                            'blue'),
-          end='\r')
+      _log_and_print_with_color(logging.INFO,
+                                'Waiting for workers to stop for %ds.',
+                                pending_secs)
     self._stop_counter += 1
     # Notify ThreadWorkers which registered for notifications.
     _signal_dispatcher(signal.SIGUSR1)
@@ -476,8 +483,9 @@ class WorkerManager:
               except BaseException as e:  
                 if not self._first_failure and not self._stop_counter:
                   self._first_failure = e
-                  print(f'Node {worker} crashed:')
-                  traceback.print_exc()
+                  _log_and_print_with_color(logging.ERROR,
+                                            'Node %s crashed: %s', worker,
+                                            traceback.format_exc())
             active = False
         elif isinstance(worker, subprocess.Popen):
           try:
