@@ -33,6 +33,7 @@ from absl import logging
 import cloudpickle
 
 from launchpad import address as lp_address
+from launchpad.launch import serialization
 from launchpad.nodes.python import node as python
 
 HandleType = Any
@@ -109,6 +110,7 @@ class MultiProcessingColocation(python.PyNode):
   def _run_subprocess(self, function):
     _, data_file_path = tempfile.mkstemp()
     with open(data_file_path, 'wb') as f:
+      serialization.enable_lru_cache_pickling_once()
       cloudpickle.dump([function], f)
       atexit.register(os.remove, data_file_path)
     subprocess_env = {}
