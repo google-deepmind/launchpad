@@ -37,10 +37,13 @@ import tree
 
 FLAGS = flags.FLAGS
 
+
+
 T = TypeVar('T')
 HandleType = TypeVar('HandleType', bound=base.Handle)
 ReturnType = TypeVar('ReturnType')
 WorkerType = TypeVar('WorkerType')
+
 
 
 class _DummyHandle(base.Handle[Any]):
@@ -64,7 +67,7 @@ class PyNode(base.Node[HandleType], Generic[HandleType, ReturnType]):
     self.py_node_id = next(PyNode.NEXT_PY_NODE_ID)
 
     # Find input handles and put them in self._input_handles.
-    tree.map_structure(
+    tree.traverse(
         functools.partial(base.extract_handles, handles=self._input_handles),
         (self._func_args, self._func_kwargs))
 
