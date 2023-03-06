@@ -27,6 +27,7 @@ namespace courier {
 
 using SafePyObjectPtr = courier::PyObjectPtr;
 
+// May clobber `*buffer` even if serialization fails.
 absl::Status SerializePyObject(PyObject* object, SerializedObject* buffer);
 
 absl::StatusOr<SerializedObject> SerializePyObject(PyObject* object);
