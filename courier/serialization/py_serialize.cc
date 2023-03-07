@@ -91,7 +91,8 @@ inline State& GetState() {
 }
 
 absl::StatusOr<PyObject*> ImportClass(const std::string& module,
-                                      const std::string& name) {
+                                      const std::string& name,
+                                      bool ignore_cache) {
   if (module.empty()) {
     return absl::InvalidArgumentError("Module cannot be empty.");
   }
@@ -106,9 +107,10 @@ absl::StatusOr<PyObject*> ImportClass(const std::string& module,
   absl::MutexLock lock(&state.mu);
   PyEval_RestoreThread(gil_releaser);  // Reacquires the GIL.
   std::string full_name = absl::StrCat(module, ".", name);
-  auto it = state.cache.find(full_name);
-  if (it != state.cache.end()) {
-    return it->second;
+  if (!ignore_cache) {
+    if (auto it = state.cache.find(full_name); it != state.cache.end()) {
+      return it->second;
+    }
   }
 
   SafePyObjectPtr py_module(PyImport_ImportModule(module.data()));
@@ -125,7 +127,7 @@ absl::StatusOr<PyObject*> ImportClass(const std::string& module,
     return absl::InvalidArgumentError(
         absl::StrCat("Failed to import class: ", module, ".", name));
   }
-  state.cache.emplace(full_name, py_class);
+  state.cache[full_name] = py_class;
   return py_class;
 }
 
@@ -150,14 +152,25 @@ absl::Status PyClassModuleAndName(PyObject* py_class, std::string* class_module,
       PythonUtils::CPPString_FromPyString(py_name.get(), class_name));
 
   // Verify that class is importable.
-  COURIER_ASSIGN_OR_RETURN(PyObject * py_class_imported,
-                           ImportClass(*class_module, *class_name));
-  if (py_class_imported != py_class) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("Class ", *class_name, " from module ", *class_module,
-                     " is not importable."));
+  COURIER_ASSIGN_OR_RETURN(
+      PyObject * py_class_imported,
+      ImportClass(*class_module, *class_name, /*ignore_cache=*/false));
+  if (py_class_imported == py_class) {
+    return absl::OkStatus();
   }
-  return absl::OkStatus();
+  // If `py_class` differs from the one from import, that may be because the
+  // import hit the module cache, while the module has actually been reloaded.
+  // To ensure this doesn't block serialization, we try bypassing the cache,
+  // which causes it to be overwritten in case of success.
+  COURIER_ASSIGN_OR_RETURN(
+      PyObject * py_class_reimported,
+      ImportClass(*class_module, *class_name, /*ignore_cache=*/true));
+  if (py_class_reimported == py_class) {
+    return absl::OkStatus();
+  }
+  return absl::InvalidArgumentError(absl::StrCat("Class ", *class_name,
+                                                 " from module ", *class_module,
+                                                 " is not importable."));
 }
 
 bool PyClassModuleStartsWith(PyObject* object, const std::string& cmp) {
@@ -267,8 +280,9 @@ absl::StatusOr<PyArrayObject*> DeserializeObjectArray(
 //   return bfloat16.dtype.num
 //
 absl::StatusOr<int> GetJaxBfloat16NumpyType() {
-  COURIER_ASSIGN_OR_RETURN(PyObject * bfloat16_obj,
-                           ImportClass("jax.numpy", "bfloat16"));
+  COURIER_ASSIGN_OR_RETURN(
+      PyObject * bfloat16_obj,
+      ImportClass("jax.numpy", "bfloat16", /*ignore_cache=*/false));
   SafePyObjectPtr dtype(
       PyObject_GetAttrString(bfloat16_obj, const_cast<char*>("dtype")));
   COURIER_RET_CHECK(dtype);
@@ -655,7 +669,8 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
     case SerializedObject::kTypeValue: {
       COURIER_ASSIGN_OR_RETURN(PyObject * py_class,
                                ImportClass(buffer.type_value().module(),
-                                           buffer.type_value().name()));
+                                           buffer.type_value().name(),
+                                           /*ignore_cache=*/false));
       // The caller of this function assumes ownership of the PyObject*. So we
       // need to increment the reference of the cached object.
       Py_INCREF(py_class);
@@ -665,7 +680,8 @@ absl::StatusOr<PyObject*> DeserializePyObjectUnsafe(
       COURIER_ASSIGN_OR_RETURN(
           PyObject * py_class,
           ImportClass(buffer.reduced_object_value().class_module(),
-                      buffer.reduced_object_value().class_name()));
+                      buffer.reduced_object_value().class_name(),
+                      /*ignore_cache=*/false));
 
       // Deserialize args.
       COURIER_ASSIGN_OR_RETURN(
