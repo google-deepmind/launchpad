@@ -114,10 +114,12 @@ void Client::cq_polling() {
   }
 }
 
-Client::Client(absl::string_view server_address)
+Client::Client(absl::string_view server_address,
+               std::optional<absl::string_view> load_balancing_policy)
     :
       cq_thread_(&Client::cq_polling, this),
-      server_address_(server_address) {
+      server_address_(server_address),
+      load_balancing_policy_(load_balancing_policy) {
   ClientCreation();
 }
 
@@ -208,6 +210,9 @@ absl::Status Client::TryInit(CallContext* context) {
   channel_args.SetInt(GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH, -1);
   channel_args.SetInt(GRPC_ARG_MAX_SEND_MESSAGE_LENGTH, -1);
   channel_args.SetInt(GRPC_ARG_MAX_METADATA_SIZE, 16 * 1024 * 1024);
+  if (load_balancing_policy_.has_value()) {
+    channel_args.SetLoadBalancingPolicyName(*load_balancing_policy_);
+  }
 
 
   channel_ =

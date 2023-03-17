@@ -115,7 +115,7 @@ PYBIND11_MODULE(py_client, m) {
       .def("Cancel", &PyClientCallCanceller::Cancel);
 
   py::class_<PyClient, std::shared_ptr<PyClient>>(m, "PyClient")
-      .def(py::init<const std::string&>())
+      .def(py::init<const std::string&, const std::optional<std::string>&>())
       .def("PyCall", &PyClient::PyCall)
       .def("AsyncPyCall", &PyClient::AsyncPyCall)
       .def("ListMethods", &PyClient::ListMethods,

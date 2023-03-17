@@ -134,6 +134,8 @@ class Client:
       call_timeout: Optional[Union[int, float, datetime.timedelta]] = None,
       wait_for_ready: bool = True,
       chunk_tensors: bool = False,
+      *,
+      load_balancing_policy: Optional[str] = None,
   ):
     """Initiates a new client that will connect to a server.
 
@@ -145,12 +147,14 @@ class Client:
       call_timeout: If set, uses a timeout for all calls.
       wait_for_ready: Sets `wait_for_ready` on the gRPC::ClientContext. This
         specifies whether to wait for a server to come online.
-      chunk_tensors: Unsupported feature.
+      load_balancing_policy: gRPC load balancing policy. Use 'round_robin' to
+        spread the load across all backends. More details at:
+        https://github.com/grpc/grpc/blob/master/doc/load-balancing.md
     """
     self._init_args = (server_address, compress, call_timeout, wait_for_ready)
     self._address = str(server_address)
     self._compress = compress
-    self._client = py_client.PyClient(self._address)
+    self._client = py_client.PyClient(self._address, load_balancing_policy)
     self._call_timeout = call_timeout if call_timeout else datetime.timedelta(0)
     if not isinstance(self._call_timeout, datetime.timedelta):
       self._call_timeout = datetime.timedelta(seconds=self._call_timeout)

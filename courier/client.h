@@ -49,7 +49,9 @@ namespace courier {
 class Client {
  public:
   // Creates a new Client that will connect to a Server.
-  explicit Client(absl::string_view server_address);
+  explicit Client(
+      absl::string_view server_address,
+      std::optional<absl::string_view> load_balancing_policy = std::nullopt);
 
   ~Client();
 
@@ -116,6 +118,7 @@ class Client {
 
   // Stored for logging.
   const std::string server_address_;
+  const std::optional<std::string> load_balancing_policy_;
 
   // The RPC client channel and stub.
   std::shared_ptr<grpc::ChannelInterface> channel_;
