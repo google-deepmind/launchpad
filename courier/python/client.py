@@ -90,10 +90,14 @@ class _AsyncClient:
           # Call could have been already canceled by the user.
           pass
 
+      if self._call_timeout:
+        deadline = datetime.datetime.now() + self._call_timeout
+      else:
+        deadline = datetime.datetime.max
       canceller = self._client.AsyncPyCall(method, list(args), kwargs,
                                            set_result, set_exception,
                                            self._wait_for_ready,
-                                           self._call_timeout, self._compress,
+                                           deadline, self._compress,
                                            self._chunk_tensors)
 
       def done_callback(f):
@@ -180,10 +184,22 @@ class Client:
     return self._async_client
 
   def _build_handler(self, method: str):
+    """Build a callable handler for a given method.
+
+    Args:
+      method: Name of the method to build.
+
+    Returns:
+      Handler for the method.
+    """
     @exception_handler
     def func(*args, **kwargs):
+      if self._call_timeout:
+        deadline = datetime.datetime.now() + self._call_timeout
+      else:
+        deadline = datetime.datetime.max
       return self._client.PyCall(method, list(args), kwargs,
-                                 self._wait_for_ready, self._call_timeout,
+                                 self._wait_for_ready, deadline,
                                  self._compress, self._chunk_tensors)
 
     return func

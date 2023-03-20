@@ -29,7 +29,7 @@ class CallContext {
   // `timeout` and `wait_for_ready` are used to set the respective attributes on
   // the `grpc::ClientContext` context. If `interruptible` is set, registers
   // interrupt signal handler to initiate cancellation on CTRL-C.
-  explicit CallContext(absl::Duration timeout = absl::ZeroDuration(),
+  explicit CallContext(absl::Time deadline = absl::InfiniteFuture(),
                        bool wait_for_ready = true, bool compress = false,
                        bool interruptible = false, bool chunk_tensors = false);
 

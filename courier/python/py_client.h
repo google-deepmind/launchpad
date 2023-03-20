@@ -58,23 +58,22 @@ class PyClient : public Client {
 
   // Calls a method on the server with a list of arguments.
   // The result from calling the method will be returned as a Python object.
-  // A non-zero `timeout` will be used as the timeout for the RPC call.
   absl::StatusOr<pybind11::object> PyCall(const std::string& method,
                                           const pybind11::list& args,
                                           const pybind11::dict& kwargs,
                                           bool wait_for_ready,
-                                          absl::Duration timeout, bool compress,
+                                          absl::Time deadline,
+                                          bool compress,
                                           bool chunk_tensors);
 
   // Asynchronous variant of PyCall.
-  // A non-zero `timeout` will be used as the timeout for the RPC call.
   // Returns a function to cancel the call. Calling this function after the call
   // has finished is legal and results in a no-op.
   absl::StatusOr<PyClientCallCanceller> AsyncPyCall(
       const std::string& method, const pybind11::list& args,
       const pybind11::dict& kwargs, PyObjectCallback result_cb,
       PyObjectCallback exception_cb, bool wait_for_ready,
-      absl::Duration timeout, bool compress, bool chunk_tensors);
+      absl::Time deadline, bool compress, bool chunk_tensors);
 };
 
 }  // namespace courier

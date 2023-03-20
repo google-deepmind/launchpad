@@ -20,7 +20,7 @@ import pickle
 import threading
 import time
 from absl.testing import absltest
-
+from absl.testing import parameterized
 from courier.python import client  # pytype: disable=import-error
 from courier.python import py_server  # pytype: disable=import-error
 
@@ -36,7 +36,13 @@ class _A:
     return a + b
 
 
-class PyIntegrationTest(absltest.TestCase):
+class PyIntegrationTest(parameterized.TestCase):
+
+  def _call_sleep(self, duration, use_async):
+    if use_async:
+      self._client.futures.sleep(duration).result()
+    else:
+      self._client.sleep(duration)
 
   def setUp(self):
     super(PyIntegrationTest, self).setUp()
@@ -51,7 +57,7 @@ class PyIntegrationTest(absltest.TestCase):
       raise ValueError('Exception method called')
 
     self._server.Bind('exception_method', _exception_method)
-    self._server.Bind('slow_method', lambda: time.sleep(5))
+    self._server.Bind('sleep', time.sleep)
     self._server.Bind('rebind', lambda: 1234)
     self._server.Bind('bytes_value', lambda: b'1234')
     self._server.Bind('unicode_value', lambda: u'1234')
@@ -110,7 +116,7 @@ class PyIntegrationTest(absltest.TestCase):
     self.assertEqual(future.result(), 123)
 
   def testAsyncFutureCancel(self):
-    future = self._client.futures.slow_method()
+    future = self._client.futures.sleep(2)
     self.assertTrue(future.cancel())
     try:
       future.result()
@@ -134,7 +140,7 @@ class PyIntegrationTest(absltest.TestCase):
             'lambda_add',
             'add_default',
             'exception_method',
-            'slow_method',
+            'sleep',
             'method_add',
             'rebind',
             'bytes_value',
@@ -164,13 +170,43 @@ class PyIntegrationTest(absltest.TestCase):
     self.assertEqual(f.result(), 1000)
     my_server.Stop()
 
-  def testClientTimeout(self):
-    my_client = client.Client(
-        '[::]:12345', call_timeout=datetime.timedelta(seconds=1))
+  @parameterized.named_parameters(('async', True), ('sync', False))
+  def testNoErrorWhenDurationLessThanTimeout(self, use_async: bool):
+    self._client = client.Client(
+        self._server.address, call_timeout=datetime.timedelta(seconds=3)
+    )
+    self._call_sleep(duration=2, use_async=use_async)
+
+  @parameterized.named_parameters(('async', True), ('sync', False))
+  def testErrorDeadlineExceededWhenDurationGreaterThanTimeout(
+      self, use_async: bool
+  ):
+    self._client = client.Client(
+        self._server.address, call_timeout=datetime.timedelta(seconds=1)
+    )
     with self.assertRaisesRegex(StatusNotOk, 'Deadline Exceeded'):
-      my_client.WillTimeout()
+      self._call_sleep(duration=2, use_async=use_async)
+
+  @parameterized.named_parameters(('async', True), ('sync', False))
+  def testErrorDeadlineExceededWhenUnknownServerAddress(self, use_async: bool):
+    self._client = client.Client(
+        '[::]:12345', call_timeout=datetime.timedelta(seconds=1)
+    )
     with self.assertRaisesRegex(StatusNotOk, 'Deadline Exceeded'):
-      my_client.futures.WillTimeout().result()
+      self._call_sleep(duration=0, use_async=use_async)
+
+  @parameterized.named_parameters(('async', True), ('sync', False))
+  def testErrorNotFoundWhenMethodDoesNotExist(self, use_async: bool):
+    self._client = client.Client(
+        self._server.address, call_timeout=datetime.timedelta(seconds=1)
+    )
+    with self.assertRaisesRegex(
+        StatusNotOk, 'method nonexistent_method not found'
+    ):
+      if use_async:
+        self._client.futures.nonexistent_method().result()
+      else:
+        self._client.nonexistent_method()
 
 
   def testWaitForReady(self):

@@ -21,10 +21,9 @@
 
 namespace courier {
 
-CallContext::CallContext(absl::Duration timeout, bool wait_for_ready,
+CallContext::CallContext(absl::Time deadline, bool wait_for_ready,
                          bool compress, bool interruptible, bool chunk_tensors)
-    : deadline_(timeout == absl::ZeroDuration() ? absl::InfiniteFuture()
-                                                : absl::Now() + timeout),
+    : deadline_(deadline),
       wait_for_ready_(wait_for_ready),
       compress_(compress),
       chunk_tensors_(chunk_tensors),
