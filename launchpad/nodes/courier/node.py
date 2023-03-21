@@ -125,10 +125,12 @@ class CourierNode(Generic[WorkerType], python.PyClassNode[CourierHandle,
   def run(self) -> None:
     """Creates the worker instance and executes the user-provided function."""
     instance = self._construct_instance()
-    self._server = courier_utils.make_courier_server(
-        instance,
-        port=lp_address.get_port_from_address(self._address.resolve()),
-        **self._courier_kwargs)
+    courier_kwargs = dict(**self._courier_kwargs)
+    if 'port' not in courier_kwargs:
+      courier_kwargs['port'] = lp_address.get_port_from_address(
+          self._address.resolve()
+      )
+    self._server = courier_utils.make_courier_server(instance, **courier_kwargs)
     if hasattr(instance, 'set_courier_server'):
       # Transfer the ownership of the server to the instance, so that the user
       # can decide when to start and stop the courier server.
