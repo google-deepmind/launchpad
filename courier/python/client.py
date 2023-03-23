@@ -26,10 +26,13 @@ result = client.my_function(4, 7)  # 11, evaluated on the server.
 from concurrent import futures
 import datetime
 from typing import List, Optional, Union
+import zoneinfo
 
 from courier.python import py_client
 # Numpy import needed for proper operation of ../serialization/py_serialize.cc
 import numpy  
+
+
 from pybind11_abseil.status import StatusNotOk as StatusThrown  # pytype: disable=import-error
 from pybind11_abseil.status import StatusNotOk  # pytype: disable=import-error
 
@@ -54,6 +57,28 @@ def exception_handler(func):
   return inner_function
 
 
+def _calculate_deadline(
+    timeout: datetime.timedelta | None, propagate_deadline: bool
+) -> datetime.datetime:
+  """Calculate the out-bound deadline from timeout and existing deadline.
+
+  Args:
+    timeout: Timeout to apply to all calls. If set to None or a zero-length
+      timedelta then no timeout is applied.
+    propagate_deadline: Unsupported feature.
+
+  Returns:
+    Returns the sooner of (now + timeout) and the existing deadline.
+  """
+  deadline = datetime.datetime.max.replace(tzinfo=zoneinfo.ZoneInfo('UTC'))
+  if timeout:
+    deadline_timeout = (
+        datetime.datetime.now(tz=zoneinfo.ZoneInfo('UTC')) + timeout
+    )
+    deadline = min(deadline, deadline_timeout)
+  return deadline
+
+
 class _AsyncClient:
   """Asynchronous client."""
 
@@ -61,15 +86,17 @@ class _AsyncClient:
       self,
       client: 'Client',
       wait_for_ready: bool,
-      call_timeout: datetime.timedelta,
+      call_timeout: datetime.timedelta | None,
       compress: bool,
       chunk_tensors: bool,
+      propagate_deadline: bool = False,
   ):
     self._client = client
     self._wait_for_ready = wait_for_ready
     self._call_timeout = call_timeout
     self._compress = compress
     self._chunk_tensors = chunk_tensors
+    self._propagate_deadline = propagate_deadline
 
   def _build_handler(self, method: str):
     """Build a future handler for a given method."""
@@ -90,15 +117,21 @@ class _AsyncClient:
           # Call could have been already canceled by the user.
           pass
 
-      if self._call_timeout:
-        deadline = datetime.datetime.now() + self._call_timeout
-      else:
-        deadline = datetime.datetime.max
-      canceller = self._client.AsyncPyCall(method, list(args), kwargs,
-                                           set_result, set_exception,
-                                           self._wait_for_ready,
-                                           deadline, self._compress,
-                                           self._chunk_tensors)
+      deadline = _calculate_deadline(
+          self._call_timeout, self._propagate_deadline
+      )
+
+      canceller = self._client.AsyncPyCall(
+          method,
+          list(args),
+          kwargs,
+          set_result,
+          set_exception,
+          self._wait_for_ready,
+          deadline,
+          self._compress,
+          self._chunk_tensors,
+      )
 
       def done_callback(f):
         if f.cancelled():
@@ -140,6 +173,7 @@ class Client:
       chunk_tensors: bool = False,
       *,
       load_balancing_policy: Optional[str] = None,
+      propagate_deadline: bool = False,
   ):
     """Initiates a new client that will connect to a server.
 
@@ -148,25 +182,33 @@ class Client:
         "/" or "localhost" then it will be interpreted as a custom BNS
         registered server_name (constructor passed to Server).
       compress: Whether to use compression.
-      call_timeout: If set, uses a timeout for all calls.
+      call_timeout: Sets a timeout to apply to all calls. If None or 0 then
+        no timeout is applied.
       wait_for_ready: Sets `wait_for_ready` on the gRPC::ClientContext. This
         specifies whether to wait for a server to come online.
+      chunk_tensors: Unsupported feature.
       load_balancing_policy: gRPC load balancing policy. Use 'round_robin' to
         spread the load across all backends. More details at:
         https://github.com/grpc/grpc/blob/master/doc/load-balancing.md
+      propagate_deadline: Unsupported feature.
     """
     self._init_args = (server_address, compress, call_timeout, wait_for_ready)
     self._address = str(server_address)
     self._compress = compress
     self._client = py_client.PyClient(self._address, load_balancing_policy)
-    self._call_timeout = call_timeout if call_timeout else datetime.timedelta(0)
-    if not isinstance(self._call_timeout, datetime.timedelta):
-      self._call_timeout = datetime.timedelta(seconds=self._call_timeout)
+    if call_timeout:
+      if isinstance(call_timeout, datetime.timedelta):
+        self._call_timeout = call_timeout
+      else:
+        self._call_timeout = datetime.timedelta(seconds=call_timeout)
+    else:
+      self._call_timeout = None
     self._wait_for_ready = wait_for_ready
     self._chunk_tensors = chunk_tensors
     self._async_client = _AsyncClient(self._client, self._wait_for_ready,
                                       self._call_timeout, self._compress,
-                                      self._chunk_tensors)
+                                      self._chunk_tensors, propagate_deadline)
+    self._propagate_deadline = propagate_deadline
 
   def __del__(self):
     self._client.Shutdown()
@@ -194,13 +236,19 @@ class Client:
     """
     @exception_handler
     def func(*args, **kwargs):
-      if self._call_timeout:
-        deadline = datetime.datetime.now() + self._call_timeout
-      else:
-        deadline = datetime.datetime.max
-      return self._client.PyCall(method, list(args), kwargs,
-                                 self._wait_for_ready, deadline,
-                                 self._compress, self._chunk_tensors)
+      deadline = _calculate_deadline(
+          self._call_timeout, self._propagate_deadline
+      )
+
+      return self._client.PyCall(
+          method,
+          list(args),
+          kwargs,
+          self._wait_for_ready,
+          deadline,
+          self._compress,
+          self._chunk_tensors,
+      )
 
     return func
 

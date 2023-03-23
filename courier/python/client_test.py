@@ -19,13 +19,18 @@ import datetime
 import pickle
 import threading
 import time
+from typing import Optional, Union
+import zoneinfo
+
 from absl.testing import absltest
 from absl.testing import parameterized
 from courier.python import client  # pytype: disable=import-error
 from courier.python import py_server  # pytype: disable=import-error
 
+
 import mock
 import numpy as np
+
 
 from pybind11_abseil.status import StatusNotOk  # pytype: disable=import-error
 
@@ -169,6 +174,28 @@ class PyIntegrationTest(parameterized.TestCase):
     my_server.Start()
     self.assertEqual(f.result(), 1000)
     my_server.Stop()
+
+  @parameterized.named_parameters(
+      ('timeout_none', None),
+      ('timeout_0', 0),
+      ('timeout_timedelta_0', datetime.timedelta(seconds=0)),
+  )
+  def testNoErrorWhenNoTimeoutSpecified(self, timeout):
+    self._client = client.Client(
+        self._server.address, call_timeout=timeout
+    )
+    self._client.sleep(1)
+
+  @parameterized.named_parameters(
+      ('float', 2.0), ('int', 2), ('timedelta', datetime.timedelta(seconds=2))
+  )
+  def testClientInitHandlesDifferentTimeoutTypes(
+      self, timeout: Optional[Union[int, float, datetime.timedelta]]
+  ):
+    self._client = client.Client(self._server.address, call_timeout=timeout)
+    self._client.sleep(1)
+    with self.assertRaisesRegex(StatusNotOk, 'Deadline Exceeded'):
+      self._client.sleep(3)
 
   @parameterized.named_parameters(('async', True), ('sync', False))
   def testNoErrorWhenDurationLessThanTimeout(self, use_async: bool):
