@@ -213,6 +213,9 @@ absl::Status Client::TryInit(CallContext* context) {
   if (load_balancing_policy_.has_value()) {
     channel_args.SetLoadBalancingPolicyName(*load_balancing_policy_);
   }
+  // Enable health checks. Especially useful for round_robin lb policy.
+  channel_args.SetServiceConfigJSON(
+      "{\"healthCheckConfig\": {\"serviceName\": \"\"}}");
 
 
   channel_ =
