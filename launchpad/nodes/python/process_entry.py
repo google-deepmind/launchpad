@@ -16,6 +16,7 @@
 
 
 import contextlib
+import functools
 import json
 import os
 import sys
@@ -49,7 +50,7 @@ flags.DEFINE_string(
 flags.DEFINE_string(
     'init_file', '', 'Pickle file location containing initialization module '
     'executed for each node prior to an entry point')
-flags.DEFINE_string('flags_to_populate', '{}', '')
+flags.DEFINE_string('flags_to_populate', '{}', 'obsolete')
 
 _FLAG_TYPE_MAPPING = {
     str: flags.DEFINE_string,
@@ -61,21 +62,12 @@ _FLAG_TYPE_MAPPING = {
 }
 
 
-def _populate_flags():
-  """Populate flags that cannot be passed directly to this script."""
-  FLAGS(sys.argv, known_only=True)
+def _parse_process_entry_flags(all_argv: list[str]) -> list[str]:
+  """Parse and consume all flags for the entry script; return the rest."""
+  # unconsumed_argv will still include all_argv[0], which is expected to be
+  # the program name and is ignored by flag parsing.
+  unconsumed_argv = FLAGS(all_argv, known_only=True)
 
-  flags_to_populate = json.loads(FLAGS.flags_to_populate)
-  for name, value in flags_to_populate.items():
-    value_type = type(value)
-    if value_type in _FLAG_TYPE_MAPPING:
-      flag_ctr = _FLAG_TYPE_MAPPING[value_type]
-      logging.info('Defining flag %s with default value %s', name, value)
-      flag_ctr(
-          name,
-          value,
-          'This flag has been auto-generated.',
-          allow_override=True)
 
   # JAX doesn't use absl flags and so we need to forward absl flags to JAX
   # explicitly. Here's a heuristic to detect JAX flags and forward them.
@@ -88,6 +80,8 @@ def _populate_flags():
     except ImportError:
       pass
 
+  return unconsumed_argv
+
 
 def _get_task_id():
   """Returns current task's id."""
@@ -99,7 +93,12 @@ def _get_task_id():
   return FLAGS.lp_task_id
 
 
-def main(_):
+def main(argv: list[str], process_argv: list[str]):
+  # See `parse_flags_and_run()` for why arguments are passed in `process_argv`
+  # instead.
+  assert len(argv) == 1
+  del argv
+
   # Allow for importing modules from the current directory.
   sys.path.append(os.getcwd())
   data_file = FLAGS.data_file
@@ -113,6 +112,15 @@ def main(_):
     init_function = cloudpickle.load(open(init_file, 'rb'))
     init_function()
   functions = cloudpickle.load(open(data_file, 'rb'))
+
+  # Now that the code that we intend to run has been unpickled, that should
+  # have caused the registration of any remaining flags that the program needs.
+  [unused_program_name, *unconsumed_argv] = FLAGS(process_argv, known_only=True)
+  if unconsumed_argv:
+    logging.warning('The following command-line arguments were passed to the '
+                    'program but are not used by anything that it imports: %s',
+                    unconsumed_argv)
+
   task_id = _get_task_id()
 
   if lp_flags.LP_WORKER_MANAGER_V2.value:
@@ -129,6 +137,13 @@ def main(_):
     functions[task_id]()
 
 
+def parse_flags_and_run():
+  # Parse flags for this module and the things it has already imported.
+  # Pass whatever flags are left over to main() through a side channel, so that
+  # app.run() doesn't try to parse them before we have set the scene.
+  [program_name, *process_argv] = _parse_process_entry_flags(sys.argv)
+  app.run(functools.partial(main, process_argv=[program_name, *process_argv]),
+          argv=[program_name])
+
 if __name__ == '__main__':
-  _populate_flags()
-  app.run(main)
+  parse_flags_and_run()
