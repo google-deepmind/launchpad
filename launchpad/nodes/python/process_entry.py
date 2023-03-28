@@ -79,16 +79,14 @@ def _populate_flags():
 
   # JAX doesn't use absl flags and so we need to forward absl flags to JAX
   # explicitly. Here's a heuristic to detect JAX flags and forward them.
-  for arg in sys.argv:
-    if arg.startswith('--jax_'):
-      try:
-        # pytype:disable=import-error
-        import jax  
-        # pytype:enable=import-error
-        jax.config.parse_flags_with_absl()
-        break
-      except ImportError:
-        pass
+  if any(arg.startswith('--jax_') for arg in sys.argv):
+    try:
+      # pytype:disable=import-error
+      import jax  
+      # pytype:enable=import-error
+      jax.config.parse_flags_with_absl()
+    except ImportError:
+      pass
 
 
 def _get_task_id():
