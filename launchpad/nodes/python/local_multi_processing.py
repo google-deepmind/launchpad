@@ -28,7 +28,6 @@ from absl import logging
 from launchpad import flags as lp_flags  
 from launchpad.launch import serialization
 from launchpad.launch.local_multi_processing import commands as mp_commands
-from launchpad.nodes.python import flags_utils
 import portpicker
 
 _INTERPRETER = sys.executable
@@ -113,14 +112,6 @@ def to_multiprocessing_executables(
     # Arguments to pass to the script
     for key, value in all_args.items():
       command_as_list.append(_to_cmd_arg(key, value))
-
-    # Find flags and pre-populate their definitions, as these definitions are
-    # not yet ready in the entry script.
-    flags_to_populate = flags_utils.get_flags_to_populate(
-        list(all_args.items()))
-    if flags_to_populate:
-      command_as_list.append(
-          _to_cmd_arg('flags_to_populate', json.dumps(flags_to_populate)))
 
     command_as_list.extend([
         '--data_file', data_file_path,
