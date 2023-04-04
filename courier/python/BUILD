@@ -60,6 +60,9 @@ lp_library(
     name = "py_server_no_tf",
     srcs = ["py_server.py"],
     srcs_version = "PY3",
+    tags = [
+        "ignore_for_dep=third_party.py.tensorflow.compat.v1",
+    ],
     deps = [
         ":router",
         ":server",
