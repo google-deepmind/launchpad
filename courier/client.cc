@@ -123,6 +123,7 @@ Client::Client(absl::string_view server_address,
   ClientCreation();
 }
 
+
 Client::~Client() { Shutdown(); }
 
 void Client::Shutdown() {
@@ -220,6 +221,8 @@ absl::Status Client::TryInit(CallContext* context) {
 
   channel_ =
       CreateCustomGrpcChannel(address, MakeChannelCredentials(), channel_args);
+
+
   stub_ = /* grpc_gen:: */CourierService::NewStub(channel_);
 
   return absl::OkStatus();

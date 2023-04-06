@@ -72,6 +72,7 @@ class Server {
   // Constructs Courier server.
   static absl::StatusOr<std::unique_ptr<Server>> BuildAndStart(
       Router* router, int port, int thread_pool_size = 16);
+
 };
 
 }  // namespace courier

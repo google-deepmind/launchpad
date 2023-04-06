@@ -53,6 +53,7 @@ class Client {
       absl::string_view server_address,
       std::optional<absl::string_view> load_balancing_policy = std::nullopt);
 
+
   ~Client();
 
   // Calls a method on the server. The caller retains ownership of `context`.
@@ -112,6 +113,7 @@ class Client {
   grpc::CompletionQueue cq_;
   std::thread cq_thread_;
   bool shutdown_ = false;
+
 
   // Ensures initialization is only done once.
   absl::Mutex init_mu_;

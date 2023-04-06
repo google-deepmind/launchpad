@@ -17,6 +17,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 
+#include "courier/router.h"
 #include "pybind11_abseil/absl_casters.h"
 #include "pybind11_abseil/status_casters.h"
 
@@ -35,7 +36,9 @@ struct unique_ptr_nogil_deleter {
 
 PYBIND11_MODULE(server, m) {
   py::google::ImportStatusModule();
-  m.def("BuildAndStart", &Server::BuildAndStart, py::return_value_policy::move);
+  m.def("BuildAndStart",
+        py::overload_cast<Router *, int, int>(&Server::BuildAndStart),
+        py::return_value_policy::move);
 
   py::class_<Server, std::unique_ptr<Server, unique_ptr_nogil_deleter<Server>>>(
       m, "Server")

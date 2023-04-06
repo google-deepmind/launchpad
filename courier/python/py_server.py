@@ -89,8 +89,10 @@ class Server:
       raise ValueError('Server already started')
 
 
-    self._server = server.BuildAndStart(self._router, self._port,
-                                        self._thread_pool_size)
+
+    if not self._server:
+      self._server = server.BuildAndStart(self._router, self._port,
+                                          self._thread_pool_size)
 
   def Stop(self):
     """Stops the Courier server."""

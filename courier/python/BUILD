@@ -19,6 +19,7 @@ lp_pybind_extension(
     name = "server",
     srcs = ["server.cc"],
     deps = [
+        "//courier:router",
         "//courier:server",
         "@pybind11",
         "@pybind11_abseil//pybind11_abseil:absl_casters",
