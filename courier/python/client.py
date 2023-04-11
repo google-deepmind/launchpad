@@ -173,7 +173,7 @@ class Client:
       chunk_tensors: bool = False,
       *,
       load_balancing_policy: Optional[str] = None,
-      propagate_deadline: bool = False,
+      propagate_deadline: bool = True,
   ):
     """Initiates a new client that will connect to a server.
 
