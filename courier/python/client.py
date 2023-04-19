@@ -58,7 +58,7 @@ def exception_handler(func):
 
 
 def _calculate_deadline(
-    timeout: datetime.timedelta | None, propagate_deadline: bool
+    timeout: Optional[datetime.timedelta], propagate_deadline: bool
 ) -> datetime.datetime:
   """Calculate the out-bound deadline from timeout and existing deadline.
 
@@ -86,7 +86,7 @@ class _AsyncClient:
       self,
       client: 'Client',
       wait_for_ready: bool,
-      call_timeout: datetime.timedelta | None,
+      call_timeout: Optional[datetime.timedelta],
       compress: bool,
       chunk_tensors: bool,
       propagate_deadline: bool = False,
