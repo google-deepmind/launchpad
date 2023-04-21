@@ -193,7 +193,7 @@ absl::Status SerializeAsTensorProto(PyObject* object,
   {
     tensorflow::Tensor tensor;
     tensorflow::Status status = ::deepmind::reverb::pybind::NdArrayToTensor(object, &tensor);
-    if (absl::StartsWith(status.error_message(), "Unsupported object type")) {
+    if (absl::StartsWith(status.message(), "Unsupported object type")) {
       return absl::InvalidArgumentError(
           "Cannot serialize array of objects. NumPy arrays of np.object can "
           "only be serialized if all elements are strings.");
