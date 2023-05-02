@@ -28,7 +28,7 @@ RUN ${APT_COMMAND} update && ${APT_COMMAND} install -y --no-install-recommends \
         libzmq3-dev \
         lsof \
         pkg-config \
-        # python3.7-dev \
+        python3-dev \
         python3.8-dev \
         python3.9-dev \
         python3.10-dev \
