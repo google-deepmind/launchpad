@@ -11,6 +11,9 @@ ARG APT_COMMAND="apt-get -o Acquire::Retries=3 -y"
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/Los_Angeles
 
+RUN rm /etc/apt/sources.list.d/cuda.list
+RUN rm /etc/apt/sources.list.d/nvidia-ml.list
+
 # Pick up some TF dependencies
 RUN ${APT_COMMAND} update && ${APT_COMMAND} install -y --no-install-recommends \
         software-properties-common \
@@ -25,7 +28,7 @@ RUN ${APT_COMMAND} update && ${APT_COMMAND} install -y --no-install-recommends \
         libzmq3-dev \
         lsof \
         pkg-config \
-        python3.7-dev \
+        # python3.7-dev \
         python3.8-dev \
         python3.9-dev \
         python3.10-dev \
