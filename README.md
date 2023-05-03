@@ -118,7 +118,7 @@ container should support. The command below enables support for Python
 3.7, 3.8, 3.9 and 3.10.
 ```
 $ docker build --tag launchpad:devel \
-  --build-arg tensorflow_pip=tensorflow==2.3.0 \
+  --build-arg tensorflow_pip="tensorflow==2.9.*" \
   --build-arg python_version="3.7 3.8 3.9 3.10" - < docker/build.dockerfile
 ```
 
@@ -132,7 +132,7 @@ $ docker run --rm --mount "type=bind,src=$PWD,dst=/tmp/launchpad" \
 At this point you can build and install Launchpad within the container by
 executing:
 ```
-$ /tmp/launchpad/oss_build.sh
+$ /tmp/launchpad/oss_build.sh --tf_package "tensorflow==2.9.*" --reverb_package "dm-reverb==0.7.2"
 ```
 
 By default it builds Python 3.8 version, you can change that with `--python`

@@ -23,7 +23,7 @@ cd "$(dirname "$0")"
 # Flags
 PYTHON_VERSIONS=3.8 # Options 3.7, 3.8, 3.9, 3.10
 CLEAN=false # Set to true to run bazel clean.
-OUTPUT_DIR=/tmp/launchpad/dist/
+OUTPUT_DIR=/tmp/launchpad/dist
 INSTALL=true # Should the built package be installed.
 
 PIP_PKG_EXTRA_ARGS="" # Extra args passed to `build_pip_package`.
