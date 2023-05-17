@@ -1,4 +1,5 @@
 recursive-include * *.py
 recursive-include * requirements.txt
 recursive-include * *.so
+recursive-include * *.dylib
 include launchpad/launch/run_locally/decorate_output

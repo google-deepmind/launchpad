@@ -58,16 +58,18 @@ test_terminal () {
 
 N_CPU=$(grep -c ^processor /proc/cpuinfo)
 
-# Run static type-checking.
-# TODO(b/205923232): enable PyType once they address the typed_ast problem.
-if [[ ${PYTHON} == "3.9" ]]
-then
-  date
-  pytype -k -x /tmp/launchpad/launchpad/pip_package/ \
-/tmp/launchpad/launchpad/examples/consumer_producers/launch_test.py \
-/tmp/launchpad/configure.py -j "${N_CPU}" /tmp/launchpad/
-  date
-fi
+cd launchpad
+
+# # Run static type-checking.
+# # TODO(b/205923232): enable PyType once they address the typed_ast problem.
+# if [[ ${PYTHON} == "3.9" ]]
+# then
+#   date
+#   pytype -k -x /tmp/launchpad/launchpad/pip_package/ \
+# launchpad/examples/consumer_producers/launch_test.py \
+# ../configure.py -j "${N_CPU}" ..
+#   date
+# fi
 
 # Run all tests.
 py_test

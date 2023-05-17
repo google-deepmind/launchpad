@@ -193,7 +193,7 @@ absl::Status SerializeAsTensorProto(PyObject* object,
   {
     tensorflow::Tensor tensor;
     tensorflow::Status status = ::deepmind::reverb::pybind::NdArrayToTensor(object, &tensor);
-    if (absl::StartsWith(status.message(), "Unsupported object type")) {
+    if (absl::StartsWith(status.error_message(), "Unsupported object type")) {
       return absl::InvalidArgumentError(
           "Cannot serialize array of objects. NumPy arrays of np.object can "
           "only be serialized if all elements are strings.");
@@ -248,7 +248,8 @@ absl::StatusOr<PyArrayObject*> DeserializeObjectArray(
     TensorLookup& tensor_lookup) {
   // Allocate the output array.
   auto result = MakeSafePyPtr<PyArrayObject>(PyArray_SimpleNewFromDescr(
-      serialized.shape_size(), const_cast<int64_t*>(serialized.shape().data()),
+      // TODO: issue is shape data is int64 (maybe pointer) but NumyPy wants long pointer (on darwin).
+      serialized.shape_size(), reinterpret_cast<const npy_intp*>(const_cast<int64_t*>(serialized.shape().data())),
       PyArray_DescrFromType(NPY_OBJECT)));
   COURIER_RET_CHECK(result != nullptr);
 

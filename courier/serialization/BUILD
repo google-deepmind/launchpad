@@ -1,12 +1,15 @@
-load("//launchpad:build_defs.bzl", "lp_cc_library", "lp_cc_proto_library", "lp_library", "lp_pybind_extension", "lp_pybind_library")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
 
 licenses(["notice"])
 
 package(default_visibility = ["//visibility:public"])
 
-lp_pybind_extension(
+pybind_extension(
     name = "pybind",
     srcs = ["pybind.cc"],
+    copts = [
+        "-fno-strict-aliasing",
+    ],
     deps = [
         ":batching",
         ":py_serialize",
@@ -17,12 +20,20 @@ lp_pybind_extension(
     ],
 )
 
-lp_cc_proto_library(
-    name = "serialization_cc_proto",
+proto_library(
+    name = "serialization_proto",
     srcs = ["serialization.proto"],
+    deps = [
+        "@local_config_tf//:tensor_proto",
+    ],
 )
 
-lp_cc_library(
+cc_proto_library(
+    name = "serialization_cc_proto",
+    deps = ["serialization_proto"],
+)
+
+cc_library(
     name = "pyobject_ptr",
     hdrs = ["pyobject_ptr.h"],
     deps = [
@@ -30,7 +41,7 @@ lp_cc_library(
     ],
 )
 
-lp_cc_library(
+cc_library(
     name = "py_serialize",
     srcs = ["py_serialize.cc"],
     hdrs = ["py_serialize.h"],
@@ -48,17 +59,18 @@ lp_cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
+        "@local_config_tf//:libtensorflow_framework",
+        "@local_config_tf//:tf_header_lib",
         "@pybind11",  # build_cleaner: keep
-        "@tensorflow_includes//:includes",
-        "@tensorflow_solib//:framework_lib",
     ],
 )
 
-lp_cc_library(
+cc_library(
     name = "batching",
     srcs = ["batching.cc"],
     hdrs = ["batching.h"],
     deps = [
+        # I am concerned that this is causing serialization proto to be registered more than once.
         ":serialization_cc_proto",
         ":tensor_conversion",
         "//courier/platform:status_macros",
@@ -67,24 +79,30 @@ lp_cc_library(
     ],
 )
 
-lp_cc_library(
+cc_library(
     name = "serialize",
-    hdrs = ["serialize.h"],
+    hdrs = [
+        "serialize.h",
+    ],
     deps = [
+        # I am concerned that this is causing serialization proto to be registered more than once.
         ":serialization_cc_proto",
         "//courier/platform:status_macros",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
+        # Apparently I am dependent on this but LaunchPad apparently where not?
+        "@local_config_tf//:tf_header_lib",
     ],
 )
 
-lp_cc_library(
+cc_library(
     name = "tensor_conversion",
     srcs = ["tensor_conversion.cc"],
     hdrs = ["tensor_conversion.h"],
     deps = [
+        # # I am concerned that this is causing serialization proto to be registered more than once.
         ":serialization_cc_proto",
         "//courier/platform:status_macros",
         "//courier/platform/default:status_macros",
@@ -93,16 +111,19 @@ lp_cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/synchronization",
+        # Apparently tensor_conversion is dependent on the TensorFlow header files.
+        "@local_config_tf//:tf_header_lib",
     ],
 )
 
-lp_pybind_library(
+pybind_library(
     name = "pybind_serialize",
     srcs = ["pybind_serialize.cc"],
     hdrs = ["pybind_serialize.h"],
     deps = [
         ":py_serialize",
-        ":serialization_cc_proto",
+        # # I am concerned that this is causing serialization proto to be registered more than once.
+        # ":serialization_cc_proto",
         "//courier/platform:status_macros",
         "@com_google_absl//absl/status",
     ],

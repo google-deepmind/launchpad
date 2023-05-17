@@ -31,7 +31,8 @@ function build_wheel() {
   pushd ${TMPDIR} > /dev/null
 
   echo $(date) : "=== Building wheel"
-  "${PYTHON_BIN_PATH}" setup.py bdist_wheel ${PKG_NAME_FLAG} ${RELEASE_FLAG} --plat manylinux2014_x86_64 > /dev/null
+  # "${PYTHON_BIN_PATH}" setup.py bdist_wheel ${PKG_NAME_FLAG} ${RELEASE_FLAG} --plat manylinux2014_x86_64 > /dev/null
+  "${PYTHON_BIN_PATH}" setup.py bdist_wheel ${PKG_NAME_FLAG} ${RELEASE_FLAG} > /dev/null
   DEST=${TMPDIR}/dist/
   if [[ ! "$TMPDIR" -ef "$DESTDIR" ]]; then
     mkdir -p ${DESTDIR}
@@ -56,10 +57,15 @@ function prepare_src() {
   cp LICENSE ${TMPDIR}
 
   # Copy all Python files, requirements and so libraries.
-  cp --parents `find -name \*.py*` ${TMPDIR}
-  cp --parents `find -name requirements.txt` ${TMPDIR}
+  cd bazel-bin && find . -name "*.py*" -exec rsync -R {} ${TMPDIR} \; && cd ..
+  cd launchpad && find . -name "*.py*" -exec rsync -R {} ${TMPDIR}/launchpad \; && cd ..
+  cd courier && find . -name "*.py*" -exec rsync -R {} ${TMPDIR}/courier \; && cd ..
+  cd reverb && find . -name "*.py*" -exec rsync -R {} ${TMPDIR}/reverb \; && cd ..
+  find . -name requirements.txt -exec cp -f {} ${TMPDIR} \;
   cp launchpad/launch/run_locally/decorate_output ${TMPDIR}/launchpad/launch/run_locally/decorate_output
-  cd bazel-bin/courier && cp --parents `find -type f -name \*.so | grep -v runfiles` ${TMPDIR}/courier && cd ../..
+
+  cd bazel-bin/courier && find . -name "*.so" -exec rsync -R {} ${TMPDIR}/courier \; && cd ../..
+  cd bazel-bin/courier && find . -name "*.dylib" -exec rsync -R {} ${TMPDIR}/courier \; && cd ../..
   mv ${TMPDIR}/courier/serialization/*.so ${TMPDIR}/courier/python/
 
   mv ${TMPDIR}/launchpad/pip_package/setup.py ${TMPDIR}

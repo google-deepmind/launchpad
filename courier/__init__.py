@@ -3,7 +3,8 @@ import pkgutil
 import os
 tf = pkgutil.get_loader("tensorflow")
 if tf:
-  cdll.LoadLibrary(os.path.join(os.path.dirname(tf.path), 'libtensorflow_framework.so.2'))  # pytype:disable=attribute-error
+  # TODO: Fix for Intel
+  cdll.LoadLibrary(os.path.join(os.path.dirname(tf.path), 'libtensorflow_framework.2.dylib'))  # pytype:disable=attribute-error
 del tf
 del cdll
 del pkgutil

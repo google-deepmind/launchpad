@@ -1,5 +1,15 @@
-# gRPC using libcares in opensource has some issues.
-build --define=grpc_no_ares=true
+# Keeping this commented out seems to help with finding symbols!
+# build --copt="-fvisibility=hidden"
+
+build --experimental_cc_shared_library
+build --experimental_cc_implementation_deps
+
+# I thought this would disable envoy admin but apparently not?
+# Enables the admin functionality found in envoy?
+build --define=admin_functionality=enabled
+
+# # gRPC using libcares in opensource has some issues.
+# build --define=grpc_no_ares=true
 
 # Suppress all warning messages.
 build:short_logs --output_filter=DONT_MATCH_ANYTHING
@@ -9,20 +19,24 @@ build --action_env=PYTHON_BIN_PATH=python3
 build --repo_env=PYTHON_BIN_PATH=python3
 build --python_path=python3
 
-build:manylinux2014 --crosstool_top=//third_party/toolchains/preconfig/ubuntu16.04/gcc7_manylinux2014:toolchain
-
 build -c opt
 build --cxxopt="-std=c++17"
 build --host_cxxopt="-std=c++17"
 # We can remove this flag (we keep it explicit for now)
 build --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=1"
 build --host_cxxopt="-D_GLIBCXX_USE_CXX11_ABI=1"
+build --cxxopt=-DNPY_NO_DEPRECATED_API
 build --auto_output_filter=subpackages
-build --copt="-Wall" --copt="-Wno-sign-compare"
-build --linkopt="-lrt -lm"
+build --copt="-Wall" --copt="-Wno-sign-compare" --copt="-Wno-c++11-narrowing"
+# rt not found on MacOS
+# build --linkopt="-lrt"
+build --linkopt="-lm"
 # We build with AVX and eigen byte alignment to match tensorflow's (and Eigen)
 # pip package byte alignment.  See b/186669968 for more details.
-build --copt=-mavx --copt=-DEIGEN_MAX_ALIGN_BYTES=64
+# build --copt=-mavx --copt=-DEIGEN_MAX_ALIGN_BYTES=64
+build --copt=-DEIGEN_MAX_ALIGN_BYTES=64
+
+build --action_env MACOSX_DEPLOYMENT_TARGET=10.14
 
 # TF isn't built in dbg mode, so our dbg builds will segfault due to inconsistency
 # of defines when using tf's headers.  In particular in refcount.h.
@@ -30,3 +44,5 @@ build --cxxopt="-DNDEBUG"
 
 # Options from ./configure
 try-import %workspace%/.launchpad.bazelrc
+
+build --linkopt="-undefined" --linkopt="dynamic_lookup"

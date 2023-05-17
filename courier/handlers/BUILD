@@ -1,10 +1,8 @@
-load("//launchpad:build_defs.bzl", "lp_cc_library")
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-lp_cc_library(
+cc_library(
     name = "interface",
     hdrs = ["interface.h"],
     deps = [
@@ -15,7 +13,7 @@ lp_cc_library(
     ],
 )
 
-lp_cc_library(
+cc_library(
     name = "py_call",
     srcs = ["py_call.cc"],
     hdrs = ["py_call.h"],
@@ -37,7 +35,7 @@ lp_cc_library(
     ],
 )
 
-lp_cc_library(
+cc_library(
     name = "handler_batcher",
     srcs = ["handler_batcher.cc"],
     hdrs = ["handler_batcher.h"],
@@ -48,11 +46,11 @@ lp_cc_library(
         "//courier/serialization:batching",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/synchronization",
-        "@tensorflow_includes//:includes",
+        "@local_config_tf//:tf_header_lib",
     ],
 )
 
-lp_cc_library(
+cc_library(
     name = "helpers",
     srcs = ["helpers.cc"],
     hdrs = ["helpers.h"],

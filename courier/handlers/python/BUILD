@@ -1,12 +1,18 @@
-load("//launchpad:build_defs.bzl", "lp_pybind_extension")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-lp_pybind_extension(
+pybind_extension(
     name = "pybind",
     srcs = ["pybind.cc"],
+    copts = [
+        "-fno-strict-aliasing",
+    ],
+    linkopts = [
+        "-Wl,-install_name,@rpath/pybind.so",
+    ],
     deps = [
         "//courier/handlers:handler_batcher",
         "//courier/handlers:interface",

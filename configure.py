@@ -39,6 +39,8 @@ import argparse
 import os
 import subprocess
 import sys
+import tensorflow as tf
+import platform
 
 _LAUNCHPAD_BAZELRC_FILENAME = '.launchpad.bazelrc'
 _LAUNCHPAD_WORKSPACE_ROOT = ''
@@ -155,6 +157,22 @@ def setup_python(environ_cp):
     python_paths = environ_cp.get('PYTHONPATH').split(':')
     if python_lib_path in python_paths:
       write_action_env_to_bazelrc('PYTHONPATH', environ_cp.get('PYTHONPATH'))
+
+  cflags = tf.sysconfig.get_compile_flags()
+  lflags = tf.sysconfig.get_link_flags()
+
+  tf_header_dir = next(cflag[2:] for cflag in cflags if cflag.startswith('-I'))
+  tf_shared_dir = next(lflag[2:] for lflag in lflags if lflag.startswith('-L'))
+  tf_shared_lib_name = next(lflag[2:] for lflag in lflags if lflag.startswith('-l'))
+  lib_ext = {
+    'Darwin': 'dylib',
+    'Linux': 'so',
+  }[platform.system()]
+  tf_lib_prefix = 'lib' if platform.system() in ('Darwin', 'Linux') else ''
+  
+  write_action_env_to_bazelrc('TF_HEADER_DIR', tf_header_dir)
+  write_action_env_to_bazelrc('TF_SHARED_LIBRARY_DIR', tf_shared_dir)
+  write_action_env_to_bazelrc('TF_SHARED_LIBRARY_NAME', tf_lib_prefix + tf_shared_lib_name + os.path.extsep + lib_ext)
 
   # Write tools/python_bin_path.sh
   with open(

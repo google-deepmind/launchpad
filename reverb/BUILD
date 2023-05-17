@@ -1,12 +1,10 @@
-load("//launchpad:build_defs.bzl", "lp_cc_library")
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
 exports_files(["LICENSE"])
 
-lp_cc_library(
+cc_library(
     name = "conversions",
     srcs = ["conversions.cc"],
     hdrs = ["conversions.h"],
@@ -14,7 +12,9 @@ lp_cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:cord",
-        "@tensorflow_includes//:includes",
-        "@tensorflow_solib//:framework_lib",
+        "@local_config_python//:python_headers",
+        "@local_config_tf//:libtensorflow_framework",
+        "@local_config_tf//:numpy_headers",
+        "@local_config_tf//:tf_header_lib",
     ],
 )
