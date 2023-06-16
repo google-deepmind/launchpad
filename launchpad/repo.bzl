@@ -235,14 +235,14 @@ cc_library(
 
 def _python_includes_repo_impl(repo_ctx):
     python_include_path = _find_python_include_path(repo_ctx)
-    python_solib = _find_python_solib_path(repo_ctx)
+    # python_solib = _find_python_solib_path(repo_ctx)
     repo_ctx.symlink(python_include_path, "python_includes")
     numpy_include_path = _find_numpy_include_path(repo_ctx)
     repo_ctx.symlink(numpy_include_path, "numpy_includes")
-    repo_ctx.symlink(
-        "{}/{}".format(python_solib.dir, python_solib.basename),
-        python_solib.basename,
-    )
+    # repo_ctx.symlink(
+    #     "{}/{}".format(python_solib.dir, python_solib.basename),
+    #     python_solib.basename,
+    # )
 
     repo_ctx.file(
         "BUILD",
@@ -259,7 +259,7 @@ cc_library(
     includes = ["numpy_includes"],
     visibility = ["//visibility:public"],
 )
-""".format(python_solib.basename),
+""",
         executable = False,
     )
 
