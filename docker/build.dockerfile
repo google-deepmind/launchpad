@@ -51,7 +51,7 @@ RUN ${APT_COMMAND} update && ${APT_COMMAND} install -y --no-install-recommends \
 RUN curl -O https://bootstrap.pypa.io/get-pip.py
 
 # Installs known working version of bazel.
-ARG bazel_version=5.3.0
+ARG bazel_version=6.1.0
 ENV BAZEL_VERSION ${bazel_version}
 RUN mkdir /bazel && \
     cd /bazel && \
