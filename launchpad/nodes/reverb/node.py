@@ -73,8 +73,8 @@ class ReverbNode(python.PyNode):
     """Initialize a ReverbNode.
 
     Args:
-      priority_tables_fn: A mapping from table name to function used to
-        compute priorities for said table.
+      priority_tables_fn: A function that returns a sequence of tables to host
+        on the server.
       checkpoint_ctor: Constructor for the checkpointer to be used. Passing None
         uses Reverb's default checkpointer.
       checkpoint_time_delta_minutes: Time between async (non-blocking)
