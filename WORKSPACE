@@ -18,6 +18,7 @@ load(
     "absl_deps",
     "cc_tf_configure",
     "googletest_deps",
+    "github_apple_deps",
     "github_grpc_deps",
     "protoc_deps",
     "python_deps",
@@ -39,6 +40,8 @@ http_archive(
   sha256 = "8f546c03bdd55d0e88cb491ddfbabe5aeb087f87de2fbf441391d70483affe39",
   urls = ["https://github.com/pybind/pybind11_bazel/archive/26973c0ff320cb4b39e45bc3e4297b82bc3a6c09.tar.gz"],
 )
+
+github_apple_deps()
 
 ## Begin GRPC related deps
 github_grpc_deps()

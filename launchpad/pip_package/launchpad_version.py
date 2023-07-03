@@ -38,7 +38,7 @@ __dev_version__ = '{}.{}'.format(__version__, _DEV_SUFFIX)
 __rel_version__ = '{}{}'.format(__version__, _REL_SUFFIX)
 
 __tensorflow_version__ = 'tensorflow~=2.8.0'
-__reverb_version__ = 'dm-reverb==0.7.2'
+__reverb_version__ = 'dm-reverb==0.11.0'
 
 __nightly_tensorflow_version__ = 'tf-nightly'
 __nightly_reverb_version__ = 'dm-reverb-nightly'
