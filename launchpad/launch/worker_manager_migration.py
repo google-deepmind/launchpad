@@ -20,11 +20,11 @@ from launchpad.launch import worker_manager
 from launchpad.launch import worker_manager_v2
 
 
-def wait_for_stop(timeout_secs: Optional[float] = None):
+def wait_for_stop(timeout_secs: Optional[float] = None) -> bool:
   if lp_flags.LP_WORKER_MANAGER_V2.value:
-    worker_manager_v2.wait_for_stop(timeout_secs)
+    return worker_manager_v2.wait_for_stop(timeout_secs)
   else:
-    worker_manager.wait_for_stop(timeout_secs)
+    return worker_manager.wait_for_stop(timeout_secs)
 
 
 def get_worker_manager(
