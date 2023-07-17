@@ -2,7 +2,9 @@ load("//launchpad:build_defs.bzl", "lp_cc_library", "lp_cc_proto_library", "lp_l
 
 licenses(["notice"])
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_visibility = ["//visibility:public"],
+)
 
 lp_pybind_extension(
     name = "pybind",

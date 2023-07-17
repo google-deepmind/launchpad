@@ -2,7 +2,9 @@
 
 load("//launchpad:build_defs.bzl", "lp_cc_library")
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_visibility = ["//visibility:public"],
+)
 
 licenses(["notice"])
 

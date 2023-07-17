@@ -2,7 +2,9 @@ load("//launchpad:build_defs.bzl", "lp_library", "lp_pybind_extension", "lp_test
 
 licenses(["notice"])
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_visibility = ["//visibility:public"],
+)
 
 lp_pybind_extension(
     name = "router",

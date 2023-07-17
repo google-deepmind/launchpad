@@ -1,10 +1,10 @@
 load("//launchpad:build_defs.bzl", "lp_cc_grpc_library", "lp_cc_library", "lp_cc_proto_library")
 
+licenses(["notice"])
+
 package(
     default_visibility = ["//visibility:public"],
 )
-
-licenses(["notice"])
 
 exports_files(["LICENSE"])
 
