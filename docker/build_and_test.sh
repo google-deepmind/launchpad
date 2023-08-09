@@ -17,6 +17,7 @@ set -e
 
 # Flags
 CLEAN=false
+CLEAR_CACHE=false
 RELEASE=false
 PYTHON=3.10
 
@@ -29,6 +30,10 @@ while [[ $# -gt -0 ]]; do
       ;;
       --clean)
       CLEAN="$2"
+      shift
+      ;;
+      --clear_bazel_cache)
+      CLEAR_CACHE="$2"
       shift
       ;;
       --release)
@@ -79,7 +84,7 @@ run_docker docker build --tag launchpad:build \
 
 run_docker docker run --rm ${MOUNT_CMD} \
   launchpad:build /tmp/launchpad/oss_build.sh --python "${PYTHON}" \
-  --clean ${CLEAN} --install false $RELEASE_FLAG
+  --clean ${CLEAN} --clear_bazel_cache ${CLEAR_CACHE} --install false $RELEASE_FLAG
 
 for python_version in $PYTHON; do
 
