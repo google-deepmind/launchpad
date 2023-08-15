@@ -1,3 +1,5 @@
+# Placeholder: load py_proto_library
+# Placeholder: load py_test
 load("//launchpad:build_defs.bzl", "lp_cc_library", "lp_cc_proto_library", "lp_library", "lp_pybind_extension", "lp_pybind_library")
 
 licenses(["notice"])
