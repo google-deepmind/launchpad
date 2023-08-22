@@ -45,7 +45,6 @@ lp_cc_library(
         "//courier/platform:status_macros",
         "//courier/platform/default:py_utils",
         "//reverb:conversions",
-        "//third_party/tensorflow/python/lib/core:bfloat16_lib",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/memory",
