@@ -23,6 +23,8 @@ cd "$(dirname "$0")"
 # Flags
 PYTHON_VERSIONS=3.8 # Options 3.7, 3.8, 3.9, 3.10
 CLEAN=false # Set to true to run bazel clean.
+# Also see https://github.com/deepmind/reverb/commit/4da8a918794b65aff4afd539e89e0ef6c35c3f35
+CLEAR_CACHE=false # Set to true to delete Bazel cache folder. b/279235134
 OUTPUT_DIR=/tmp/launchpad/dist/
 INSTALL=true # Should the built package be installed.
 
@@ -42,6 +44,10 @@ while [[ $# -gt -0 ]]; do
       CLEAN="$2" # `true` to run bazel clean. False otherwise.
       shift
       ;;
+      --clear_bazel_cache)
+      CLEAR_CACHE="$2"
+      shift
+      ;;
       --install)
       INSTALL="$2" # `true` to install built package. False otherwise.
       shift
@@ -56,6 +62,7 @@ while [[ $# -gt -0 ]]; do
       echo "--release [Indicates this is a release build. Otherwise nightly.]"
       echo "--python  [3.7|3.8(default)|3.9]"
       echo "--clean   [true to run bazel clean]"
+      echo "--clear_bazel_cache [true to delete Bazel cache folder]"
       echo "--install [true to install built package]"
       echo "--output_dir  [location to copy .whl file.]"
       exit 1
@@ -68,6 +75,9 @@ for python_version in $PYTHON_VERSIONS; do
 
   # Cleans the environment.
   if [ "$CLEAN" = "true" ]; then
+    if [ "$CLEAR_CACHE" = "true" ]; then
+      rm -rf $HOME/.cache/bazel
+    fi
     bazel clean
   fi
 

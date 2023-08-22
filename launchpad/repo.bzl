@@ -235,14 +235,14 @@ cc_library(
 
 def _python_includes_repo_impl(repo_ctx):
     python_include_path = _find_python_include_path(repo_ctx)
-    python_solib = _find_python_solib_path(repo_ctx)
+    # python_solib = _find_python_solib_path(repo_ctx)
     repo_ctx.symlink(python_include_path, "python_includes")
     numpy_include_path = _find_numpy_include_path(repo_ctx)
     repo_ctx.symlink(numpy_include_path, "numpy_includes")
-    repo_ctx.symlink(
-        "{}/{}".format(python_solib.dir, python_solib.basename),
-        python_solib.basename,
-    )
+    # repo_ctx.symlink(
+    #     "{}/{}".format(python_solib.dir, python_solib.basename),
+    #     python_solib.basename,
+    # )
 
     repo_ctx.file(
         "BUILD",
@@ -259,7 +259,7 @@ cc_library(
     includes = ["numpy_includes"],
     visibility = ["//visibility:public"],
 )
-""".format(python_solib.basename),
+""",
         executable = False,
     )
 
@@ -333,16 +333,10 @@ def github_apple_deps():
 def github_grpc_deps():
     http_archive(
         name = "com_github_grpc_grpc",
-        patch_cmds = [
-            """sed -i.bak 's/"python",/"python3",/g' third_party/py/python_configure.bzl""",
-            """sed -i.bak 's/PYTHONHASHSEED=0/PYTHONHASHSEED=0 python3/g' bazel/cython_library.bzl""",
-        ],
-        sha256 = "39bad059a712c6415b168cb3d922cb0e8c16701b475f047426c81b46577d844b",
-        strip_prefix = "grpc-reverb_fix",
+        strip_prefix = "grpc-1.54.2",
+        sha256 = "3c305f0ca5f98919bc104448f59177e7b936acd5c69c144bf4a548cad723e1e4",
         urls = [
-            # Patched version of GRPC / boringSSL to make it compile with old TF GCC compiler
-            # (see b/244280763 for details).
-            "https://github.com/qstanczyk/grpc/archive/reverb_fix.tar.gz",
+            "https://github.com/grpc/grpc/archive/refs/tags/v1.54.2.tar.gz",
         ],
     )
 
